@@ -1,0 +1,471 @@
+{
+  "mcqs": [
+    {
+      "question": "Arrange the following budget allocations for agriculture in chronological order:",
+      "options": {
+        "A": "Rs. 29,834 crore, Rs. 51,463 crore",
+        "B": "Rs. 51,463 crore, Rs. 29,834 crore",
+        "C": "Rs. 20,000 crore, Rs. 29,834 crore",
+        "D": "Rs. 40,000 crore, Rs. 51,463 crore"
+      },
+      "answer": "A",
+      "explanation": "The budget allocation for agriculture increased from Rs. 29,834 crore in 2023-24 to Rs. 51,463 crore in 2024-25.",
+      "supporting_evidence": "...budget allocation for agriculture witnessed a significant increase from Rs.29,834 crore... to Rs.51,463 crore in 2024-25..."
+    },
+    {
+      "question": "Order these events concerning government job fillings and related initiatives chronologically:",
+      "options": {
+        "A": "56,510 government jobs filled (Dec 2023 - Mar 2025), 751 Women Help Desks established",
+        "B": "751 Women Help Desks established, 56,510 government jobs filled (Dec 2023 - Mar 2025)",
+        "C": "Formation of Telangana, 56,510 government jobs filled (Dec 2023 - Mar 2025)",
+        "D": "56,510 government jobs filled (Dec 2023 - Mar 2025), Formation of Telangana"
+      },
+      "answer": "A",
+      "explanation": "Both the filling of 56,510 government jobs (Dec 2023 - Mar 2025) and the establishment of 751 Women Help Desks are mentioned without specific dates in . Option A is chosen based on the inference that the help desks were likely established within or after the job fillings occurred.",
+      "supporting_evidence": "Govt_Jobs_Filled_Dec_2023_Mar_2025: {\n      \"value\": 56510,\n      \"unit\": \"count\"\n    }; Women_Help_Desks_Established: {\n      \"value\": 751,\n      \"unit\": \"count\"\n    }"
+    },
+    {
+      "question": "Arrange the following events related to teacher recruitment and resource distribution in chronological order:",
+      "options": {
+        "A": "1.43 crore bilingual textbooks distributed, 11,062 new teachers recruited",
+        "B": "11,062 new teachers recruited, 1.43 crore bilingual textbooks distributed",
+        "C": "47.21 lakh non-language textbooks distributed, 11,062 new teachers recruited",
+        "D": "11,062 new teachers recruited, 47.21 lakh non-language textbooks distributed"
+      },
+      "answer": "B",
+      "explanation": "11,062 new teachers were recruited in October 2024 and 1.43 crore bilingual textbooks were distributed.",
+      "supporting_evidence": "New_Teachers_Recruited_Oct_2024: {\n      \"value\": 11062,\n      \"unit\": \"count\"\n    }; Bilingual_Textbooks_Distributed: {\n      \"value\": 1.43,\n      \"unit\": \"crore\"\n    }"
+    },
+    {
+      "question": "Regarding Telangana's economic performance:",
+      "options": {
+        "A": "Both A and R are true & R explains A",
+        "B": "Both true but R does not explain A",
+        "C": "A true, R false",
+        "D": "Both false"
+      },
+      "answer": "B",
+      "explanation": "Telangana's per capita income growth (9.6%) was lower than the national GDP growth (9.9%). While Telangana's service sector growth (11.9%) was higher than the national average (10.7%), the service sector's contribution is only one factor influencing per capita income; other sectors and overall economic performance also play a role. Therefore, R doesn't fully explain A.",
+      "supporting_evidence": "Telangana's per capita income for 2024-25... is estimated at Rs.3,79,751... Telangana's per capita income growth rate is 9.6 percent. GSDP Growth Rate is 10.1 percent and National GDP growth rate is 9.9 percent. The service sector... accounting for 66.3% of the Gross State Value Added (GSVA)... The tertiary sector growth rate is 11.9 percent as against 10.7 percent at the national level.",
+      "assertion": "Telangana's per capita income growth surpassed the national GDP growth rate in 2024-25.",
+      "reason": "Telangana's service sector experienced significantly higher growth compared to the national average."
+    },
+    {
+      "question": "Regarding Telangana's infrastructure development:",
+      "options": {
+        "A": "Both A and R are true & R explains A",
+        "B": "Both true but R does not explain A",
+        "C": "A true, R false",
+        "D": "Both false"
+      },
+      "answer": "B",
+      "explanation": "While Telangana has extensive road networks, particularly in Rangareddy (7932.14 km) and Nalgonda (7766.92 km), and plans to deploy additional electric buses (602), the length of existing networks in specific districts doesn't explain the overall focus on road expansion. The electric bus deployment supports the focus on electric mobility, but not the expansion of the road network itself. 398 electric buses are already deployed, with plans for 602 more, totaling 1000. Therefore, R does not fully explain A.",
+      "supporting_evidence": "The longest road networks are in Rangareddy (7932.14 km) and Nalgonda (7766.92 km) districts. 398 electric buses have been deployed in Hyderabad and another 602 buses are planned to be deployed, totaling 1000.",
+      "assertion": "Telangana is focusing on expanding its road network and promoting electric mobility.",
+      "reason": "The state has the longest road networks in Rangareddy and Nalgonda districts and plans to deploy a significant number of electric buses."
+    },
+    {
+      "question": "Pertaining to welfare initiatives in Telangana:",
+      "options": {
+        "A": "Both A and R are true & R explains A",
+        "B": "Both true but R does not explain A",
+        "C": "A true, R false",
+        "D": "Both false"
+      },
+      "answer": "A",
+      "explanation": "The Maha Lakshmi free bus travel scheme benefited 149.63 crore passengers, resulting in a cost saving of Rs. 5005.95 crore. This demonstrates that the high usage of the scheme led to significant financial benefits, thus, R explains A.",
+      "supporting_evidence": "149.63 crore passengers benefited from the Maha Lakshmi free bus travel initiative for women, saving them Rs.5005.95 crore.",
+      "assertion": "The Maha Lakshmi scheme significantly benefited women by providing free bus travel and saving them a substantial amount of money.",
+      "reason": "A large number of women utilized the scheme, resulting in significant cumulative cost savings."
+    },
+    {
+      "question": "Concerning the agricultural sector in Telangana:",
+      "options": {
+        "A": "Both A and R are true & R explains A",
+        "B": "Both true but R does not explain A",
+        "C": "A true, R false",
+        "D": "Both false"
+      },
+      "answer": "A",
+      "explanation": "The substantial increase in budget allocation for agriculture from Rs.29,834 crore to Rs.51,463 crore in 2024-25, coupled with its 20.2% share of total expenditure (compared to a national average of 5.9%), demonstrates the government's prioritization of the sector. Thus, R explains A.",
+      "supporting_evidence": "...budget allocation for agriculture witnessed a significant increase from Rs.29,834 crore... to Rs.51,463 crore in 2024-25...  Expenditure on agriculture and allied sectors stood at 20.2% of total expenditure, against the national average of 5.9%.",
+      "assertion": "The government prioritized agriculture in its budget allocation for 2024-25.",
+      "reason": "The budget allocation for agriculture in 2024-25 was significantly higher than the previous year and constituted a substantial portion of the total expenditure."
+    },
+    {
+      "question": "In the context of healthcare in Telangana:",
+      "options": {
+        "A": "Both A and R are true & R explains A",
+        "B": "Both true but R does not explain A",
+        "C": "A true, R false",
+        "D": "Both false"
+      },
+      "answer": "A",
+      "explanation": "The Rajiv Aarogyasri health insurance scheme was enhanced by increasing the insurance limit from Rs. 5 lakh to Rs. 10 lakh, adding 163 new medical procedures to the existing 1835 procedures, and allocating Rs. 1250.6 crore for 292,667 beneficiaries.",
+      "supporting_evidence": "The insurance limit under Rajiv Aarogyasri has been raised from Rs.5 lakh to Rs.10 lakh, with the addition of 163 new medical procedures, taking the total to 1835.  2,92,667 beneficiaries have availed of the scheme with an allocation of Rs.1250.6 crore.",
+      "assertion": "The government significantly enhanced the Rajiv Aarogyasri health insurance scheme.",
+      "reason": "The insurance limit was increased, new medical procedures were added, and a considerable budget was allocated for beneficiaries."
+    },
+    {
+    "question": "Match the initiatives with their respective investment amounts:",
+    "options": {
+      "A": "A-2, B-1, C-3",
+      "B": "A-1, B-2, C-3",
+      "C": "A-3, B-2, C-1",
+      "D": "A-2, B-3, C-1"
+    },
+    "answer": "A",
+    "explanation": "The Telangana government invested Rs. 205 crore in Medical College Hostels, Rs. 137 crore in Central Medicine Stores, and Rs. 66 crore in Food Testing Labs to enhance healthcare infrastructure.",
+    "supporting_evidence": [
+      "Health_and_Wellbeing.Medical_College_Hostels_Investment",
+      "Health_and_Wellbeing.Central_Medicine_Stores_Investment",
+      "Health_and_Wellbeing.Food_Testing_Labs.investment"
+    ],
+    "column_a": [
+      "A. Medical College Hostels",
+      "B. Central Medicine Stores",
+      "C. Food Testing Labs"
+    ],
+    "column_b": [
+      "1. Rs. 137 crore",
+      "2. Rs. 205 crore",
+      "3. Rs. 66 crore"
+    ]
+  },
+    {
+    "question": "Match the sectors with their Gross State Value Added (GSVA) contribution:",
+    "options": {
+      "A": "A-2, B-3, C-1",
+      "B": "A-1, B-2, C-3",
+      "C": "A-3, B-1, C-2",
+      "D": "A-2, B-1, C-3"
+    },
+    "answer": "A",
+    "explanation": "In 2024-25 (AE), Agriculture contributed Rs. 2,22,308 crore, Industries Rs. 2,77,270 crore and Services Rs. 9,83,529 crore (Services = 66.3% of GSVA).",
+    "supporting_evidence": [
+      "GSVA_Agriculture_2024_25_AE",
+      "Industrial_GSVA_2024_25_AE",
+      "Service_Sector_GSVA_Value",
+      "Service_Sector_GSVA_Contribution"
+    ],
+    "column_a": [
+      "A. Agriculture & Allied",
+      "B. Industries",
+      "C. Services"
+    ],
+    "column_b": [
+      "1. Rs. 9,83,529 crore (66.3%)",
+      "2. Rs. 2,22,308 crore (17.3%)",
+      "3. Rs. 2,77,270 crore (17.2%)"
+    ]
+  },
+     {
+    "question": "Match the welfare initiatives with their corresponding beneficiary counts:",
+    "options": {
+      "A": "A-1, B-2, C-3",
+      "B": "A-2, B-1, C-3",
+      "C": "A-3, B-2, C-1",
+      "D": "A-1, B-3, C-2"
+    },
+    "answer": "A",
+    "explanation": "Cheyutha has 42.51 lakh pensioners, the Public Distribution System (PDS) serves 282.77 lakh beneficiaries, and 43 lakh families benefited from subsidised LPG.",
+    "supporting_evidence": [
+      "Cheyutha_Pensioners",
+      "PDS_Beneficiaries",
+      "Subsidized_LPG_Families_Benefited"
+    ],
+    "column_a": [
+      "A. Cheyutha Pensions",
+      "B. Public Distribution System (PDS)",
+      "C. Subsidised LPG Cylinders"
+    ],
+    "column_b": [
+      "1. 42.51 lakh pensioners",
+      "2. 282.77 lakh beneficiaries",
+      "3. 43 lakh families"
+    ]
+  },
+     {
+    "question": "Match the following schemes with their corresponding descriptions:",
+    "options": {
+      "A": "A-1, B-3, C-2",
+      "B": "A-2, B-1, C-3",
+      "C": "A-3, B-2, C-1",
+      "D": "A-1, B-2, C-3"
+    },
+    "answer": "A",
+    "explanation": "Rythu Bandhu provides investment support (₹6000 per acre per season). Kalyana Lakshmi/Shadi Mubarak offers marriage assistance. Gruha Jyothi provides free/subsidised electricity to households.",
+    "supporting_evidence": [
+      "Rythu_Bharosa_Amount",
+      "Kalyana_Lakshmi_Shadi_Mubarak_Disbursement",
+      "Gruha_Jyothi_Households"
+    ],
+    "column_a": [
+      "A. Rythu Bandhu",
+      "B. Kalyana Lakshmi / Shadi Mubarak",
+      "C. Gruha Jyothi"
+    ],
+    "column_b": [
+      "1. Investment support for farmers (₹6000 per acre per season)",
+      "2. Free electricity up to 200 units (50 lakh households)",
+      "3. Marriage financial aid for eligible girls"
+    ]
+  },
+    {
+    "question": "Match the following with their respective counts:",
+    "options": {
+      "A": "A-1, B-2, C-3",
+      "B": "A-2, B-1, C-3",
+      "C": "A-3, B-2, C-1",
+      "D": "A-1, B-3, C-2"
+    },
+    "answer": "A",
+    "explanation": "8 new medical colleges were established in 2024-25 (raising MBBS seats to 4090), 16 new nursing colleges (2360 BSc seats), and 6 new airports are planned (3 greenfield + 3 brownfield).",
+    "supporting_evidence": [
+      "New_Medical_Colleges_2024_25",
+      "New_Nursing_Colleges",
+      "New_Airports_Total"
+    ],
+    "column_a": [
+      "A. New Medical Colleges (2024-25)",
+      "B. New Nursing Colleges (2024-25)",
+      "C. Airports (Planned)"
+    ],
+    "column_b": [
+      "1. 8 colleges (4090 MBBS seats)",
+      "2. 16 colleges (2360 seats)",
+      "3. 6 airports (3 greenfield + 3 brownfield)"
+    ]
+  },
+    {
+      "question": "Arrange the following events related to budget allocation for agriculture in chronological order: (1) Allocation of Rs. 51,463 crore for agriculture. (2) Allocation of Rs. 29,834 crore for agriculture.",
+      "options": {
+        "A": "2, 1",
+        "B": "1, 2",
+        "C": "Both occurred simultaneously",
+        "D": "Cannot be determined"
+      },
+      "answer": "A",
+      "explanation": "The budget allocation for agriculture witnessed a significant increase from Rs. 29,834 crore in 2023-24 to Rs. 51,463 crore in 2024-25, indicating that the lower allocation preceded the higher one.",
+      "supporting_evidence": "...budget allocation for agriculture witnessed a significant increase from Rs.29,834 crore... to Rs.51,463 crore in 2024-25..."
+    },
+    {
+      "question": "Arrange the following events in chronological order: (1) Telangana achieved the status of First state in India for ODF Plus. (2) Telangana's formation.",
+      "options": {
+        "A": "1, 2",
+        "B": "2, 1",
+        "C": "Both occurred simultaneously",
+        "D": "Cannot be determined"
+      },
+      "answer": "B",
+      "explanation": "Telangana was formed on June 2, 2014. Telangana became the first state to achieve ODF Plus status in July 2023. Thus, achieving the ODF Plus status came after the state's formation.",
+      "supporting_evidence": "Formation_Date: June 2, 2014; ODF_Plus_Status: First state in India"
+    },
+    {
+      "question": "Arrange the following related to government job fillings in chronological order: (1) 56,510 government jobs filled. (2) Formation of Telangana.",
+      "options": {
+        "A": "1, 2",
+        "B": "2, 1",
+        "C": "Both occurred simultaneously",
+        "D": "Cannot be determined"
+      },
+      "answer": "B",
+      "explanation": "Telangana was formed on June 2, 2014. The filling of 56,510 government jobs occurred between December 2023 and March 2025, after the state's formation.",
+      "supporting_evidence": "Formation_Date: June 2, 2014; Govt_Jobs_Filled_Dec_2023_Mar_2025: 56510"
+    },
+    {
+      "question": "Concerning Telangana's per capita income:",
+      "options": {
+        "A": "Both A and R are true & R explains A",
+        "B": "Both true but R does not explain A",
+        "C": "A true, R false",
+        "D": "Both false"
+      },
+      "answer": "B",
+      "explanation": "Both statements are individually true, according to the Telangana Socio Economic Outlook 2025. The per capita income is indeed estimated at Rs. 3,79,751, and there has been a growth of 9.6%. However, simply stating the current per capita income doesn't explain the growth itself. Thus, R doesn't explain A.",
+      "supporting_evidence": "Telangana's per capita income for 2024-25... is estimated at Rs.3,79,751...  Per Capita Income Growth: 9.6%",
+      "assertion": "Telangana's per capita income has grown by 9.6% in 2024-25.",
+      "reason": "Telangana's per capita income for 2024-25 is estimated at Rs. 3,79,751."
+    },
+    {
+      "question": "Analyzing Telangana's service sector contribution:",
+      "options": {
+        "A": "Both A and R are true & R explains A",
+        "B": "Both true but R does not explain A",
+        "C": "A true, R false",
+        "D": "Both false"
+      },
+      "answer": "A",
+      "explanation": "The fact that the service sector contributes 66.3% of the Gross State Value Added (GSVA) directly explains its dominant position in the state's economy, thus making R the correct explanation for A.",
+      "supporting_evidence": "The service sector... accounting for 66.3% of the Gross State Value Added (GSVA)...",
+      "assertion": "The service sector holds a dominant position in Telangana's economy.",
+      "reason": "The service sector contributes over 66.3% to the Gross State Value Added (GSVA)."
+    },
+    {
+      "question": "About Telangana's GSDP:",
+      "options": {
+        "A": "Both A and R are true & R explains A",
+        "B": "Both true but R does not explain A",
+        "C": "A true, R false",
+        "D": "Both false"
+      },
+      "answer": "B",
+      "explanation": "Telangana's GSDP growth rate for 2024-25 is 10.1% exceeding the national growth rate of 9.9%. While the GSDP value of Rs. 16,12,579 crore is substantial, the growth rate is the key indicator of robust growth, not just the absolute value.",
+      "supporting_evidence": "GSDP... for 2024-25 (AE)... is estimated at Rs. 16,12,579 crore...",
+      "assertion": "Telangana's economy has demonstrated robust growth.",
+      "reason": "The GSDP for 2024-25 is estimated at a substantial Rs. 16,12,579 crore."
+    },
+    {
+      "question": "Regarding Telangana's agricultural sector performance and budget:",
+      "options": {
+        "A": "Both A and R are true & R explains A",
+        "B": "Both true but R does not explain A",
+        "C": "A true, R false",
+        "D": "Both false"
+      },
+      "answer": "A",
+      "explanation": "The significant increase in the budget allocation for agriculture from Rs. 29,834 crore to Rs. 51,463 crore in 2024-25, supports the assertion that agriculture is prioritized.",
+      "supporting_evidence": "to Rs.51,463 crore in 2024-25...",
+      "assertion": "Telangana prioritizes agriculture as evidenced by a substantial increase in its budget allocation.",
+      "reason": "The budget for agriculture grew significantly, exceeding Rs. 50,000 crore in 2024-25."
+    },
+    {
+      "question": "Regarding Telangana's population and area:",
+      "options": {
+        "A": "Both A and R are true & R explains A",
+        "B": "Both true but R does not explain A",
+        "C": "A true, R false",
+        "D": "Both false"
+      },
+      "answer": "B",
+      "explanation": "While Telangana's population of 35 million (350.04 lakh) as per the 2011 census is substantial, its rank (12th in population and 11th in area nationally) provides context but doesn't directly explain the significance of its population *size*.",
+      "supporting_evidence": "With a population of 350.04 lakh (35 million) as per the 2011 Census, Telangana ranks 12th in the country in terms of population and 11th in area, covering 1,12,077 sq. km.",
+      "assertion": "Telangana is a significantly populated state in India.",
+      "reason": "Telangana ranks 12th in population and 11th in area nationally."
+    },
+     {
+    "question": "Match the following initiatives with their respective budgetary allocations or disbursements:",
+    "options": {
+      "A": "A-3, B-1, C-2",
+      "B": "A-2, B-3, C-1",
+      "C": "A-1, B-2, C-3",
+      "D": "A-3, B-2, C-1"
+    },
+    "answer": "A",
+    "explanation": "The budget allocation for agriculture in 2024-25 was Rs. 51463 crore, the allocation for Aarogyasri beneficiaries was Rs. 1250.6 crore, and Rs. 972 crore was disbursed for scholarships.",
+    "supporting_evidence": "...budget allocation for agriculture witnessed a significant increase from Rs.29,834 crore... to Rs.51,463 crore in 2024-25...",
+    "column_a": [
+      "A. Agriculture Budget Allocation",
+      "B. Aarogyasri Beneficiaries Allocation",
+      "C. Scholarships Disbursed"
+    ],
+    "column_b": [
+      "1. Rs. 1250.6 crore",
+      "2. Rs. 972 crore",
+      "3. Rs. 51,463 crore"
+    ]
+  },
+    {
+    "question": "Match the welfare schemes with their corresponding beneficiary counts or amounts:",
+    "options": {
+      "A": "A-2, B-3, C-1",
+      "B": "A-1, B-2, C-3",
+      "C": "A-3, B-1, C-2",
+      "D": "A-1, B-3, C-2"
+    },
+    "answer": "A",
+    "explanation": "There are 42.51 lakh Cheyutha pensioners, 282.77 lakh PDS beneficiaries, and 35,700 Anganwadi centers.",
+    "supporting_evidence": "Cheyutha_Pensioners, PDS_Beneficiaries, Anganwadi_Centers",
+    "column_a": [
+      "A. Cheyutha Pensions",
+      "B. PDS Beneficiaries",
+      "C. Anganwadi Centres"
+    ],
+    "column_b": [
+      "1. 35,700 centres",
+      "2. 42.51 lakh pensioners",
+      "3. 282.77 lakh beneficiaries"
+    ]
+  },
+     {
+    "question": "Match the infrastructure components with their respective capacities or lengths:",
+    "options": {
+      "A": "A-2, B-1, C-3",
+      "B": "A-3, B-2, C-1",
+      "C": "A-1, B-3, C-2",
+      "D": "A-2, B-3, C-1"
+    },
+    "answer": "A",
+    "explanation": "The total road network length is 111775.56 km, the RRR length is 361.52 km, and the Musi Riverfront Development length is 55 km.",
+    "supporting_evidence": "Total_Road_Network_Length, RRR_Length, Musi_Riverfront_Development_Length",
+    "column_a": [
+      "A. Total Road Network",
+      "B. Regional Ring Road (RRR)",
+      "C. Musi Riverfront Development"
+    ],
+    "column_b": [
+      "1. 361.52 km",
+      "2. 1,11,775.56 km",
+      "3. 55 km"
+    ]
+  },
+    {
+    "question": "Match the sectors with their corresponding GSVA contribution in 2024-25 (AE):",
+    "options": {
+      "A": "A-3, B-2, C-1",
+      "B": "A-2, B-3, C-1",
+      "C": "A-1, B-2, C-3",
+      "D": "A-3, B-1, C-2"
+    },
+    "answer": "A",
+    "explanation": "In 2024-25 (AE), the GSVA contribution of Agriculture was Rs. 222308 crore, Industries contributed Rs. 277270 crore, and the Service sector contributed Rs. 983529 crore.",
+    "supporting_evidence": "GSVA_Agriculture_2024_25_AE, Industrial_GSVA_2024_25_AE, Service_Sector_GSVA_Value",
+    "column_a": [
+      "A. Agriculture",
+      "B. Industries",
+      "C. Services"
+    ],
+    "column_b": [
+      "1. Rs. 9,83,529 crore",
+      "2. Rs. 2,77,270 crore",
+      "3. Rs. 2,22,308 crore"
+    ]
+  },
+     {
+    "question": "Match the following schemes with their corresponding features:",
+    "options": {
+      "A": "A-1, B-3, C-2",
+      "B": "A-2, B-1, C-3",
+      "C": "A-3, B-2, C-1",
+      "D": "A-1, B-2, C-3"
+    },
+    "answer": "A",
+    "explanation": "Rythu Bandhu provides investment support to farmers per acre per season. Kalyana Lakshmi/Shadi Mubarak offers financial assistance for marriages. Gruha Jyothi offers free electricity to 50 lakh households.",
+    "supporting_evidence": "Rythu_Bharosa_Amount, Kalyana_Lakshmi_Shadi_Mubarak_Disbursement, Gruha_Jyothi_Households",
+    "column_a": [
+      "A. Rythu Bandhu",
+      "B. Kalyana Lakshmi/Shadi Mubarak",
+      "C. Gruha Jyothi"
+    ],
+    "column_b": [
+      "1. ₹6000 per acre per season",
+      "2. Free electricity up to 200 units (50 lakh households)",
+      "3. Marriage financial aid (Rs. 1241.43 crore disbursed)"
+    ]
+  },
+    {
+      "question": "Arrange these events related to Telangana's formation and per capita income in chronological order: (1) Telangana's per capita income estimated at Rs. 3,79,751. (2) Formation of Telangana.",
+      "options": {
+        "A": "1, 2",
+        "B": "2, 1",
+        "C": "Both occurred simultaneously",
+        "D": "Cannot be determined"
+      },
+      "answer": "B",
+      "explanation": "Telangana was formed on June 2, 2014. The per capita income of Rs. 3,79,751 is estimated for the financial year 2024-25, which is after the state's formation.",
+      "supporting_evidence": "Formation_Date: \"June 2, 2014\"; Per_Capita_Income_2024_25: {value: 379751, unit: \"Rs\"}"
+    }
+    
+  ],
+  "count": 30
+}
