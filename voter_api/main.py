@@ -134,7 +134,7 @@ def update_voter_data(data: VoterUpdate, db: Session = Depends(get_db)):
     return {"status": "success"}
 
 @app.get("/voters/stats")
-def get_voter_stats(ward: Optional[int] = None, db: Session = Depends(get_db)):
+def get_voter_stats(ward: Optional[int] = None, current_voter_id: Optional[int] = None, db: Session = Depends(get_db)):
     query = db.query(Voter)
     if ward is not None:
         query = query.filter(Voter.ward_no == ward)
@@ -142,11 +142,21 @@ def get_voter_stats(ward: Optional[int] = None, db: Session = Depends(get_db)):
     total = query.count()
     completed = query.filter(Voter.expected_party != None).count()
     
-    return {
+    stats = {
         "total": total,
         "completed": completed,
         "ward": ward
     }
+
+    if current_voter_id is not None and ward is not None:
+        # Calculate rank of current voter in this ward
+        current_index = db.query(Voter).filter(
+            Voter.ward_no == ward, 
+            Voter.voter_id <= current_voter_id
+        ).count()
+        stats["current_index"] = current_index
+
+    return stats
 
 # Legacy endpoint support (optional, can keep for backward compatibility if needed)
 @app.put("/voters/update_legacy")
