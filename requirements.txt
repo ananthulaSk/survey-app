@@ -1,0 +1,7 @@
+fastapi
+uvicorn
+sqlalchemy
+requests
+pydantic
+python-multipart
+# Add database driver if using Postgres/MySQL in cloud (e.g., psycopg2-binary)

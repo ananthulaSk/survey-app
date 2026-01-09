@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.env
+
+# Database (Local SQLite should not go to cloud usually, but maybe for demo it's okay? 
+# Better to ignore and let the app create a fresh one or connect to Cloud SQL.
+# For now, let's ignore it so we don't overwrite production DB with local test DB)
+voter_db.sqlite
+voter_data.db
+
+# OS
+.DS_Store
+Thumbs.db
+
+# FORCE INCLUDE Flutter Build (even if static/ is ignored by some rule)
+!static/flutter_app/
+!static/style.css
+!static/app.js
+!static/index.html
