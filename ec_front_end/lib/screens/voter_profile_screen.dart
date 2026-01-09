@@ -5,13 +5,29 @@ import '../widgets/app_drawer.dart';
 
 class VoterProfileScreen extends StatefulWidget {
   final Voter? voter;
-  const VoterProfileScreen({super.key, this.voter});
+  final ApiService? apiService; // Allow injection
+
+  const VoterProfileScreen({super.key, this.voter, this.apiService});
+
   @override
   State<VoterProfileScreen> createState() => _VoterProfileScreenState();
 }
 
 class _VoterProfileScreenState extends State<VoterProfileScreen> {
-  final ApiService _apiService = ApiService();
+  late final ApiService _apiService;
+
+  @override
+  void initState() {
+    super.initState();
+    _apiService = widget.apiService ?? ApiService();
+    _currentVoter = widget.voter;
+    if (_currentVoter != null) {
+      _populateFields(_currentVoter!);
+    } else {
+      _loadFirstVoter();
+    }
+  }
+
   Voter? _currentVoter;
   bool _isLoading = false;
   String _voterStatus = "AVAILABLE";
@@ -63,17 +79,6 @@ class _VoterProfileScreenState extends State<VoterProfileScreen> {
     "Mala",
     "Other",
   ];
-
-  @override
-  void initState() {
-    super.initState();
-    _currentVoter = widget.voter;
-    if (_currentVoter != null) {
-      _populateFields(_currentVoter!);
-    } else {
-      _loadFirstVoter();
-    }
-  }
 
   Future<void> _refreshStats() async {
     if (_currentVoter == null) return;

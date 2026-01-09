@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EC Survey Admin Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo">
+                <h2>EC Survey</h2>
+                <span class="badge">Admin</span>
+            </div>
+            <nav class="nav-links">
+                <a href="#" class="nav-item active" data-tab="dashboard" onclick="switchTab('dashboard')">
+                    <span class="icon">📊</span> Dashboard
+                </a>
+                <a href="#" class="nav-item" data-tab="approvals" onclick="switchTab('approvals')">
+                    <span class="icon">👥</span> Approvals
+                </a>
+                <a href="#" class="nav-item" data-tab="surveys" onclick="switchTab('surveys')">
+                    <span class="icon">📋</span> Surveys
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="top-bar">
+                <div class="breadcrumbs">
+                    <h1 id="page-title">Dashboard</h1>
+                </div>
+                <div class="survey-selector">
+                    <label>Active Survey:</label>
+                    <select id="surveySelect" onchange="loadDashboardData()">
+                        <option value="">Loading...</option>
+                    </select>
+                </div>
+            </header>
+
+            <!-- Dashboard Tab -->
+            <div id="dashboard-tab" class="tab-content active">
+                <div class="stats-grid">
+                    <div class="stat-card blue">
+                        <h3>Total Voters</h3>
+                        <p id="totalVoters">0</p>
+                    </div>
+                    <div class="stat-card green">
+                        <h3>Effective</h3>
+                        <p id="effectiveVoters">0</p>
+                    </div>
+                    <div class="stat-card orange">
+                        <h3>Completed</h3>
+                        <p id="completedSurveys">0</p>
+                    </div>
+                    <div class="stat-card purple">
+                        <h3>Progress</h3>
+                        <p id="completionPercentage">0%</p>
+                    </div>
+                </div>
+
+                <div class="content-grid">
+                    <div class="chart-container">
+                        <h3>Party Analytics (Effective Voters)</h3>
+                        <canvas id="analyticsChart"></canvas>
+                    </div>
+                    <div class="table-container">
+                        <h3>Ward Progress</h3>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Ward</th>
+                                    <th>Completed</th>
+                                    <th>Total</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="progressTableBody">
+                                <!-- JS will populate -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Approvals Tab -->
+            <div id="approvals-tab" class="tab-content">
+                <div class="table-container full-width">
+                    <h3>Pending Surveyor Requests</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Mobile</th>
+                                <th>Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="approvalsTableBody">
+                            <!-- JS will populate -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Surveys Tab -->
+            <div id="surveys-tab" class="tab-content">
+                <div class="table-container full-width">
+                   <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
+                        <h3>Active Surveys</h3>
+                        <button class="btn-primary" onclick="showCreateSurveyModal()">+ Create New Survey</button>
+                   </div>
+                   <p>Create generic surveys for different wards here.</p>
+                   <!-- List could be added here -->
+                </div>
+                
+                <!-- Simple Modal for Creation -->
+                <div id="createModal" class="modal" style="display:none;">
+                    <div class="modal-content">
+                        <h3>New Survey</h3>
+                        <input type="text" id="newSurveyName" placeholder="Survey Name (e.g. Ward 5 2026)">
+                        <input type="number" id="newSurveyWard" placeholder="Ward Number">
+                        <div class="modal-actions">
+                            <button onclick="closeModal()">Cancel</button>
+                            <button class="btn-primary" onclick="createSurvey()">Create</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>

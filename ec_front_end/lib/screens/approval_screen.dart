@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'voter_profile_screen.dart';
+import 'survey_selection_screen.dart';
+import '../services/api_service.dart';
 
 class ApprovalScreen extends StatefulWidget {
   const ApprovalScreen({super.key});
@@ -28,10 +29,12 @@ class _ApprovalScreenState extends State<ApprovalScreen> {
         ),
       );
 
-      // Navigate to Survey
+      // Navigate to Survey Selection
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => const VoterProfileScreen()),
+        MaterialPageRoute(
+          builder: (_) => SurveySelectionScreen(apiService: ApiService()),
+        ),
       );
     }
   }

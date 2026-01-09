@@ -1,18 +1,19 @@
 import urllib.parse
 from fastapi import FastAPI, Depends, HTTPException, Query, Body
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy import Column, Integer, String, asc, desc
-from sqlalchemy.orm import Session
+from fastapi.staticfiles import StaticFiles
+from sqlalchemy import Column, Integer, String, asc, desc, ForeignKey, DateTime, func
+from sqlalchemy.orm import Session, relationship
 from typing import List, Optional
+from datetime import datetime
 from pydantic import BaseModel
 
 # Import robust database setup
 from database import engine, SessionLocal, Base, get_db
 
-# --- VOTER MODEL (Matches AREGUDEM_MASTER_FINAL_PROD.csv) ---
-class Voter(Base):
-    __tablename__ = "voters"
-    # We use a dedicated voter_id as the primary key for the database
+# --- 1. VOTER MASTER (Production Data - Read Only) ---
+class VoterMaster(Base):
+    __tablename__ = "voters"  # Existing table
     voter_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     serial_no = Column(Integer)
     house_no = Column(String)
@@ -23,14 +24,65 @@ class Voter(Base):
     surname = Column(String)
     ward_no = Column(Integer)
     family_id = Column(String)
-    # Survey fields
+    # Master data should typically NOT maintain dynamic survey fields, 
+    # but we keep them here as they exist in legacy schema.
+    # In the new architecture, these will be ignored/read-only in this table.
     expected_party = Column(String, nullable=True)
     occupation = Column(String, nullable=True)
     religion = Column(String, nullable=True)
     caste = Column(String, nullable=True)
     sub_caste = Column(String, nullable=True)
     mobile_no = Column(String, nullable=True)
-    voter_status = Column(String, default="AVAILABLE") # New Field
+    voter_status = Column(String, default="AVAILABLE") 
+
+# --- 2. SURVEY META DATA ---
+class Survey(Base):
+    __tablename__ = "surveys"
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    name = Column(String, nullable=False)
+    scope_type = Column(String) # e.g., "WARD", "VILLAGE"
+    scope_value = Column(String) # e.g., "1" (Stored as string to be flexible)
+    status = Column(String, default="ACTIVE") # ACTIVE, COMPLETED
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+# --- 3. SURVEY SNAPSHOT (Writable Survey Data) ---
+class SurveyVoter(Base):
+    __tablename__ = "survey_voters"
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    
+    survey_id = Column(Integer, ForeignKey("surveys.id"), index=True)
+    master_voter_id = Column(Integer, ForeignKey("voters.voter_id"), index=True)
+    
+    # Copied Identity Fields (for search/display performance)
+    voter_name = Column(String)
+    surname = Column(String)
+    ward_no = Column(Integer)
+    house_no = Column(String)
+    age = Column(Integer)
+    gender = Column(String)
+    relation_name = Column(String)
+    
+    # Writable Survey Fields
+    expected_party = Column(String, nullable=True)
+    occupation = Column(String, nullable=True)
+    religion = Column(String, nullable=True)
+    caste = Column(String, nullable=True)
+    sub_caste = Column(String, nullable=True)
+    mobile_no = Column(String, nullable=True)
+    voter_status = Column(String, default="AVAILABLE")
+
+# --- 4. SURVEYOR REQUESTS (For Approval Workflow) ---
+class SurveyorRequest(Base):
+    __tablename__ = "surveyor_requests"
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    name = Column(String)
+    mobile_no = Column(String)
+    device_id = Column(String, nullable=True) # To uniquely identify app installation
+    status = Column(String, default="PENDING") # PENDING, APPROVED, REJECTED
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+# Backward compatibility alias - Delete this once migration is complete
+Voter = VoterMaster
 
 # Create the table in Google Cloud if it doesn't exist
 Base.metadata.create_all(bind=engine)
@@ -46,9 +98,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Serve Static Files (Web Dashboard)
+app.mount("/static", StaticFiles(directory="static", html=True), name="static")
+
 # --- Pydantic Models for Request Body ---
 class VoterUpdate(BaseModel):
     voter_id: int
+    survey_id: int # REQUIRED NOW
     party: Optional[str] = None
     occupation: Optional[str] = None
     religion: Optional[str] = None
@@ -57,23 +113,87 @@ class VoterUpdate(BaseModel):
     mobile_no: Optional[str] = None
     voter_status: Optional[str] = None
 
-# --- API ENDPOINTS ---
+class SurveyCreate(BaseModel):
+    name: str
+    scope_type: str = "WARD" # Only "WARD" supported initially
+    scope_value: str # e.g. "1"
 
 @app.get("/")
 def read_root():
     return {"status": "online", "message": "Voter API is running", "docs_url": "/docs"}
 
+@app.post("/surveys/create")
+def create_survey(survey_data: SurveyCreate, db: Session = Depends(get_db)):
+    # 1. Create Survey Record
+    new_survey = Survey(
+        name=survey_data.name,
+        scope_type=survey_data.scope_type,
+        scope_value=survey_data.scope_value,
+        status="ACTIVE"
+    )
+    db.add(new_survey)
+    db.commit()
+    db.refresh(new_survey)
+    
+    # 2. Bulk Copy Logic (Snapshot)
+    copied_count = 0
+    if survey_data.scope_type == "WARD":
+        try:
+            ward_num = int(survey_data.scope_value)
+            masters = db.query(VoterMaster).filter(VoterMaster.ward_no == ward_num).all()
+            
+            survey_voters = []
+            for v in masters:
+                sv = SurveyVoter(
+                    survey_id=new_survey.id,
+                    master_voter_id=v.voter_id,
+                    voter_name=v.voter_name,
+                    surname=v.surname,
+                    ward_no=v.ward_no,
+                    house_no=v.house_no,
+                    age=v.age,
+                    gender=v.gender,
+                    relation_name=v.relation_name,
+                    # Initialize blank survey data
+                    expected_party=None,
+                    occupation=None,
+                    voter_status="AVAILABLE"
+                )
+                survey_voters.append(sv)
+            
+            if survey_voters:
+                db.add_all(survey_voters)
+                db.commit()
+                copied_count = len(survey_voters)
+                
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Scope value must be an integer for WARD type")
+
+    return {
+        "status": "success", 
+        "survey_id": new_survey.id, 
+        "message": f"Survey created with {copied_count} voters in snapshot."
+    }
+
+@app.get("/surveys/active")
+def get_active_surveys(db: Session = Depends(get_db)):
+    surveys = db.query(Survey).filter(Survey.status == "ACTIVE").order_by(desc(Survey.created_at)).all()
+    return surveys
+
 @app.get("/voters/search", response_model=List[dict])
-def search_voters(query: str, db: Session = Depends(get_db)):
-    # Search across Name and Surname
-    voters = db.query(Voter).filter(
-        (Voter.voter_name.ilike(f"%{query}%")) | 
-        (Voter.surname.ilike(f"%{query}%"))
+def search_voters(query: str, survey_id: int, db: Session = Depends(get_db)):
+    # Search in the active Survey Snapshot
+    voters = db.query(SurveyVoter).filter(
+        SurveyVoter.survey_id == survey_id,
+        (SurveyVoter.voter_name.ilike(f"%{query}%")) | 
+        (SurveyVoter.surname.ilike(f"%{query}%"))
     ).limit(50).all()
     
+    # Return formatted data (same structure as before but from Snapshot)
     return [
         {
-            "voter_id": v.voter_id,
+            "voter_id": v.master_voter_id, # Return MASTER ID for reference
+            "snapshot_id": v.id, # Keep track of snapshot ID if needed internaly
             "name": v.voter_name,
             "surname": v.surname,
             "ward": v.ward_no,
@@ -91,9 +211,14 @@ def search_voters(query: str, db: Session = Depends(get_db)):
     ]
 
 @app.get("/voters/next")
-def get_next_voter(current_id: int = 0, db: Session = Depends(get_db)):
-    # Fetch the next voter with ID greater than current_id
-    voter = db.query(Voter).filter(Voter.voter_id > current_id).order_by(asc(Voter.voter_id)).first()
+def get_next_voter(survey_id: int, current_id: int = 0, db: Session = Depends(get_db)):
+    # Use Master ID for sequential navigation, but fetch from Snapshot
+    # We assume snapshots are ordered by master_voter_id as they were inserted that way
+    
+    voter = db.query(SurveyVoter).filter(
+        SurveyVoter.survey_id == survey_id,
+        SurveyVoter.master_voter_id > current_id
+    ).order_by(asc(SurveyVoter.master_voter_id)).first()
     
     if not voter:
         return {"status": "finished", "data": None}
@@ -101,7 +226,7 @@ def get_next_voter(current_id: int = 0, db: Session = Depends(get_db)):
     return {
         "status": "success",
         "data": {
-            "voter_id": voter.voter_id,
+            "voter_id": voter.master_voter_id,
             "name": voter.voter_name,
             "surname": voter.surname,
             "ward": voter.ward_no,
@@ -120,9 +245,11 @@ def get_next_voter(current_id: int = 0, db: Session = Depends(get_db)):
     }
 
 @app.get("/voters/previous")
-def get_previous_voter(current_id: int, db: Session = Depends(get_db)):
-    # Fetch the previous voter with ID less than current_id
-    voter = db.query(Voter).filter(Voter.voter_id < current_id).order_by(desc(Voter.voter_id)).first()
+def get_previous_voter(survey_id: int, current_id: int, db: Session = Depends(get_db)):
+    voter = db.query(SurveyVoter).filter(
+        SurveyVoter.survey_id == survey_id,
+        SurveyVoter.master_voter_id < current_id
+    ).order_by(desc(SurveyVoter.master_voter_id)).first()
     
     if not voter:
         return {"status": "finished", "data": None}
@@ -130,7 +257,7 @@ def get_previous_voter(current_id: int, db: Session = Depends(get_db)):
     return {
         "status": "success",
         "data": {
-            "voter_id": voter.voter_id,
+            "voter_id": voter.master_voter_id,
             "name": voter.voter_name,
             "surname": voter.surname,
             "ward": voter.ward_no,
@@ -152,9 +279,14 @@ def get_previous_voter(current_id: int, db: Session = Depends(get_db)):
 
 @app.put("/voters/update")
 def update_voter_data(data: VoterUpdate, db: Session = Depends(get_db)):
-    voter = db.query(Voter).filter(Voter.voter_id == data.voter_id).first()
+    # Update Survey Snapshot
+    voter = db.query(SurveyVoter).filter(
+        SurveyVoter.survey_id == data.survey_id,
+        SurveyVoter.master_voter_id == data.voter_id
+    ).first()
+    
     if not voter:
-        raise HTTPException(status_code=404, detail="Voter not found")
+        raise HTTPException(status_code=404, detail="Voter not found in this survey")
         
     # Update fields if provided
     if data.voter_status is not None: 
@@ -167,10 +299,6 @@ def update_voter_data(data: VoterUpdate, db: Session = Depends(get_db)):
             voter.caste = None
             voter.sub_caste = None
             voter.mobile_no = None
-    
-    # Only update these if status IS AVAILABLE (or if we are just updating fields without changing status, but status must be checked)
-    # Actually, if the user sends data + Non-Available status, we should ignore the data.
-    # If the user sends data + Available status (or no status change), we update.
     
     is_available = (data.voter_status == "AVAILABLE") if data.voter_status is not None else (voter.voter_status == "AVAILABLE")
     
@@ -186,13 +314,13 @@ def update_voter_data(data: VoterUpdate, db: Session = Depends(get_db)):
     return {"status": "success"}
 
 @app.get("/voters/stats")
-def get_voter_stats(ward: Optional[int] = None, current_voter_id: Optional[int] = None, db: Session = Depends(get_db)):
-    query = db.query(Voter)
+def get_voter_stats(survey_id: int, ward: Optional[int] = None, current_voter_id: Optional[int] = None, db: Session = Depends(get_db)):
+    query = db.query(SurveyVoter).filter(SurveyVoter.survey_id == survey_id)
     if ward is not None:
-        query = query.filter(Voter.ward_no == ward)
+        query = query.filter(SurveyVoter.ward_no == ward)
         
     total = query.count()
-    completed = query.filter(Voter.expected_party != None).count()
+    completed = query.filter(SurveyVoter.expected_party != None).count()
     
     stats = {
         "total": total,
@@ -202,24 +330,29 @@ def get_voter_stats(ward: Optional[int] = None, current_voter_id: Optional[int] 
 
     if current_voter_id is not None and ward is not None:
         # Calculate rank of current voter in this ward
-        current_index = db.query(Voter).filter(
-            Voter.ward_no == ward, 
-            Voter.voter_id <= current_voter_id
+        current_index = db.query(SurveyVoter).filter(
+            SurveyVoter.survey_id == survey_id,
+            SurveyVoter.ward_no == ward, 
+            SurveyVoter.master_voter_id <= current_voter_id
         ).count()
         stats["current_index"] = current_index
 
     return stats
 
 @app.get("/voters/{voter_id}")
-def get_voter_by_id(voter_id: int, db: Session = Depends(get_db)):
-    voter = db.query(Voter).filter(Voter.voter_id == voter_id).first()
+def get_voter_by_id(voter_id: int, survey_id: int, db: Session = Depends(get_db)):
+    voter = db.query(SurveyVoter).filter(
+        SurveyVoter.survey_id == survey_id,
+        SurveyVoter.master_voter_id == voter_id
+    ).first()
+    
     if not voter:
-        raise HTTPException(status_code=404, detail="Voter not found")
+        raise HTTPException(status_code=404, detail="Voter not found in this survey")
         
     return {
         "status": "success",
         "data": {
-            "voter_id": voter.voter_id,
+            "voter_id": voter.master_voter_id,
             "name": voter.voter_name,
             "surname": voter.surname,
             "ward": voter.ward_no,
@@ -246,6 +379,171 @@ def update_voter_legacy(voter_id: int, party: str, db: Session = Depends(get_db)
     voter.expected_party = party
     db.commit()
     return {"status": "success"}
+
+# --- DASHBOARD ENDPOINTS ---
+
+@app.get("/dashboard/summary")
+def get_dashboard_summary(survey_id: int, db: Session = Depends(get_db)):
+    # 1. Total Voters in Survey
+    total_voters = db.query(SurveyVoter).filter(SurveyVoter.survey_id == survey_id).count()
+    
+    # 2. Completed Surveys (Any Status + Survey Data)
+    # Actually, completion is usually defined by having collected data (e.g. expected_party)
+    completed_surveys = db.query(SurveyVoter).filter(
+        SurveyVoter.survey_id == survey_id,
+        SurveyVoter.expected_party != None
+    ).count()
+    
+    # 3. Effective Voters (Available only)
+    effective_voters = db.query(SurveyVoter).filter(
+        SurveyVoter.survey_id == survey_id,
+        SurveyVoter.voter_status == "AVAILABLE"
+    ).count()
+    
+    # 4. Ward Count (Distinct Wards)
+    # SQLite distinct count syntax might need specific func usage or python len
+    # using simple python distinct for compatibility/ease
+    wards = db.query(SurveyVoter.ward_no).filter(SurveyVoter.survey_id == survey_id).distinct().all()
+    ward_count = len(wards)
+    
+    completion_percentage = 0
+    if effective_voters > 0:
+        completion_percentage = round((completed_surveys / effective_voters) * 100, 1)
+
+    return {
+        "status": "success",
+        "data": {
+            "total_voters": total_voters,
+            "effective_voters": effective_voters,
+            "completed_surveys": completed_surveys,
+            "completion_percentage": completion_percentage,
+            "ward_count": ward_count
+        }
+    }
+
+@app.get("/dashboard/progress")
+def get_dashboard_progress(survey_id: int, db: Session = Depends(get_db)):
+    # Return list of stats per ward
+    # We can use raw SQL for aggregation or python loop if dataset is small (<100k)
+    # Given requirements, simple python loop over wards is robust enough for now
+    
+    # Get all distinct wards
+    wards_res = db.query(SurveyVoter.ward_no).filter(SurveyVoter.survey_id == survey_id).distinct().order_by(SurveyVoter.ward_no).all()
+    wards = [w[0] for w in wards_res]
+    
+    progress_data = []
+    
+    for ward in wards:
+        w_total = db.query(SurveyVoter).filter(SurveyVoter.survey_id == survey_id, SurveyVoter.ward_no == ward).count()
+        w_completed = db.query(SurveyVoter).filter(SurveyVoter.survey_id == survey_id, SurveyVoter.ward_no == ward, SurveyVoter.expected_party != None).count()
+        w_effective = db.query(SurveyVoter).filter(SurveyVoter.survey_id == survey_id, SurveyVoter.ward_no == ward, SurveyVoter.voter_status == "AVAILABLE").count()
+        
+        status = "IN_PROGRESS"
+        if w_effective > 0 and w_completed >= w_effective:
+            status = "COMPLETED"
+        elif w_completed == 0:
+            status = "PENDING"
+            
+        progress_data.append({
+            "ward_no": ward,
+            "total_voters": w_total,
+            "effective_voters": w_effective,
+            "completed": w_completed,
+            "status": status,
+            "surveyor": "Unassigned" # Placeholder for Phase 4 (Assignment)
+        })
+        
+    return {
+        "status": "success",
+        "data": progress_data
+    }
+
+@app.get("/dashboard/analytics")
+def get_dashboard_analytics(survey_id: int, db: Session = Depends(get_db)):
+    # Access Analytics: Party Vote Share based on EFFECTIVE VOTERS only
+    
+    # 1. Total Effective Voters who have voted (Expected Party is not None AND Status is AVAILABLE)
+    # Note: If status != AVAILABLE, we wiped party data anyway, so checking party != None serves same purpose mostly,
+    # but explicitly checking status is safer.
+    
+    results = db.query(
+        SurveyVoter.expected_party, 
+        func.count(SurveyVoter.expected_party)
+    ).filter(
+        SurveyVoter.survey_id == survey_id,
+        SurveyVoter.voter_status == "AVAILABLE",
+        SurveyVoter.expected_party != None
+    ).group_by(SurveyVoter.expected_party).all()
+    
+    analytics_data = []
+    total_polled = 0
+    for party, count in results:
+        analytics_data.append({"party": party, "count": count})
+        total_polled += count
+        
+    # Calculate percentages
+    final_data = []
+    for item in analytics_data:
+        percent = 0
+        if total_polled > 0:
+            percent = round((item["count"] / total_polled) * 100, 1)
+        
+        final_data.append({
+            "party": item["party"],
+            "count": item["count"],
+            "percentage": percent
+        })
+        
+    return {
+        "status": "success",
+        "total_polled": total_polled,
+        "data": final_data
+    }
+
+    return {
+        "status": "success",
+        "total_polled": total_polled,
+        "data": final_data
+    }
+
+@app.get("/dashboard/approvals")
+def get_pending_approvals(db: Session = Depends(get_db)):
+    requests = db.query(SurveyorRequest).filter(SurveyorRequest.status == "PENDING").all()
+    return [{"id": r.id, "name": r.name, "mobile": r.mobile_no, "date": r.created_at} for r in requests]
+
+@app.post("/dashboard/approve")
+def approve_surveyor(request_id: int = Body(...), action: str = Body(...), db: Session = Depends(get_db)):
+    # Action: APPROVED / REJECTED
+    req = db.query(SurveyorRequest).filter(SurveyorRequest.id == request_id).first()
+    if not req:
+        raise HTTPException(status_code=404, detail="Request not found")
+        
+    if action not in ["APPROVED", "REJECTED"]:
+        raise HTTPException(status_code=400, detail="Invalid action")
+        
+    req.status = action
+    db.commit()
+    return {"status": "success"}
+
+# --- PUBLIC ENDPOINT FOR APP REGISTRATION (To feed into approvals) ---
+@app.post("/register/surveyor")
+def register_surveyor(name: str = Body(...), mobile: str = Body(...), device_id: str = Body(None), db: Session = Depends(get_db)):
+    # Check if already exists
+    existing = db.query(SurveyorRequest).filter(SurveyorRequest.mobile_no == mobile).first()
+    if existing:
+        return {"status": "exists", "id": existing.id, "current_status": existing.status}
+        
+    new_req = SurveyorRequest(name=name, mobile_no=mobile, device_id=device_id)
+    db.add(new_req)
+    db.commit()
+    return {"status": "success", "id": new_req.id, "current_status": "PENDING"}
+
+@app.get("/register/status/{request_id}")
+def check_registration_status(request_id: int, db: Session = Depends(get_db)):
+    req = db.query(SurveyorRequest).filter(SurveyorRequest.id == request_id).first()
+    if not req:
+        raise HTTPException(status_code=404, detail="Request not found")
+    return {"status": "success", "approval_status": req.status}
 
 if __name__ == "__main__":
     import uvicorn
