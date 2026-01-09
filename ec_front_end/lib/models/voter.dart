@@ -13,6 +13,7 @@ class Voter {
   final String? caste;
   final String? subCaste;
   final String? mobileNo;
+  final String? voterStatus;
 
   Voter({
     required this.id,
@@ -29,6 +30,7 @@ class Voter {
     this.caste,
     this.subCaste,
     this.mobileNo,
+    this.voterStatus,
   });
 
   factory Voter.fromJson(Map<String, dynamic> json) {
@@ -47,6 +49,7 @@ class Voter {
       caste: json['caste'],
       subCaste: json['sub_caste'],
       mobileNo: json['mobile_no'],
+      voterStatus: json['voter_status'],
     );
   }
 
@@ -66,6 +69,7 @@ class Voter {
       'caste': caste,
       'sub_caste': subCaste,
       'mobile_no': mobileNo,
+      'voter_status': voterStatus,
     };
   }
 }

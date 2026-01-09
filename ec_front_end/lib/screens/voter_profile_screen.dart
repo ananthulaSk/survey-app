@@ -14,6 +14,7 @@ class _VoterProfileScreenState extends State<VoterProfileScreen> {
   final ApiService _apiService = ApiService();
   Voter? _currentVoter;
   bool _isLoading = false;
+  String _voterStatus = "AVAILABLE";
 
   // Controllers
   final _mobileController = TextEditingController();
@@ -85,6 +86,7 @@ class _VoterProfileScreenState extends State<VoterProfileScreen> {
 
   void _populateFields(Voter v) {
     _selectedParty = v.expectedParty;
+    _voterStatus = v.voterStatus ?? "AVAILABLE";
     _mobileController.text = v.mobileNo ?? '';
     _occupationController.text = v.occupation ?? '';
     _casteController.text = v.caste ?? '';
@@ -148,7 +150,20 @@ class _VoterProfileScreenState extends State<VoterProfileScreen> {
       "religion": _religionController.text,
       "caste": _casteController.text,
       "sub_caste": _subCasteController.text,
+      "voter_status": _voterStatus,
     };
+
+    // If not available, clear survey data in the backend update (or handle in UI logic)
+    // The requirement says: "If Deceased OR Out of Station / NRI is selected -> Completely hide ... Survey not required"
+    // And "backend must block it" (simulated here by sending nulls or relying on backend to ignore if status != AVAILABLE)
+    if (_voterStatus != "AVAILABLE") {
+      updates["party"] = null;
+      updates["occupation"] = null;
+      updates["religion"] = null;
+      updates["caste"] = null;
+      updates["sub_caste"] = null;
+      updates["mobile_no"] = null;
+    }
 
     final success = await _apiService.updateVoter(_currentVoter!.id, updates);
     if (success && mounted) {
@@ -264,7 +279,7 @@ class _VoterProfileScreenState extends State<VoterProfileScreen> {
                             _currentVoter!.name,
                             style: const TextStyle(
                               fontWeight: FontWeight.bold,
-                              fontSize: 22, // Increased size
+                              fontSize: 24, // Increased size further
                             ),
                           ),
                           const SizedBox(height: 8), // Increased spacing
@@ -311,119 +326,186 @@ class _VoterProfileScreenState extends State<VoterProfileScreen> {
                 ),
               ),
 
-              const SizedBox(height: 25),
-              const Text(
-                "Expecting to Vote For",
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
-              const SizedBox(height: 15),
-
-              // 2. Party Grid WITH DYNAMIC COLORS
-              GridView.count(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                crossAxisCount: 3,
-                childAspectRatio: 1.4,
-                mainAxisSpacing: 10,
-                crossAxisSpacing: 10,
-                children: [
-                  _buildPartyButton(
-                    "TRS",
-                    Icons.directions_car,
-                    const Color(0xFFF50057),
-                  ), // Pink
-                  _buildPartyButton("INC", Icons.pan_tool, Colors.blue),
-                  _buildPartyButton("BJP", Icons.local_florist, Colors.orange),
-                  _buildPartyButton("CPM", Icons.handyman, Colors.red),
-                  _buildPartyButton("CPI", Icons.agriculture, Colors.red),
-                  _buildPartyButton("OTHER", Icons.more_horiz, Colors.black),
-                ],
-              ),
-
-              const SizedBox(height: 25),
-              const Text(
-                "Demographic Details",
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
-              const SizedBox(height: 15),
-
-              // 3. Demographic Details Card
-              Container(
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey[300]!),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                padding: const EdgeInsets.all(16),
-                child: Column(
+              const SizedBox(height: 8),
+              // Voter Status Buttons
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    _buildDropdown(
-                      "Occupation",
-                      _occupationController,
-                      _occupations,
-                      Icons.work,
-                    ),
-                    const SizedBox(height: 15),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _buildDropdown(
-                            "Religion",
-                            _religionController,
-                            _religions,
-                            Icons.temple_buddhist,
-                          ),
-                        ),
-                        const SizedBox(width: 15),
-                        Expanded(
-                          child: _buildDropdown(
-                            "Caste",
-                            _casteController,
-                            _castes,
-                            Icons.people,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 15),
-                    _buildDropdown(
-                      "Sub-Caste (Goud, Reddy, etc.)",
-                      _subCasteController,
-                      _subCastes,
-                      Icons.subdirectory_arrow_right,
+                    _buildStatusButton("AVAILABLE", "Available", Colors.green),
+                    const SizedBox(width: 8),
+                    _buildStatusButton("DEATH", "Death", Colors.red),
+                    const SizedBox(width: 8),
+                    _buildStatusButton(
+                      "OUT_OF_STATION",
+                      "Out of Station",
+                      Colors.grey,
                     ),
                   ],
                 ),
               ),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 25),
 
-              // 4. Mobile Number
-              Container(
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey[300]!),
-                  borderRadius: BorderRadius.circular(12),
+              // CONDITIONAL RENDERING BASED ON STATUS
+              if (_voterStatus == "AVAILABLE") ...[
+                const Text(
+                  "Expecting to Vote For",
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                 ),
-                child: TextField(
-                  controller: _mobileController,
-                  keyboardType: TextInputType.phone,
-                  decoration: const InputDecoration(
-                    prefixIcon: Icon(Icons.phone),
-                    hintText: "Mobile Number (Optional)",
-                    border: InputBorder.none,
-                    contentPadding: EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 14,
+                const SizedBox(height: 15),
+
+                // 2. Party Grid WITH DYNAMIC COLORS
+                GridView.count(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  crossAxisCount: 3,
+                  childAspectRatio: 1.4,
+                  mainAxisSpacing: 10,
+                  crossAxisSpacing: 10,
+                  children: [
+                    _buildPartyButton(
+                      "TRS",
+                      Icons.directions_car,
+                      const Color(0xFFF50057),
+                    ), // Pink
+                    _buildPartyButton("INC", Icons.pan_tool, Colors.blue),
+                    _buildPartyButton(
+                      "BJP",
+                      Icons.local_florist,
+                      Colors.orange,
+                    ),
+                    _buildPartyButton("CPM", Icons.handyman, Colors.red),
+                    _buildPartyButton("CPI", Icons.agriculture, Colors.red),
+                    _buildPartyButton("OTHER", Icons.more_horiz, Colors.black),
+                  ],
+                ),
+
+                const SizedBox(height: 25),
+                const Text(
+                  "Demographic Details",
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+                const SizedBox(height: 15),
+
+                // 3. Demographic Details Card
+                Container(
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey[300]!),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    children: [
+                      _buildDropdown(
+                        "Occupation",
+                        _occupationController,
+                        _occupations,
+                        Icons.work,
+                      ),
+                      const SizedBox(height: 15),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildDropdown(
+                              "Religion",
+                              _religionController,
+                              _religions,
+                              Icons.temple_buddhist,
+                            ),
+                          ),
+                          const SizedBox(width: 15),
+                          Expanded(
+                            child: _buildDropdown(
+                              "Caste",
+                              _casteController,
+                              _castes,
+                              Icons.people,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 15),
+                      _buildDropdown(
+                        "Sub-Caste (Goud, Reddy, etc.)",
+                        _subCasteController,
+                        _subCastes,
+                        Icons.subdirectory_arrow_right,
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+
+                // 4. Mobile Number
+                Container(
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey[300]!),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: TextField(
+                    controller: _mobileController,
+                    keyboardType: TextInputType.phone,
+                    decoration: const InputDecoration(
+                      prefixIcon: Icon(Icons.phone),
+                      hintText: "Mobile Number (Optional)",
+                      border: InputBorder.none,
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 14,
+                      ),
                     ),
                   ),
                 ),
-              ),
-              const Padding(
-                padding: EdgeInsets.only(left: 8.0, top: 8),
-                child: Text(
-                  "Used only for follow-up communication",
-                  style: TextStyle(color: Colors.grey, fontSize: 12),
+                const Padding(
+                  padding: EdgeInsets.only(left: 8.0, top: 8),
+                  child: Text(
+                    "Used only for follow-up communication",
+                    style: TextStyle(color: Colors.grey, fontSize: 12),
+                  ),
                 ),
-              ),
+              ] else ...[
+                // MESSAGE FOR NON-AVAILABLE VOTERS
+                Container(
+                  margin: const EdgeInsets.only(top: 40, bottom: 20),
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[100],
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.grey[300]!),
+                  ),
+                  child: Column(
+                    children: [
+                      Icon(
+                        Icons.info_outline,
+                        size: 48,
+                        color: Colors.grey[600],
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        "Survey not required for this voter.",
+                        style: TextStyle(
+                          fontSize: 18,
+                          color: Colors.grey[800],
+                          fontWeight: FontWeight.w500,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        "Status: $_voterStatus",
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey[600],
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
 
               const SizedBox(height: 30),
 
@@ -566,6 +648,70 @@ class _VoterProfileScreenState extends State<VoterProfileScreen> {
               setState(() => controller.text = val);
             }
           },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatusButton(String value, String label, Color color) {
+    print("Voter Status: $_voterStatus");
+    bool isSelected = _voterStatus == value;
+    return InkWell(
+      onTap: () {
+        if (value == "DEATH" && _voterStatus != "DEATH") {
+          showDialog(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              title: const Text("Confirm Deceased"),
+              content: const Text(
+                "Please confirm this voter is deceased. This action ensures accuracy and cannot be easily undone.",
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(ctx).pop(),
+                  child: const Text("Cancel"),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                  onPressed: () {
+                    setState(() => _voterStatus = value);
+                    Navigator.of(ctx).pop();
+                  },
+                  child: const Text(
+                    "Confirm",
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
+              ],
+            ),
+          );
+        } else {
+          setState(() {
+            _voterStatus = value;
+            print("Updated Voter Status to: $_voterStatus");
+          });
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? color : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: color),
+        ),
+        child: Row(
+          children: [
+            if (isSelected)
+              const Icon(Icons.check, color: Colors.white, size: 16),
+            if (isSelected) const SizedBox(width: 4),
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected ? Colors.white : color,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
         ),
       ),
     );

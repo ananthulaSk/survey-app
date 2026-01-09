@@ -1,7 +1,7 @@
 import urllib.parse
 from fastapi import FastAPI, Depends, HTTPException, Query, Body
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy import Column, Integer, String, asc
+from sqlalchemy import Column, Integer, String, asc, desc
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from pydantic import BaseModel
@@ -30,6 +30,7 @@ class Voter(Base):
     caste = Column(String, nullable=True)
     sub_caste = Column(String, nullable=True)
     mobile_no = Column(String, nullable=True)
+    voter_status = Column(String, default="AVAILABLE") # New Field
 
 # Create the table in Google Cloud if it doesn't exist
 Base.metadata.create_all(bind=engine)
@@ -54,6 +55,7 @@ class VoterUpdate(BaseModel):
     caste: Optional[str] = None
     sub_caste: Optional[str] = None
     mobile_no: Optional[str] = None
+    voter_status: Optional[str] = None
 
 # --- API ENDPOINTS ---
 
@@ -112,9 +114,41 @@ def get_next_voter(current_id: int = 0, db: Session = Depends(get_db)):
             "religion": voter.religion,
             "caste": voter.caste,
             "sub_caste": voter.sub_caste,
-            "mobile_no": voter.mobile_no
+            "mobile_no": voter.mobile_no,
+            "voter_status": voter.voter_status
         }
     }
+
+@app.get("/voters/previous")
+def get_previous_voter(current_id: int, db: Session = Depends(get_db)):
+    # Fetch the previous voter with ID less than current_id
+    voter = db.query(Voter).filter(Voter.voter_id < current_id).order_by(desc(Voter.voter_id)).first()
+    
+    if not voter:
+        return {"status": "finished", "data": None}
+        
+    return {
+        "status": "success",
+        "data": {
+            "voter_id": voter.voter_id,
+            "name": voter.voter_name,
+            "surname": voter.surname,
+            "ward": voter.ward_no,
+            "house_no": voter.house_no,
+            "age": voter.age,
+            "gender": voter.gender,
+            "relation": voter.relation_name,
+            "expected_party": voter.expected_party,
+            "occupation": voter.occupation,
+            "religion": voter.religion,
+            "caste": voter.caste,
+            "sub_caste": voter.sub_caste,
+            "mobile_no": voter.mobile_no,
+            "voter_status": voter.voter_status
+        }
+    }
+
+
 
 @app.put("/voters/update")
 def update_voter_data(data: VoterUpdate, db: Session = Depends(get_db)):
@@ -123,12 +157,30 @@ def update_voter_data(data: VoterUpdate, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Voter not found")
         
     # Update fields if provided
-    if data.party is not None: voter.expected_party = data.party
-    if data.occupation is not None: voter.occupation = data.occupation
-    if data.religion is not None: voter.religion = data.religion
-    if data.caste is not None: voter.caste = data.caste
-    if data.sub_caste is not None: voter.sub_caste = data.sub_caste
-    if data.mobile_no is not None: voter.mobile_no = data.mobile_no
+    if data.voter_status is not None: 
+        voter.voter_status = data.voter_status
+        # STRICT RULE: If status is not AVAILABLE, wipe all survey data
+        if data.voter_status != "AVAILABLE":
+            voter.expected_party = None
+            voter.occupation = None
+            voter.religion = None
+            voter.caste = None
+            voter.sub_caste = None
+            voter.mobile_no = None
+    
+    # Only update these if status IS AVAILABLE (or if we are just updating fields without changing status, but status must be checked)
+    # Actually, if the user sends data + Non-Available status, we should ignore the data.
+    # If the user sends data + Available status (or no status change), we update.
+    
+    is_available = (data.voter_status == "AVAILABLE") if data.voter_status is not None else (voter.voter_status == "AVAILABLE")
+    
+    if is_available:
+        if data.party is not None: voter.expected_party = data.party
+        if data.occupation is not None: voter.occupation = data.occupation
+        if data.religion is not None: voter.religion = data.religion
+        if data.caste is not None: voter.caste = data.caste
+        if data.sub_caste is not None: voter.sub_caste = data.sub_caste
+        if data.mobile_no is not None: voter.mobile_no = data.mobile_no
     
     db.commit()
     return {"status": "success"}
@@ -157,6 +209,33 @@ def get_voter_stats(ward: Optional[int] = None, current_voter_id: Optional[int] 
         stats["current_index"] = current_index
 
     return stats
+
+@app.get("/voters/{voter_id}")
+def get_voter_by_id(voter_id: int, db: Session = Depends(get_db)):
+    voter = db.query(Voter).filter(Voter.voter_id == voter_id).first()
+    if not voter:
+        raise HTTPException(status_code=404, detail="Voter not found")
+        
+    return {
+        "status": "success",
+        "data": {
+            "voter_id": voter.voter_id,
+            "name": voter.voter_name,
+            "surname": voter.surname,
+            "ward": voter.ward_no,
+            "house_no": voter.house_no,
+            "age": voter.age,
+            "gender": voter.gender,
+            "relation": voter.relation_name,
+            "expected_party": voter.expected_party,
+            "occupation": voter.occupation,
+            "religion": voter.religion,
+            "caste": voter.caste,
+            "sub_caste": voter.sub_caste,
+            "mobile_no": voter.mobile_no,
+            "voter_status": voter.voter_status
+        }
+    }
 
 # Legacy endpoint support (optional, can keep for backward compatibility if needed)
 @app.put("/voters/update_legacy")
