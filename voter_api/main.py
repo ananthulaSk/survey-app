@@ -41,9 +41,15 @@ class Survey(Base):
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     name = Column(String, nullable=False)
     scope_type = Column(String) # e.g., "WARD", "VILLAGE"
-    scope_value = Column(String) # e.g., "1" (Stored as string to be flexible)
-    status = Column(String, default="ACTIVE") # ACTIVE, COMPLETED
+    scope_value = Column(String) 
+    status = Column(String, default="CREATED") # CREATED, ACTIVE, COMPLETED, ARCHIVED
+    survey_code = Column(String, unique=True) # WARD-01-TEST-2026...
+    survey_type = Column(String, default="TEST") # TEST, FINAL, EXIT_POLL
     created_at = Column(DateTime, default=datetime.utcnow)
+    
+    @property
+    def is_locked(self):
+        return self.status in ["COMPLETED", "ARCHIVED"]
 
 # --- 3. SURVEY SNAPSHOT (Writable Survey Data) ---
 class SurveyVoter(Base):
@@ -52,6 +58,7 @@ class SurveyVoter(Base):
     
     survey_id = Column(Integer, ForeignKey("surveys.id"), index=True)
     master_voter_id = Column(Integer, ForeignKey("voters.voter_id"), index=True)
+    snapshot_created_at = Column(DateTime, default=datetime.utcnow) # Audit timestamp
     
     # Copied Identity Fields (for search/display performance)
     voter_name = Column(String)
@@ -115,8 +122,9 @@ class VoterUpdate(BaseModel):
 
 class SurveyCreate(BaseModel):
     name: str
-    scope_type: str = "WARD" # Only "WARD" supported initially
-    scope_value: str # e.g. "1"
+    scope_type: str 
+    scope_value: str
+    survey_type: str = "TEST" # Default to TEST
 
 @app.get("/")
 def read_root():
@@ -124,25 +132,38 @@ def read_root():
 
 @app.post("/surveys/create")
 def create_survey(survey_data: SurveyCreate, db: Session = Depends(get_db)):
+    # 0. Generate Survey Code
+    # Format: SCOPE-VALUE-TYPE-DATE (e.g., WARD-01-TEST-20260109)
+    date_str = datetime.utcnow().strftime("%Y%m%d")
+    code = f"{survey_data.scope_type}-{survey_data.scope_value}-{survey_data.survey_type}-{date_str}"
+    
+    # Check uniqueness (simple append if exists)
+    existing = db.query(Survey).filter(Survey.survey_code == code).first()
+    if existing:
+        code = f"{code}-{datetime.utcnow().strftime('%H%M%S')}"
+
     # 1. Create Survey Record
     new_survey = Survey(
         name=survey_data.name,
         scope_type=survey_data.scope_type,
         scope_value=survey_data.scope_value,
-        status="ACTIVE"
+        status="ACTIVE", # Auto-activate for now, user can change logic if CREATED state needed
+        survey_code=code,
+        survey_type=survey_data.survey_type
     )
     db.add(new_survey)
     db.commit()
     db.refresh(new_survey)
-    
+
     # 2. Bulk Copy Logic (Snapshot)
     copied_count = 0
     if survey_data.scope_type == "WARD":
         try:
             ward_num = int(survey_data.scope_value)
             masters = db.query(VoterMaster).filter(VoterMaster.ward_no == ward_num).all()
-            
+
             survey_voters = []
+            now = datetime.utcnow()
             for v in masters:
                 sv = SurveyVoter(
                     survey_id=new_survey.id,
@@ -157,21 +178,23 @@ def create_survey(survey_data: SurveyCreate, db: Session = Depends(get_db)):
                     # Initialize blank survey data
                     expected_party=None,
                     occupation=None,
-                    voter_status="AVAILABLE"
+                    voter_status="AVAILABLE",
+                    snapshot_created_at=now
                 )
                 survey_voters.append(sv)
-            
+
             if survey_voters:
                 db.add_all(survey_voters)
                 db.commit()
                 copied_count = len(survey_voters)
-                
+
         except ValueError:
             raise HTTPException(status_code=400, detail="Scope value must be an integer for WARD type")
 
     return {
-        "status": "success", 
-        "survey_id": new_survey.id, 
+        "status": "success",
+        "survey_id": new_survey.id,
+        "survey_code": new_survey.survey_code,
         "message": f"Survey created with {copied_count} voters in snapshot."
     }
 
@@ -279,6 +302,13 @@ def get_previous_voter(survey_id: int, current_id: int, db: Session = Depends(ge
 
 @app.put("/voters/update")
 def update_voter_data(data: VoterUpdate, db: Session = Depends(get_db)):
+    # GUARD: Context Lock
+    survey = db.query(Survey).filter(Survey.id == data.survey_id).first()
+    if not survey:
+        raise HTTPException(status_code=404, detail="Survey not found")
+    if survey.is_locked:
+        raise HTTPException(status_code=403, detail="Survey is LOCKED (Completed or Archived). No updates allowed.")
+    
     # Update Survey Snapshot
     voter = db.query(SurveyVoter).filter(
         SurveyVoter.survey_id == data.survey_id,

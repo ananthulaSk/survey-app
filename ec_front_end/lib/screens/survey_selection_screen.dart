@@ -108,7 +108,13 @@ class _SurveySelectionScreenState extends State<SurveySelectionScreen> {
   }
 
   void _selectSurvey(dynamic survey) {
+    // CRITICAL: Clear previous state to prevent data bleed
     widget.apiService.currentSurveyId = survey['id'];
+
+    // In a real provider/bloc setup, we would call a reset() method here.
+    // For now, since state is mostly inside screens or refreshed on load,
+    // ensuring apiService has the new ID and pushing a FRESH VoterProfileScreen is key.
+
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -145,11 +151,21 @@ class _SurveySelectionScreenState extends State<SurveySelectionScreen> {
                   margin: EdgeInsets.all(8),
                   child: ListTile(
                     leading: CircleAvatar(
+                      backgroundColor: survey['survey_type'] == 'FINAL'
+                          ? Colors.red[100]
+                          : Colors.blue[100],
                       child: Text(survey['scope_value'] ?? "?"),
                     ),
                     title: Text(survey['name'] ?? "Unnamed Survey"),
-                    subtitle: Text(
-                      "Created: ${survey['created_at']?.split('T')[0] ?? 'Unknown'}",
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text("Code: ${survey['survey_code'] ?? 'N/A'}"),
+                        Text("Type: ${survey['survey_type'] ?? 'TEST'}"),
+                        Text(
+                          "Created: ${survey['created_at']?.split('T')[0] ?? 'Unknown'}",
+                        ),
+                      ],
                     ),
                     trailing: Icon(Icons.arrow_forward_ios),
                     onTap: () => _selectSurvey(survey),
