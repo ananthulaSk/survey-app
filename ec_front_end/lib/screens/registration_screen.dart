@@ -198,11 +198,11 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                     Icon(Icons.lock_outline, size: 16, color: Colors.grey[600]),
                     const SizedBox(width: 8),
                     Text(
-                      "Secure • Local Approval • v12 (HARDCODED URL)",
+                      "v13 (DEBUG RED SCREEN)",
                       style: TextStyle(
-                        color: Colors.red, // Making it red to be obvious
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
+                        color: Colors.red,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w900,
                       ),
                     ),
                   ],
