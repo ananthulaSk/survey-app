@@ -14,20 +14,19 @@ class ApiService {
   // Dynamic URL selection
   String get baseUrl {
     if (kIsWeb) {
-      // 1. If running on a real domain (Cloud Run, Firebase, etc.), treat it as Self-Hosted.
-      //    This automatically points API calls to the same domain (e.g., https://myapp.run.app).
+      // 1. Hardcoded Production URL for reliability
+      if (Uri.base.toString().contains("run.app")) {
+        print("Using Hardcoded Prod URL");
+        return "https://survey-app-75558224521.asia-south1.run.app";
+      }
+
+      // 2. Dynamic Localhost/Self-Hosted fallback
       if (Uri.base.host != 'localhost' && Uri.base.host != '127.0.0.1') {
-        print("Using Web Origin: ${Uri.base.origin}");
         return Uri.base.origin;
       }
 
-      // 2. If running on localhost (Dev):
-      //    a) If served by the backend itself (e.g. http://127.0.0.1:8000/app/), use origin.
-      if (Uri.base.port == 8000) {
-        return Uri.base.origin;
-      }
-
-      //    b) If running via 'flutter run' (random port), point to default local backend.
+      // 3. Localhost Dev
+      if (Uri.base.port == 8000) return Uri.base.origin;
       return "http://127.0.0.1:8000";
     }
 
