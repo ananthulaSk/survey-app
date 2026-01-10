@@ -17,6 +17,7 @@ class ApiService {
       // 1. If running on a real domain (Cloud Run, Firebase, etc.), treat it as Self-Hosted.
       //    This automatically points API calls to the same domain (e.g., https://myapp.run.app).
       if (Uri.base.host != 'localhost' && Uri.base.host != '127.0.0.1') {
+        print("Using Web Origin: ${Uri.base.origin}");
         return Uri.base.origin;
       }
 
