@@ -3,6 +3,7 @@ let currentSurveyId = null;
 let chartInstance = null;
 
 document.addEventListener('DOMContentLoaded', () => {
+    console.log("Admin Dashboard v7 Loaded");
     loadSurveys();
     loadApprovals();
     loadSurveyList(); // Adding the missing load
