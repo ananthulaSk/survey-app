@@ -198,11 +198,11 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                     Icon(Icons.lock_outline, size: 16, color: Colors.grey[600]),
                     const SizedBox(width: 8),
                     Text(
-                      "Secure • Local Approval • v11 (Nuclear Cache Clear)",
+                      "Secure • Local Approval • v12 (HARDCODED URL)",
                       style: TextStyle(
-                        color: Colors.grey[600],
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
+                        color: Colors.red, // Making it red to be obvious
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
                   ],

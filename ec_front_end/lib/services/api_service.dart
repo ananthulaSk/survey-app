@@ -48,30 +48,9 @@ class ApiService {
 
   // Dynamic URL selection
   String get baseUrl {
-    if (kIsWeb) {
-      // 1. Force Production URL if running on Cloud Run
-      // Using contains to catch any variation of the domain
-      if (Uri.base.toString().contains("run.app") || !kDebugMode) {
-        // !kDebugMode check forces prod URL in release build if not on localhost
-        if (!Uri.base.toString().contains("localhost") &&
-            !Uri.base.toString().contains("127.0.0.1")) {
-          print("Using Hardcoded Prod URL (v10 Trigger)");
-          return "https://survey-app-75558224521.asia-south1.run.app";
-        }
-      }
-
-      // 2. Dynamic Localhost/Self-Hosted fallback
-      if (Uri.base.host != 'localhost' && Uri.base.host != '127.0.0.1') {
-        return Uri.base.origin;
-      }
-
-      // 3. Localhost Dev
-      if (Uri.base.port == 8000) return Uri.base.origin;
-      return "http://127.0.0.1:8000";
-    }
-
-    // Android Emulator
-    return "http://10.0.2.2:8000";
+    // NUCLEAR OPTION: Unconditional Production URL
+    // This removes ANY possibility of logic error.
+    return "https://survey-app-75558224521.asia-south1.run.app";
   }
 
   // --- Survey Management ---
