@@ -130,6 +130,7 @@ async function loadApprovals() {
                 <td>
                     <button class="btn-approve" onclick="handleApproval(${a.id}, 'APPROVED')">Approve</button>
                     <button class="btn-reject" onclick="handleApproval(${a.id}, 'REJECTED')">Reject</button>
+                    <button class="btn btn-sm btn-danger ms-2" style="background-color: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 4px;" onclick="deleteSurveyor(${a.id})">Delete</button>
                 </td>
             </tr>
         `).join('');
@@ -143,7 +144,10 @@ async function loadApprovals() {
                     <td>${a.name}</td>
                     <td>${a.mobile}</td>
                     <td>${new Date(a.date).toLocaleDateString()}</td>
-                    <td><span class="badge" style="background:${a.status === 'APPROVED' ? '#10b981' : (a.status === 'REJECTED' ? '#ef4444' : '#6b7280')}">${a.status || 'PENDING'}</span></td>
+                    <td>
+                        <span class="badge" style="background:${a.status === 'APPROVED' ? '#10b981' : (a.status === 'REJECTED' ? '#ef4444' : '#6b7280')}">${a.status || 'PENDING'}</span>
+                        <button class="btn btn-sm btn-danger ms-2" style="background-color: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 4px; margin-left: 10px;" onclick="deleteSurveyor(${a.id})">Delete</button>
+                    </td>
                 </tr>
             `).join('');
         }
@@ -161,6 +165,30 @@ async function handleApproval(id, action) {
     loadApprovals();
     // Also REFRESH the assignment dropdowns if we just approved someone!
     if (action === 'APPROVED') loadAssignmentOptions();
+}
+
+async function deleteSurveyor(id) {
+    if (!confirm("Are you sure you want to delete this surveyor? This will also remove their survey assignments.")) {
+        return;
+    }
+
+    try {
+        const res = await fetch(`${API_BASE}/dashboard/surveyor/${id}`, {
+            method: 'DELETE'
+        });
+        const data = await res.json();
+
+        if (data.status === 'success') {
+            alert(data.message);
+            loadApprovals(); // Refresh table
+            loadAssignmentOptions(); // Refresh dropdowns
+        } else {
+            alert("Error: " + data.message);
+        }
+    } catch (e) {
+        console.error("Error deleting surveyor:", e);
+        alert("Failed to delete surveyor");
+    }
 }
 
 function showCreateSurveyModal() { document.getElementById('createModal').style.display = 'flex'; }

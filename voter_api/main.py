@@ -670,6 +670,24 @@ def get_surveyor_requests(db: Session = Depends(get_db)):
         } for r in requests
     ]
 
+# --- DELETE SURVEYOR FEATURE ---
+@app.delete("/dashboard/surveyor/{surveyor_id}")
+def delete_surveyor(surveyor_id: int, db: Session = Depends(get_db)):
+    # 1. Find the surveyor
+    surveyor = db.query(SurveyorRequest).filter(SurveyorRequest.id == surveyor_id).first()
+    if not surveyor:
+         return JSONResponse(status_code=404, content={"status": "fail", "message": "Surveyor not found"})
+    
+    # 2. Delete assignments first (Foreign Key Logic)
+    db.query(SurveyAssignment).filter(SurveyAssignment.surveyor_id == surveyor_id).delete()
+    
+    # 3. Delete the surveyor
+    db.delete(surveyor)
+    db.commit()
+    
+    print(f"[DEBUG] Deleted surveyor ID {surveyor_id} and their assignments.")
+    return {"status": "success", "message": "Surveyor deleted successfully"}
+
 @app.post("/dashboard/approve")
 def approve_surveyor(request_id: int = Body(...), action: str = Body(...), db: Session = Depends(get_db)):
     # Action: APPROVED / REJECTED
