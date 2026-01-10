@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/voter.dart';
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
   // Current Survey Context
@@ -10,6 +11,40 @@ class ApiService {
   // Session Context (Simple In-Memory)
   static String? loggedInMobile;
   static int? loggedInSurveyorId;
+
+  // Normalization Helper
+  static String normalizeMobile(String mobile) {
+    return mobile
+        .replaceAll("+91", "")
+        .replaceAll(" ", "")
+        .replaceAll("-", "")
+        .trim();
+  }
+
+  // Persist Session
+  static Future<void> saveSession(String mobile, int? surveyorId) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('mobile', normalizeMobile(mobile));
+    if (surveyorId != null) {
+      await prefs.setInt('surveyor_id', surveyorId);
+    }
+    loggedInMobile = mobile;
+    loggedInSurveyorId = surveyorId;
+  }
+
+  // Restore Session
+  static Future<bool> restoreSession() async {
+    final prefs = await SharedPreferences.getInstance();
+    final mobile = prefs.getString('mobile');
+    final surveyorId = prefs.getInt('surveyor_id');
+
+    if (mobile != null && mobile.isNotEmpty) {
+      loggedInMobile = mobile;
+      loggedInSurveyorId = surveyorId;
+      return true;
+    }
+    return false;
+  }
 
   // Dynamic URL selection
   String get baseUrl {
@@ -59,7 +94,7 @@ class ApiService {
   Future<List<dynamic>> getActiveSurveys() async {
     String url = '$baseUrl/surveys/active';
     if (loggedInMobile != null) {
-      url += '?mobile_no=$loggedInMobile';
+      url += '?mobile_no=${normalizeMobile(loggedInMobile!)}';
     }
 
     print("Fetching surveys from: $url");

@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
 import 'screens/registration_screen.dart';
 
-void main() => runApp(const VoterApp());
+import 'services/api_service.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await ApiService.restoreSession();
+  runApp(const VoterApp());
+}
 
 class VoterApp extends StatelessWidget {
   const VoterApp({super.key});

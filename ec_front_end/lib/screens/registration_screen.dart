@@ -136,8 +136,10 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                             );
 
                             // 2. Save Session locally
-                            ApiService.loggedInMobile = _mobileController.text
-                                .trim();
+                            await ApiService.saveSession(
+                              _mobileController.text.trim(),
+                              null,
+                            );
 
                             print("Logged in as: ${ApiService.loggedInMobile}");
 
