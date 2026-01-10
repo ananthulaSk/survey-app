@@ -2,21 +2,69 @@
 __pycache__/
 *.py[cod]
 *$py.class
-venv/
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+.pytest_cache/
+.coverage
+htmlcov/
 .env
+.venv
+venv/
+venv*/
 
-# Database (Local SQLite should not go to cloud usually, but maybe for demo it's okay? 
-# Better to ignore and let the app create a fresh one or connect to Cloud SQL.
-# For now, let's ignore it so we don't overwrite production DB with local test DB)
+# Database
 voter_db.sqlite
 voter_data.db
 
+# Flutter
+.dart_tool/
+.packages
+.pub/
+.flutter-plugins
+.flutter-plugins-dependencies
+build/
+ios/Flutter/Generated.xcconfig
+ios/Flutter/flutter_export_environment.sh
+ios/Flutter/app.flx
+ios/Flutter/app.zip
+ios/Flutter/flutter_assets/
+ios/Flutter/
+ios/Runner/GeneratedPluginRegistrant.h
+ios/Runner/GeneratedPluginRegistrant.m
+android/local.properties
+.idea/
+.vscode/
+*.iml
+
 # OS
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
 
-# FORCE INCLUDE Flutter Build (even if static/ is ignored by some rule)
-!static/flutter_app/
-!static/style.css
-!static/app.js
-!static/index.html
+# Project specific
+client_secrets.json
+credentials/
+
+# FORCE INCLUDE Deployment Artifacts (Critical for Cloud Build)
+!voter_api/static/flutter_app/
+!voter_api/static/style.css
+!voter_api/static/app.js
+!voter_api/static/index.html
