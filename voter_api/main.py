@@ -124,6 +124,21 @@ app.add_middleware(
 app.mount("/static", StaticFiles(directory="static", html=True), name="static")
 
 # Serve Flutter Mobile App (Web Version)
+from fastapi.responses import FileResponse
+
+# Explicitly serve index.html with NO-CACHE headers to break stale service workers
+@app.get("/app/")
+@app.get("/app/index.html")
+async def serve_app_index():
+    return FileResponse(
+        "static/flutter_app/index.html", 
+        headers={
+            "Cache-Control": "no-cache, no-store, must-revalidate", 
+            "Pragma": "no-cache", 
+            "Expires": "0"
+        }
+    )
+
 app.mount("/app", StaticFiles(directory="static/flutter_app", html=True), name="flutter_app")
 
 # --- Pydantic Models for Request Body ---
