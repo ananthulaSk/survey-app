@@ -105,6 +105,12 @@ Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
+# Helper for mobile sanitization
+def clean_mobile(mobile: str) -> str:
+    if not mobile:
+        return ""
+    return mobile.replace("+91", "").replace(" ", "").replace("-", "").strip()
+
 # CORS for Chrome/Web
 app.add_middleware(
     CORSMiddleware,
@@ -228,6 +234,7 @@ def get_active_surveys(mobile_no: Optional[str] = None, db: Session = Depends(ge
     
     # If mobile_no provided, FILTER by assignment
     if mobile_no:
+        mobile_no = clean_mobile(mobile_no)
         print(f"[DEBUG] Filtering surveys for mobile: {mobile_no}")
         # Find surveyor by mobile
         surveyor = db.query(SurveyorRequest).filter(SurveyorRequest.mobile_no == mobile_no, SurveyorRequest.status == "APPROVED").first()
@@ -680,6 +687,7 @@ def approve_surveyor(request_id: int = Body(...), action: str = Body(...), db: S
 # --- PUBLIC ENDPOINT FOR APP REGISTRATION (To feed into approvals) ---
 @app.post("/register/surveyor")
 def register_surveyor(name: str = Body(...), mobile: str = Body(...), device_id: str = Body(None), db: Session = Depends(get_db)):
+    mobile = clean_mobile(mobile)
     print(f"[DEBUG] Registering surveyor: Name={name}, Mobile={mobile}")
     # Check if already exists
     existing = db.query(SurveyorRequest).filter(SurveyorRequest.mobile_no == mobile).first()
@@ -700,6 +708,7 @@ def check_registration_status(request_id: int, db: Session = Depends(get_db)):
 
 @app.get("/register/status/mobile")
 def check_registration_status_by_mobile(mobile_no: str, db: Session = Depends(get_db)):
+    mobile_no = clean_mobile(mobile_no)
     req = db.query(SurveyorRequest).filter(SurveyorRequest.mobile_no == mobile_no).first()
     if not req:
         raise HTTPException(status_code=404, detail="Request not found")

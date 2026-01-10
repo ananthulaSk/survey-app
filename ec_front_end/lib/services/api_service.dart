@@ -300,6 +300,9 @@ class ApiService {
     final url = Uri.parse('$baseUrl/register/surveyor');
     print("Attempting Registration to: $url");
 
+    // Sanitize
+    mobile = normalizeMobile(mobile);
+
     final response = await http.post(
       url,
       headers: {'Content-Type': 'application/json'},
@@ -320,7 +323,9 @@ class ApiService {
   Future<String> checkStatusByMobile(String mobile) async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/register/status/mobile?mobile_no=$mobile'),
+        Uri.parse(
+          '$baseUrl/register/status/mobile?mobile_no=${normalizeMobile(mobile)}',
+        ),
       );
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
