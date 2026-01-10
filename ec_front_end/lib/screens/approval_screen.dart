@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'survey_selection_screen.dart';
 import '../services/api_service.dart';
@@ -11,31 +12,70 @@ class ApprovalScreen extends StatefulWidget {
 
 class _ApprovalScreenState extends State<ApprovalScreen> {
   bool _isChecking = false;
+  Timer? _timer;
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
 
   void _checkStatus() async {
-    setState(() => _isChecking = true);
-
-    // Simulate network delay
-    await Future.delayed(const Duration(seconds: 2));
-
-    if (mounted) {
-      setState(() => _isChecking = false);
-
-      // Simulate Success
+    if (ApiService.loggedInMobile == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text("Request Approved! Access Granted."),
-          backgroundColor: Colors.green,
+          content: Text("Error: No mobile number found. Restart App."),
         ),
+      );
+      return;
+    }
+
+    setState(() => _isChecking = true);
+
+    try {
+      // Real Polling Call
+      final status = await ApiService().checkStatusByMobile(
+        ApiService.loggedInMobile!,
       );
 
-      // Navigate to Survey Selection
-      Navigator.pushReplacement(
+      if (!mounted) return;
+
+      if (status == "APPROVED") {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Request Approved! Access Granted."),
+            backgroundColor: Colors.green,
+          ),
+        );
+
+        // Navigate to Survey Selection
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => SurveySelectionScreen(apiService: ApiService()),
+          ),
+        );
+      } else if (status == "REJECTED") {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Request Rejected by Admin."),
+            backgroundColor: Colors.red,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Still Pending... Please wait for approval."),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(
         context,
-        MaterialPageRoute(
-          builder: (_) => SurveySelectionScreen(apiService: ApiService()),
-        ),
-      );
+      ).showSnackBar(SnackBar(content: Text("Connection Error: $e")));
+    } finally {
+      if (mounted) setState(() => _isChecking = false);
     }
   }
 

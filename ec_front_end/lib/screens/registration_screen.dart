@@ -2,8 +2,19 @@ import 'package:flutter/material.dart';
 
 import 'approval_screen.dart';
 
-class RegistrationScreen extends StatelessWidget {
+import '../services/api_service.dart';
+
+class RegistrationScreen extends StatefulWidget {
   const RegistrationScreen({super.key});
+
+  @override
+  State<RegistrationScreen> createState() => _RegistrationScreenState();
+}
+
+class _RegistrationScreenState extends State<RegistrationScreen> {
+  final TextEditingController _mobileController = TextEditingController();
+  final TextEditingController _nameController = TextEditingController();
+  bool _isSubmitting = false;
 
   @override
   Widget build(BuildContext context) {
@@ -61,12 +72,14 @@ class RegistrationScreen extends StatelessWidget {
                     child: Column(
                       children: [
                         _buildTextField(
+                          controller: _mobileController,
                           label: "Mobile Number",
                           icon: Icons.phone,
                           isNumber: true,
                         ),
                         const SizedBox(height: 16),
                         _buildTextField(
+                          controller: _nameController,
                           label: "Surveyor Name",
                           icon: Icons.person,
                         ),
@@ -97,44 +110,77 @@ class RegistrationScreen extends StatelessWidget {
                 const SizedBox(height: 40),
 
                 // --- Action Area ---
-                ElevatedButton(
-                  onPressed: () {
-                    // Simulate API request/Approval
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text("Request Sent! Redirecting..."),
-                      ),
-                    );
-                    // Navigate to Survey Screen (Profile) after delay
-                    Future.delayed(const Duration(seconds: 1), () {
-                      if (context.mounted) {
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) =>
-                                const ApprovalScreen(), // Go to Approval Wait Screen
+                _isSubmitting
+                    ? const Center(child: CircularProgressIndicator())
+                    : ElevatedButton(
+                        onPressed: () async {
+                          if (_mobileController.text.trim().isEmpty ||
+                              _nameController.text.trim().isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  "Please enter Name and Mobile Number",
+                                ),
+                              ),
+                            );
+                            return;
+                          }
+
+                          setState(() => _isSubmitting = true);
+
+                          try {
+                            // 1. Send Request to Backend
+                            await ApiService().registerSurveyor(
+                              _nameController.text.trim(),
+                              _mobileController.text.trim(),
+                            );
+
+                            // 2. Save Session locally
+                            ApiService.loggedInMobile = _mobileController.text
+                                .trim();
+
+                            print("Logged in as: ${ApiService.loggedInMobile}");
+
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text("Request Sent! Redirecting..."),
+                              ),
+                            );
+
+                            // 3. Navigate
+                            if (context.mounted) {
+                              Navigator.pushReplacement(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const ApprovalScreen(),
+                                ),
+                              );
+                            }
+                          } catch (e) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text("Error: $e")),
+                            );
+                          } finally {
+                            if (mounted) setState(() => _isSubmitting = false);
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF2E7D32), // Green
+                          padding: const EdgeInsets.symmetric(vertical: 18),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
                           ),
-                        );
-                      }
-                    });
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2E7D32), // Green
-                    padding: const EdgeInsets.symmetric(vertical: 18),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    elevation: 4,
-                  ),
-                  child: const Text(
-                    "Request Survey Access",
-                    style: TextStyle(
-                      fontSize: 18,
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
+                          elevation: 4,
+                        ),
+                        child: const Text(
+                          "Request Survey Access",
+                          style: TextStyle(
+                            fontSize: 18,
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
                 const SizedBox(height: 12),
                 Text(
                   "Access will be approved by village coordinator",
@@ -171,8 +217,10 @@ class RegistrationScreen extends StatelessWidget {
     required String label,
     required IconData icon,
     bool isNumber = false,
+    TextEditingController? controller,
   }) {
     return TextField(
+      controller: controller,
       keyboardType: isNumber ? TextInputType.phone : TextInputType.text,
       decoration: InputDecoration(
         labelText: label,

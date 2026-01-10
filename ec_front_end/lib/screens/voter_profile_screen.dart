@@ -120,9 +120,19 @@ class _VoterProfileScreenState extends State<VoterProfileScreen> {
 
     Voter? newVoter;
     if (isNext) {
-      newVoter = await _apiService.getNextVoter(_currentVoter!.id);
+      // SMART NAVIGATION: Skip completed voters
+      newVoter = await _apiService.getNextVoter(
+        _currentVoter!.id,
+        skipCompleted: true,
+      );
     } else {
-      newVoter = await _apiService.getPreviousVoter(_currentVoter!.id);
+      // When going back, might want to see history, so maybe don't skip?
+      // But typically "Previous" means just previous relative to ID.
+      // Let's keep strict ID order for Previous to allow fixing mistakes.
+      newVoter = await _apiService.getPreviousVoter(
+        _currentVoter!.id,
+        skipCompleted: false,
+      );
     }
 
     if (newVoter != null && mounted) {
@@ -136,7 +146,9 @@ class _VoterProfileScreenState extends State<VoterProfileScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              isNext ? "No more voters" : "This is the first voter",
+              isNext
+                  ? "No undecided voters left ahead!"
+                  : "Start of list reached",
             ),
           ),
         );
@@ -158,17 +170,8 @@ class _VoterProfileScreenState extends State<VoterProfileScreen> {
       "voter_status": _voterStatus,
     };
 
-    // If not available, clear survey data in the backend update (or handle in UI logic)
-    // The requirement says: "If Deceased OR Out of Station / NRI is selected -> Completely hide ... Survey not required"
-    // And "backend must block it" (simulated here by sending nulls or relying on backend to ignore if status != AVAILABLE)
-    if (_voterStatus != "AVAILABLE") {
-      updates["party"] = null;
-      updates["occupation"] = null;
-      updates["religion"] = null;
-      updates["caste"] = null;
-      updates["sub_caste"] = null;
-      updates["mobile_no"] = null;
-    }
+    // NOTE: We no longer nullify fields here if status != AVAILABLE.
+    // We send whatever data is collected so the backend can store it safely.
 
     final success = await _apiService.updateVoter(_currentVoter!.id, updates);
     if (success && mounted) {
@@ -178,9 +181,12 @@ class _VoterProfileScreenState extends State<VoterProfileScreen> {
         const SnackBar(
           content: Text("Survey Data Saved Successfully!"),
           backgroundColor: Colors.green,
-          duration: Duration(seconds: 2),
+          duration: Duration(seconds: 1),
         ),
       );
+
+      // Auto-advance after save
+      // _navigate(true);
     }
   }
 
@@ -238,18 +244,15 @@ class _VoterProfileScreenState extends State<VoterProfileScreen> {
         ),
         backgroundColor: Colors.white,
         elevation: 0,
-        automaticallyImplyLeading: false, // Explicitly disable auto
+        automaticallyImplyLeading: false,
         leading: Builder(
           builder: (context) => IconButton(
-            icon: const Icon(
-              Icons.menu,
-              color: Colors.indigo,
-            ), // Changed color to visible Indigo
+            icon: const Icon(Icons.menu, color: Colors.indigo),
             onPressed: () => Scaffold.of(context).openDrawer(),
           ),
         ),
       ),
-      drawer: const AppDrawer(), // Add Left Side Menu using new widget
+      drawer: const AppDrawer(),
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -284,24 +287,24 @@ class _VoterProfileScreenState extends State<VoterProfileScreen> {
                             _currentVoter!.name,
                             style: const TextStyle(
                               fontWeight: FontWeight.bold,
-                              fontSize: 24, // Increased size further
+                              fontSize: 24,
                             ),
                           ),
-                          const SizedBox(height: 8), // Increased spacing
+                          const SizedBox(height: 8),
                           Text(
                             "RELATION: ${_currentVoter!.relation ?? '-'}",
                             style: const TextStyle(
-                              color: Colors.black87, // Darker for visibility
-                              fontWeight: FontWeight.bold, // Bold
-                              fontSize: 16, // Increased size
+                              color: Colors.black87,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
                             ),
                           ),
                           const SizedBox(height: 6),
                           Text(
                             "Age: ${_currentVoter!.age} | Ward: ${_currentVoter!.ward}",
                             style: const TextStyle(
-                              fontWeight: FontWeight.bold, // Bold
-                              fontSize: 16, // Increased size
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
                               color: Colors.black87,
                             ),
                           ),
@@ -317,8 +320,8 @@ class _VoterProfileScreenState extends State<VoterProfileScreen> {
                               Text(
                                 "House #${_currentVoter!.houseNo}",
                                 style: const TextStyle(
-                                  fontWeight: FontWeight.bold, // Bold
-                                  fontSize: 16, // Increased size
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
                                   color: Colors.black54,
                                 ),
                               ),

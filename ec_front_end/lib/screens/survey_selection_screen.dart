@@ -38,82 +38,8 @@ class _SurveySelectionScreenState extends State<SurveySelectionScreen> {
     }
   }
 
-  Future<void> _createNewSurvey() async {
-    final nameController = TextEditingController();
-    final wardController = TextEditingController();
-
-    await showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text("Create New Survey"),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameController,
-              decoration: InputDecoration(labelText: "Survey Name"),
-            ),
-            TextField(
-              controller: wardController,
-              decoration: InputDecoration(labelText: "Ward No (Scope)"),
-              keyboardType: TextInputType.number,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text("Cancel"),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              if (nameController.text.isNotEmpty &&
-                  wardController.text.isNotEmpty) {
-                Navigator.pop(context);
-                _submitCreateSurvey(nameController.text, wardController.text);
-              }
-            },
-            child: Text("Create"),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _submitCreateSurvey(String name, String ward) async {
-    setState(() => _isLoading = true);
-    try {
-      // Assuming Scope Type is always WARD for now
-      final result = await widget.apiService.createSurvey(name, "WARD", ward);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(result['message'] ?? "Survey Created")),
-      );
-      _loadSurveys();
-    } catch (e) {
-      setState(() => _isLoading = false);
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: Text("Error"),
-          content: Text(e.toString()),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text("OK"),
-            ),
-          ],
-        ),
-      );
-    }
-  }
-
   void _selectSurvey(dynamic survey) {
-    // CRITICAL: Clear previous state to prevent data bleed
     widget.apiService.currentSurveyId = survey['id'];
-
-    // In a real provider/bloc setup, we would call a reset() method here.
-    // For now, since state is mostly inside screens or refreshed on load,
-    // ensuring apiService has the new ID and pushing a FRESH VoterProfileScreen is key.
 
     Navigator.push(
       context,
@@ -126,21 +52,39 @@ class _SurveySelectionScreenState extends State<SurveySelectionScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Select Survey")),
+      appBar: AppBar(
+        title: const Text("Select Survey"),
+        actions: [
+          IconButton(icon: const Icon(Icons.refresh), onPressed: _loadSurveys),
+        ],
+      ),
       body: _isLoading
-          ? Center(child: CircularProgressIndicator())
+          ? const Center(child: CircularProgressIndicator())
           : _surveys.isEmpty
           ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text("No Active Surveys"),
-                  SizedBox(height: 20),
-                  ElevatedButton(
-                    onPressed: _createNewSurvey,
-                    child: Text("Create Your First Survey"),
-                  ),
-                ],
+              child: Padding(
+                padding: const EdgeInsets.all(32.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.pending_actions, size: 64, color: Colors.grey),
+                    const SizedBox(height: 16),
+                    const Text(
+                      "No active surveys available",
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      "Surveys will appear here once created and approved by the central dashboard.",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+                    ),
+                  ],
+                ),
               ),
             )
           : ListView.builder(
@@ -173,13 +117,6 @@ class _SurveySelectionScreenState extends State<SurveySelectionScreen> {
                 );
               },
             ),
-      floatingActionButton: _surveys.isNotEmpty
-          ? FloatingActionButton(
-              onPressed: _createNewSurvey,
-              child: Icon(Icons.add),
-              tooltip: "Create New Survey",
-            )
-          : null,
     );
   }
 }

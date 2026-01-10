@@ -1,5 +1,5 @@
 import urllib.parse
-from fastapi import FastAPI, Depends, HTTPException, Query, Body
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Depends, Body, Query, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import Column, Integer, String, asc, desc, ForeignKey, DateTime, func
@@ -88,6 +88,15 @@ class SurveyorRequest(Base):
     status = Column(String, default="PENDING") # PENDING, APPROVED, REJECTED
     created_at = Column(DateTime, default=datetime.utcnow)
 
+# --- 5. SURVEY ASSIGNMENTS (Access Control) ---
+class SurveyAssignment(Base):
+    __tablename__ = "survey_assignments"
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    survey_id = Column(Integer, ForeignKey("surveys.id"), index=True)
+    surveyor_id = Column(Integer, ForeignKey("surveyor_requests.id"), index=True)
+    assigned_at = Column(DateTime, default=datetime.utcnow)
+    status = Column(String, default="ACTIVE") # ACTIVE, REVOKED
+
 # Backward compatibility alias - Delete this once migration is complete
 Voter = VoterMaster
 
@@ -107,6 +116,9 @@ app.add_middleware(
 
 # Serve Static Files (Web Dashboard)
 app.mount("/static", StaticFiles(directory="static", html=True), name="static")
+
+# Serve Flutter Mobile App (Web Version)
+app.mount("/app", StaticFiles(directory="static/flutter_app", html=True), name="flutter_app")
 
 # --- Pydantic Models for Request Body ---
 class VoterUpdate(BaseModel):
@@ -131,11 +143,23 @@ def read_root():
     return {"status": "online", "message": "Voter API is running", "docs_url": "/docs"}
 
 @app.post("/surveys/create")
-def create_survey(survey_data: SurveyCreate, db: Session = Depends(get_db)):
+def create_survey(
+    name: str = Body(...), 
+    scope_type: str = Body(...), 
+    scope_value: str = Body(...), 
+    survey_type: str = Body("TEST"),
+    x_admin_token: Optional[str] = Header(None),
+    db: Session = Depends(get_db)
+):
+    # --- SECURITY GUARD ---
+    if x_admin_token != "admin-secret-123":
+        raise HTTPException(status_code=403, detail="Forbidden: Admin Access Required")
+    # ----------------------
+
     # 0. Generate Survey Code
     # Format: SCOPE-VALUE-TYPE-DATE (e.g., WARD-01-TEST-20260109)
     date_str = datetime.utcnow().strftime("%Y%m%d")
-    code = f"{survey_data.scope_type}-{survey_data.scope_value}-{survey_data.survey_type}-{date_str}"
+    code = f"{scope_type}-{scope_value}-{survey_type}-{date_str}"
     
     # Check uniqueness (simple append if exists)
     existing = db.query(Survey).filter(Survey.survey_code == code).first()
@@ -144,12 +168,12 @@ def create_survey(survey_data: SurveyCreate, db: Session = Depends(get_db)):
 
     # 1. Create Survey Record
     new_survey = Survey(
-        name=survey_data.name,
-        scope_type=survey_data.scope_type,
-        scope_value=survey_data.scope_value,
-        status="ACTIVE", # Auto-activate for now, user can change logic if CREATED state needed
+        name=name,
+        scope_type=scope_type,
+        scope_value=scope_value,
+        status="ACTIVE", 
         survey_code=code,
-        survey_type=survey_data.survey_type
+        survey_type=survey_type
     )
     db.add(new_survey)
     db.commit()
@@ -157,9 +181,9 @@ def create_survey(survey_data: SurveyCreate, db: Session = Depends(get_db)):
 
     # 2. Bulk Copy Logic (Snapshot)
     copied_count = 0
-    if survey_data.scope_type == "WARD":
+    if scope_type == "WARD":
         try:
-            ward_num = int(survey_data.scope_value)
+            ward_num = int(scope_value)
             masters = db.query(VoterMaster).filter(VoterMaster.ward_no == ward_num).all()
 
             survey_voters = []
@@ -199,9 +223,98 @@ def create_survey(survey_data: SurveyCreate, db: Session = Depends(get_db)):
     }
 
 @app.get("/surveys/active")
-def get_active_surveys(db: Session = Depends(get_db)):
-    surveys = db.query(Survey).filter(Survey.status == "ACTIVE").order_by(desc(Survey.created_at)).all()
+def get_active_surveys(mobile_no: Optional[str] = None, db: Session = Depends(get_db)):
+    query = db.query(Survey).filter(Survey.status == "ACTIVE")
+    
+    # If mobile_no provided, FILTER by assignment
+    if mobile_no:
+        print(f"[DEBUG] Filtering surveys for mobile: {mobile_no}")
+        # Find surveyor by mobile
+        surveyor = db.query(SurveyorRequest).filter(SurveyorRequest.mobile_no == mobile_no, SurveyorRequest.status == "APPROVED").first()
+        if not surveyor:
+            print(f"[DEBUG] No approved surveyor found for {mobile_no}")
+            return [] # No approved surveyor found, return empty list (Authentication failed conceptually)
+            
+        # Join with assignments
+        query = query.join(SurveyAssignment, Survey.id == SurveyAssignment.survey_id)\
+                     .filter(SurveyAssignment.surveyor_id == surveyor.id, SurveyAssignment.status == "ACTIVE")
+    else:
+        print(f"[DEBUG] No mobile filter provided. Returning ALL active surveys (Admin view).")
+    
+    surveys = query.order_by(desc(Survey.created_at)).all()
+    print(f"[DEBUG] Found {len(surveys)} surveys active for mobile: {mobile_no}")
     return surveys
+    
+@app.delete("/surveys/{survey_id}")
+def delete_survey(survey_id: int, x_admin_token: Optional[str] = Header(None), db: Session = Depends(get_db)):
+    # --- SECURITY GUARD ---
+    if x_admin_token != "admin-secret-123":
+        raise HTTPException(status_code=403, detail="Forbidden: Admin Access Required")
+    # ----------------------
+    
+    survey = db.query(Survey).filter(Survey.id == survey_id).first()
+    if not survey:
+        raise HTTPException(status_code=404, detail="Survey not found")
+        
+    # Validation Rules
+    if survey.status in ["COMPLETED", "ARCHIVED"]:
+        raise HTTPException(status_code=400, detail="Cannot delete COMPLETED or ARCHIVED surveys. Please Archive only.")
+        
+    try:
+        # Cascade Delete (Manually to be safe with SQLite fk support)
+        # 1. Delete Assignments
+        db.query(SurveyAssignment).filter(SurveyAssignment.survey_id == survey_id).delete()
+        
+        # 2. Delete Voters (Snapshot)
+        db.query(SurveyVoter).filter(SurveyVoter.survey_id == survey_id).delete()
+        
+        # 3. Delete Survey
+        db.delete(survey)
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Delete failed: {str(e)}")
+        
+    return {"status": "success", "message": f"Survey '{survey.name}' deleted."}
+    
+@app.post("/assignments/create")
+def create_assignment(survey_id: int = Body(...), surveyor_id: int = Body(...), db: Session = Depends(get_db)):
+    # Check if exists
+    existing = db.query(SurveyAssignment).filter(
+        SurveyAssignment.survey_id == survey_id,
+        SurveyAssignment.surveyor_id == surveyor_id,
+        SurveyAssignment.status == "ACTIVE"
+    ).first()
+    
+    if existing:
+        return {"status": "exists", "message": "Already assigned"}
+        
+    new_assign = SurveyAssignment(survey_id=survey_id, surveyor_id=surveyor_id)
+    db.add(new_assign)
+    db.commit()
+    return {"status": "success"}
+
+@app.get("/assignments/list")
+def list_assignments(survey_id: Optional[int] = None, db: Session = Depends(get_db)):
+    query = db.query(SurveyAssignment).filter(SurveyAssignment.status == "ACTIVE")
+    if survey_id:
+        query = query.filter(SurveyAssignment.survey_id == survey_id)
+        
+    assignments = query.all()
+    # Enrich with names
+    results = []
+    for a in assignments:
+        s_req = db.query(SurveyorRequest).filter(SurveyorRequest.id == a.surveyor_id).first()
+        survey = db.query(Survey).filter(Survey.id == a.survey_id).first()
+        if s_req and survey:
+            results.append({
+                "id": a.id,
+                "survey_name": survey.name,
+                "surveyor_name": s_req.name,
+                "surveyor_mobile": s_req.mobile_no,
+                "assigned_at": a.assigned_at
+            })
+    return results
 
 @app.get("/voters/search", response_model=List[dict])
 def search_voters(query: str, survey_id: int, db: Session = Depends(get_db)):
@@ -234,14 +347,22 @@ def search_voters(query: str, survey_id: int, db: Session = Depends(get_db)):
     ]
 
 @app.get("/voters/next")
-def get_next_voter(survey_id: int, current_id: int = 0, db: Session = Depends(get_db)):
+def get_next_voter(survey_id: int, current_id: int = 0, skip_completed: bool = True, db: Session = Depends(get_db)):
     # Use Master ID for sequential navigation, but fetch from Snapshot
-    # We assume snapshots are ordered by master_voter_id as they were inserted that way
+    # If skip_completed is True, we only fetch voters where expected_party IS NULL
     
-    voter = db.query(SurveyVoter).filter(
+    query = db.query(SurveyVoter).filter(
         SurveyVoter.survey_id == survey_id,
         SurveyVoter.master_voter_id > current_id
-    ).order_by(asc(SurveyVoter.master_voter_id)).first()
+    )
+
+    if skip_completed:
+        # Also skip statuses that are decidedly handled (like Death, Out of Station etc if desired, 
+        # but typically "Completed" means data entered).
+        # Assuming "expected_party" presence implies data was collected.
+        query = query.filter(SurveyVoter.expected_party == None)
+
+    voter = query.order_by(asc(SurveyVoter.master_voter_id)).first()
     
     if not voter:
         return {"status": "finished", "data": None}
@@ -268,11 +389,16 @@ def get_next_voter(survey_id: int, current_id: int = 0, db: Session = Depends(ge
     }
 
 @app.get("/voters/previous")
-def get_previous_voter(survey_id: int, current_id: int, db: Session = Depends(get_db)):
-    voter = db.query(SurveyVoter).filter(
+def get_previous_voter(survey_id: int, current_id: int, skip_completed: bool = True, db: Session = Depends(get_db)):
+    query = db.query(SurveyVoter).filter(
         SurveyVoter.survey_id == survey_id,
         SurveyVoter.master_voter_id < current_id
-    ).order_by(desc(SurveyVoter.master_voter_id)).first()
+    )
+
+    if skip_completed:
+        query = query.filter(SurveyVoter.expected_party == None)
+
+    voter = query.order_by(desc(SurveyVoter.master_voter_id)).first()
     
     if not voter:
         return {"status": "finished", "data": None}
@@ -318,27 +444,19 @@ def update_voter_data(data: VoterUpdate, db: Session = Depends(get_db)):
     if not voter:
         raise HTTPException(status_code=404, detail="Voter not found in this survey")
         
-    # Update fields if provided
+    # FIX: Update fields regardless of previous availability
+    # We NO LONGER wipe data if status is not available.
     if data.voter_status is not None: 
         voter.voter_status = data.voter_status
-        # STRICT RULE: If status is not AVAILABLE, wipe all survey data
-        if data.voter_status != "AVAILABLE":
-            voter.expected_party = None
-            voter.occupation = None
-            voter.religion = None
-            voter.caste = None
-            voter.sub_caste = None
-            voter.mobile_no = None
     
-    is_available = (data.voter_status == "AVAILABLE") if data.voter_status is not None else (voter.voter_status == "AVAILABLE")
-    
-    if is_available:
-        if data.party is not None: voter.expected_party = data.party
-        if data.occupation is not None: voter.occupation = data.occupation
-        if data.religion is not None: voter.religion = data.religion
-        if data.caste is not None: voter.caste = data.caste
-        if data.sub_caste is not None: voter.sub_caste = data.sub_caste
-        if data.mobile_no is not None: voter.mobile_no = data.mobile_no
+    # Always update data fields if provided, to ensure we capture
+    # info even if user is marked Out of Station / Death
+    if data.party is not None: voter.expected_party = data.party
+    if data.occupation is not None: voter.occupation = data.occupation
+    if data.religion is not None: voter.religion = data.religion
+    if data.caste is not None: voter.caste = data.caste
+    if data.sub_caste is not None: voter.sub_caste = data.sub_caste
+    if data.mobile_no is not None: voter.mobile_no = data.mobile_no
     
     db.commit()
     return {"status": "success"}
@@ -530,16 +648,20 @@ def get_dashboard_analytics(survey_id: int, db: Session = Depends(get_db)):
         "data": final_data
     }
 
-    return {
-        "status": "success",
-        "total_polled": total_polled,
-        "data": final_data
-    }
-
 @app.get("/dashboard/approvals")
-def get_pending_approvals(db: Session = Depends(get_db)):
-    requests = db.query(SurveyorRequest).filter(SurveyorRequest.status == "PENDING").all()
-    return [{"id": r.id, "name": r.name, "mobile": r.mobile_no, "date": r.created_at} for r in requests]
+def get_surveyor_requests(db: Session = Depends(get_db)):
+    # Return ALL requests (Pending + History)
+    requests = db.query(SurveyorRequest).order_by(desc(SurveyorRequest.created_at)).all()
+    print(f"[DEBUG] Total Requests Found: {len(requests)}")
+    return [
+        {
+            "id": r.id, 
+            "name": r.name, 
+            "mobile": r.mobile_no, 
+            "date": r.created_at,
+            "status": r.status 
+        } for r in requests
+    ]
 
 @app.post("/dashboard/approve")
 def approve_surveyor(request_id: int = Body(...), action: str = Body(...), db: Session = Depends(get_db)):
@@ -558,6 +680,7 @@ def approve_surveyor(request_id: int = Body(...), action: str = Body(...), db: S
 # --- PUBLIC ENDPOINT FOR APP REGISTRATION (To feed into approvals) ---
 @app.post("/register/surveyor")
 def register_surveyor(name: str = Body(...), mobile: str = Body(...), device_id: str = Body(None), db: Session = Depends(get_db)):
+    print(f"[DEBUG] Registering surveyor: Name={name}, Mobile={mobile}")
     # Check if already exists
     existing = db.query(SurveyorRequest).filter(SurveyorRequest.mobile_no == mobile).first()
     if existing:
@@ -574,6 +697,13 @@ def check_registration_status(request_id: int, db: Session = Depends(get_db)):
     if not req:
         raise HTTPException(status_code=404, detail="Request not found")
     return {"status": "success", "approval_status": req.status}
+
+@app.get("/register/status/mobile")
+def check_registration_status_by_mobile(mobile_no: str, db: Session = Depends(get_db)):
+    req = db.query(SurveyorRequest).filter(SurveyorRequest.mobile_no == mobile_no).first()
+    if not req:
+        raise HTTPException(status_code=404, detail="Request not found")
+    return {"status": "success", "approval_status": req.status, "surveyor_id": req.id}
 
 if __name__ == "__main__":
     import uvicorn

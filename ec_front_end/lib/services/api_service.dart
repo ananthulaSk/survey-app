@@ -7,12 +7,22 @@ class ApiService {
   // Current Survey Context
   int? currentSurveyId;
 
-  // Dynamic URL selection for Android Emulator vs Windows/Web
+  // Session Context (Simple In-Memory)
+  static String? loggedInMobile;
+  static int? loggedInSurveyorId;
+
+  // Dynamic URL selection
   String get baseUrl {
+    if (kReleaseMode) {
+      // PROD (Google Cloud)
+      return "https://survey-app-75558224521.asia-south1.run.app";
+    }
+
+    // DEV (Local)
     if (kIsWeb) {
       return "http://127.0.0.1:8000";
     }
-    // For mobile (Android/iOS)
+    // Android Emulator
     return "http://10.0.2.2:8000";
   }
 
@@ -39,9 +49,19 @@ class ApiService {
   }
 
   Future<List<dynamic>> getActiveSurveys() async {
-    final response = await http.get(Uri.parse('$baseUrl/surveys/active'));
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body);
+    String url = '$baseUrl/surveys/active';
+    if (loggedInMobile != null) {
+      url += '?mobile_no=$loggedInMobile';
+    }
+
+    print("Fetching surveys from: $url");
+    try {
+      final response = await http.get(Uri.parse(url));
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+    } catch (e) {
+      print("Error fetching active surveys: $e");
     }
     return [];
   }
@@ -83,12 +103,15 @@ class ApiService {
     return response.statusCode == 200;
   }
 
-  Future<Voter?> getNextVoter(int currentId) async {
+  Future<Voter?> getNextVoter(
+    int currentId, {
+    bool skipCompleted = true,
+  }) async {
     if (currentSurveyId == null) throw Exception("No survey selected");
 
     final response = await http.get(
       Uri.parse(
-        '$baseUrl/voters/next?current_id=$currentId&survey_id=$currentSurveyId',
+        '$baseUrl/voters/next?current_id=$currentId&survey_id=$currentSurveyId&skip_completed=$skipCompleted',
       ),
     );
     if (response.statusCode == 200) {
@@ -100,12 +123,15 @@ class ApiService {
     return null;
   }
 
-  Future<Voter?> getPreviousVoter(int currentId) async {
+  Future<Voter?> getPreviousVoter(
+    int currentId, {
+    bool skipCompleted = true,
+  }) async {
     if (currentSurveyId == null) throw Exception("No survey selected");
 
     final response = await http.get(
       Uri.parse(
-        '$baseUrl/voters/previous?current_id=$currentId&survey_id=$currentSurveyId',
+        '$baseUrl/voters/previous?current_id=$currentId&survey_id=$currentSurveyId&skip_completed=$skipCompleted',
       ),
     );
     if (response.statusCode == 200) {
@@ -134,6 +160,7 @@ class ApiService {
   }
 
   Future<Voter?> getFirstVoter() async {
+    // Pass 0 to get the very first one relative to 0
     return getNextVoter(0);
   }
 
@@ -221,5 +248,47 @@ class ApiService {
       body: jsonEncode({"request_id": requestId, "action": action}),
     );
     return response.statusCode == 200;
+  }
+
+  Future<Map<String, dynamic>> registerSurveyor(
+    String name,
+    String mobile,
+  ) async {
+    final url = Uri.parse('$baseUrl/register/surveyor');
+    print("Attempting Registration to: $url");
+
+    final response = await http.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        "name": name,
+        "mobile": mobile,
+        "device_id": "device_${DateTime.now().millisecondsSinceEpoch}",
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    }
+    throw Exception("Registration failed: ${response.statusCode}");
+  }
+
+  // --- NEW: Polling Status ---
+  Future<String> checkStatusByMobile(String mobile) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/register/status/mobile?mobile_no=$mobile'),
+      );
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['surveyor_id'] != null) {
+          loggedInSurveyorId = data['surveyor_id'];
+        }
+        return data['approval_status'] ?? 'PENDING';
+      }
+    } catch (e) {
+      print("Check status failed: $e");
+    }
+    return 'PENDING'; // Default
   }
 }

@@ -1,5 +1,7 @@
 fastapi
 uvicorn
 sqlalchemy
+requests
 pydantic
-psycopg2-binary
+python-multipart
+# Add database driver if using Postgres/MySQL in cloud (e.g., psycopg2-binary)
