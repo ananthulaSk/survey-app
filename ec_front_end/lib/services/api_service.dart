@@ -49,10 +49,15 @@ class ApiService {
   // Dynamic URL selection
   String get baseUrl {
     if (kIsWeb) {
-      // 1. Hardcoded Production URL for reliability
-      if (Uri.base.toString().contains("run.app")) {
-        print("Using Hardcoded Prod URL");
-        return "https://survey-app-75558224521.asia-south1.run.app";
+      // 1. Force Production URL if running on Cloud Run
+      // Using contains to catch any variation of the domain
+      if (Uri.base.toString().contains("run.app") || !kDebugMode) {
+        // !kDebugMode check forces prod URL in release build if not on localhost
+        if (!Uri.base.toString().contains("localhost") &&
+            !Uri.base.toString().contains("127.0.0.1")) {
+          print("Using Hardcoded Prod URL (v10 Trigger)");
+          return "https://survey-app-75558224521.asia-south1.run.app";
+        }
       }
 
       // 2. Dynamic Localhost/Self-Hosted fallback
