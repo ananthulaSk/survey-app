@@ -198,7 +198,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                     Icon(Icons.lock_outline, size: 16, color: Colors.grey[600]),
                     const SizedBox(width: 8),
                     Text(
-                      "Secure • Local Approval • v8 (Final Sync)",
+                      "Secure • Local Approval • v9 (Cache Bust)",
                       style: TextStyle(
                         color: Colors.grey[600],
                         fontSize: 13,

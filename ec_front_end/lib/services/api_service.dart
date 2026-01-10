@@ -99,7 +99,9 @@ class ApiService {
 
     print("Fetching surveys from: $url");
     try {
-      final response = await http.get(Uri.parse(url));
+      final response = await http
+          .get(Uri.parse(url))
+          .timeout(const Duration(seconds: 10));
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
       }
