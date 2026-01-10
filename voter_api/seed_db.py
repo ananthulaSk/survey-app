@@ -3,7 +3,7 @@ import os
 from database import engine, SessionLocal, Base
 from main import Voter
 
-CSV_PATH = r"C:\Users\hariprasad ananthula\OneDrive\Documents\Translater\EC data\Output\AREGUDEM_MASTER_FINAL_PROD.csv"
+CSV_PATH = "voter_data.csv"
 
 def seed_data():
     Base.metadata.create_all(bind=engine)

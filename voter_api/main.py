@@ -123,10 +123,33 @@ app.add_middleware(
 # Serve Static Files (Web Dashboard)
 app.mount("/static", StaticFiles(directory="static", html=True), name="static")
 
+# STARTUP: Auto-Seed Database if Empty
+@app.on_event("startup")
+def startup_event():
+    # Ensure tables exist
+    Base.metadata.create_all(bind=engine)
+    
+    # Check if we need to seed
+    db = SessionLocal()
+    try:
+        count = db.query(VoterMaster).count()
+        if count == 0:
+            print("[STARTUP] Database appears empty. Running seeder...")
+            from seed_db import seed_data
+            seed_data()
+            print("[STARTUP] Seeding complete.")
+        else:
+            print(f"[STARTUP] Database has {count} voters. Skipping seed.")
+    except Exception as e:
+        print(f"[STARTUP] Error checking/seeding DB: {e}")
+    finally:
+        db.close()
+
 # Serve Flutter Mobile App (Web Version)
 from fastapi.responses import FileResponse
 
 # Explicitly serve index.html with NO-CACHE headers to break stale service workers
+
 @app.get("/app/")
 @app.get("/app/index.html")
 async def serve_app_index():
