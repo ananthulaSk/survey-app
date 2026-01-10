@@ -4,17 +4,16 @@ FROM python:3.10-slim
 # Set working directory
 WORKDIR /app
 
-# Copy requirements first (caching)
-COPY requirements.txt .
+# Copy requirements from the subfolder
+COPY voter_api/requirements.txt .
 
 # Install dependencies
-# Using --no-cache-dir to keep image small
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the rest of the application
-COPY . .
+# Copy the backend code (including static/flutter_app) from subfolder to /app
+COPY voter_api/ .
 
-# Expose port (Cloud Run uses 8080 by default)
+# Expose port
 EXPOSE 8080
 
 # Run the application
