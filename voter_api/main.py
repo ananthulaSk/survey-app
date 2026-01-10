@@ -765,9 +765,13 @@ def check_registration_status(request_id: int, db: Session = Depends(get_db)):
 @app.get("/register/status/mobile")
 def check_registration_status_by_mobile(mobile_no: str, db: Session = Depends(get_db)):
     mobile_no = clean_mobile(mobile_no)
+    print(f"[DEBUG] CHECKING STATUS FOR MOBILE: {mobile_no}")
     req = db.query(SurveyorRequest).filter(SurveyorRequest.mobile_no == mobile_no).first()
     if not req:
+        print(f"[DEBUG] STATUS CHECK: {mobile_no} -> NOT FOUND")
         raise HTTPException(status_code=404, detail="Request not found")
+    
+    print(f"[DEBUG] STATUS CHECK: {mobile_no} -> {req.status}")
     return {"status": "success", "approval_status": req.status, "surveyor_id": req.id}
 
 if __name__ == "__main__":
