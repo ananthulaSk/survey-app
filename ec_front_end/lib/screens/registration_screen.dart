@@ -198,7 +198,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                     Icon(Icons.lock_outline, size: 16, color: Colors.grey[600]),
                     const SizedBox(width: 8),
                     Text(
-                      "v13 (DEBUG RED SCREEN)",
+                      "v13.2 (HARDCODED FIX)",
                       style: TextStyle(
                         color: Colors.red,
                         fontSize: 16,

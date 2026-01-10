@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../services/api_service.dart';
 import 'package:http/http.dart' as http;
 
 class VoterDetailsScreen extends StatefulWidget {
@@ -10,7 +11,9 @@ class VoterDetailsScreen extends StatefulWidget {
 
 class _VoterDetailsScreenState extends State<VoterDetailsScreen> {
   String? _party;
-  final String updateUrl = "http://127.0.0.1:8000/voters/update";
+  // FIX: Use ApiService for dynamic URL
+  // final String updateUrl = "http://127.0.0.1:8000/voters/update";
+  String get updateUrl => "${ApiService.baseUrl}/voters/update";
 
   Future<void> _save() async {
     if (_party == null) return;

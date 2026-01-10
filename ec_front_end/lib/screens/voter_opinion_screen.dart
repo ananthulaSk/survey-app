@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../services/api_service.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
@@ -30,7 +31,9 @@ class _VoterOpinionScreenState extends State<VoterOpinionScreen> {
       }
 
       final response = await http.get(
-        Uri.parse('http://127.0.0.1:8000/voters/next?current_id=$currentId'),
+        // FIX: Use ApiService
+        // Uri.parse('http://127.0.0.1:8000/voters/next?current_id=$currentId'),
+        Uri.parse('${ApiService.baseUrl}/voters/next?current_id=$currentId'),
       );
 
       if (response.statusCode == 200) {
@@ -233,7 +236,9 @@ class _VoterOpinionScreenState extends State<VoterOpinionScreen> {
                     };
 
                     await http.put(
-                      Uri.parse('http://127.0.0.1:8000/voters/update'),
+                      // FIX: Use ApiService
+                      // Uri.parse('http://127.0.0.1:8000/voters/update'),
+                      Uri.parse('${ApiService.baseUrl}/voters/update'),
                       headers: {"Content-Type": "application/json"},
                       body: jsonEncode(updateData),
                     );

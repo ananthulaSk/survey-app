@@ -47,7 +47,7 @@ class ApiService {
   }
 
   // Dynamic URL selection
-  String get baseUrl {
+  static String get baseUrl {
     // NUCLEAR OPTION: Unconditional Production URL
     // This removes ANY possibility of logic error.
     return "https://survey-app-75558224521.asia-south1.run.app";
