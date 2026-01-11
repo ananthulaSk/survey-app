@@ -224,12 +224,24 @@ def startup_event():
              # 6. Check/Seed Dummy Voters for this Survey
              if db.query(SurveyVoter).filter(SurveyVoter.survey_id == survey.id).count() == 0:
                  print(f"[STARTUP] Seeding Dummy Voters for Survey {survey.id} (Forcing)...")
+                 
+                 # Create Master Voters first to satisfy Foreign Keys and Pagination
+                 master_voters = [
+                     VoterMaster(voter_name="Raju One", mobile_no="9000000001", age=30, gender="M", ward_no=1, house_no="1-1"),
+                     VoterMaster(voter_name="Rani Two", mobile_no="9000000002", age=28, gender="F", ward_no=1, house_no="1-2"),
+                     VoterMaster(voter_name="Suresh Three", mobile_no="9000000003", age=45, gender="M", ward_no=1, house_no="1-3"),
+                     VoterMaster(voter_name="Mahesh Four", mobile_no="9000000004", age=50, gender="M", ward_no=1, house_no="1-4"),
+                     VoterMaster(voter_name="Latha Five", mobile_no="9000000005", age=35, gender="F", ward_no=1, house_no="1-5"),
+                 ]
+                 db.add_all(master_voters)
+                 db.flush() # Get IDs
+
                  dummy_voters = [
-                     SurveyVoter(survey_id=survey.id, voter_name="Raju One", mobile_no="9000000001", age=30, gender="M", ward_no="1", house_no="1-1"),
-                     SurveyVoter(survey_id=survey.id, voter_name="Rani Two", mobile_no="9000000002", age=28, gender="F", ward_no="1", house_no="1-2"),
-                     SurveyVoter(survey_id=survey.id, voter_name="Suresh Three", mobile_no="9000000003", age=45, gender="M", ward_no="1", house_no="1-3"),
-                     SurveyVoter(survey_id=survey.id, voter_name="Mahesh Four", mobile_no="9000000004", age=50, gender="M", ward_no="1", house_no="1-4"),
-                     SurveyVoter(survey_id=survey.id, voter_name="Latha Five", mobile_no="9000000005", age=35, gender="F", ward_no="1", house_no="1-5"),
+                     SurveyVoter(survey_id=survey.id, master_voter_id=master_voters[0].voter_id, voter_name="Raju One", mobile_no="9000000001", age=30, gender="M", ward_no="1", house_no="1-1"),
+                     SurveyVoter(survey_id=survey.id, master_voter_id=master_voters[1].voter_id, voter_name="Rani Two", mobile_no="9000000002", age=28, gender="F", ward_no="1", house_no="1-2"),
+                     SurveyVoter(survey_id=survey.id, master_voter_id=master_voters[2].voter_id, voter_name="Suresh Three", mobile_no="9000000003", age=45, gender="M", ward_no="1", house_no="1-3"),
+                     SurveyVoter(survey_id=survey.id, master_voter_id=master_voters[3].voter_id, voter_name="Mahesh Four", mobile_no="9000000004", age=50, gender="M", ward_no="1", house_no="1-4"),
+                     SurveyVoter(survey_id=survey.id, master_voter_id=master_voters[4].voter_id, voter_name="Latha Five", mobile_no="9000000005", age=35, gender="F", ward_no="1", house_no="1-5"),
                  ]
                  db.add_all(dummy_voters)
                  db.commit()
