@@ -206,71 +206,73 @@ def startup_event():
              
              db.commit() # Get ID
              
-             # 5. [FIX v16.2] DETECT & DESTROY ROTTEN SURVEY (The one with null code)
-             # The user screenshot showed Survey 1 has 'null' code. This is the root cause.
-             # We must delete it so a fresh, valid one (SUR-001) is created.
-             rotten_survey = db.query(Survey).filter(Survey.name == "Aregudem - Ward 1", Survey.survey_code == None).first()
-             if rotten_survey:
-                 print(f"[STARTUP] Found Rotten Survey {rotten_survey.id} (Null Code). destroying...")
-                 # Delete its voters first
-                 db.query(SurveyVoter).filter(SurveyVoter.survey_id == rotten_survey.id).delete()
-                 # Delete the survey
-                 db.delete(rotten_survey)
-                 db.commit()
-                 print("[STARTUP] Rotten Survey Destroyed. Ready for clean seed.")
+             # 5. [PROD MODE] Clean Startup - No Dummy Survey/Voters
+             # We rely on Manual Creation via Dashboard now.
+             print("[STARTUP] v17.0 PROD MODE: Skipping dummy survey creation. Waiting for admin action.")
 
-             # 6. Check/Seed Phase 1 Survey (Standard Logic)
-             # Now, if we deleted the bad one, this will returns None, and we create a NEW one.
-             survey = db.query(Survey).filter(Survey.name == "Aregudem - Ward 1").first()
-             
-             if not survey:
-                 print("[STARTUP] Seeding Phase 1 Survey (Creating New)...")
-                 survey = Survey(
-                     name="Aregudem - Ward 1", 
-                     survey_code="SUR-001", 
-                     status="ACTIVE",
-                     district_name="Yadadri Bhuvanagiri",
-                     mandal_name="Choutuppal",
-                     village_name="Aregudem",
-                     ward_no="1"
-                 )
-                 db.add(survey)
-                 db.commit() # Get ID
-             
-             # 7. Check/Seed Dummy Voters for this Survey
-             # Double check: ensure we have valid voters (master_id > 0)
-             valid_voters_count = db.query(SurveyVoter).filter(
-                SurveyVoter.survey_id == survey.id, 
-                SurveyVoter.master_voter_id > 0
-             ).count()
-             
-             if valid_voters_count == 0:
-                 print(f"[STARTUP] Seeding Dummy Voters for Survey {survey.id} (Forcing)...")
-                 
-                 # Clean up any potential junk (count was 0 valid, but maybe junk exists)
-                 db.query(SurveyVoter).filter(SurveyVoter.survey_id == survey.id).delete()
-                 db.commit()
+# --- MANUAL SURVEY CREATION ENDPOINT (For Dashboard) ---
+class SurveyCreate(BaseModel):
+    name: str
+    scope_type: str
+    scope_value: str
 
-                 # Create Master Voters first to satisfy Foreign Keys and Pagination
-                 master_voters = [
-                     VoterMaster(voter_name="Raju One", mobile_no="9000000001", age=30, gender="M", ward_no=1, house_no="1-1"),
-                     VoterMaster(voter_name="Rani Two", mobile_no="9000000002", age=28, gender="F", ward_no=1, house_no="1-2"),
-                     VoterMaster(voter_name="Suresh Three", mobile_no="9000000003", age=45, gender="M", ward_no=1, house_no="1-3"),
-                     VoterMaster(voter_name="Mahesh Four", mobile_no="9000000004", age=50, gender="M", ward_no=1, house_no="1-4"),
-                     VoterMaster(voter_name="Latha Five", mobile_no="9000000005", age=35, gender="F", ward_no=1, house_no="1-5"),
-                 ]
-                 db.add_all(master_voters)
-                 db.flush() # Get IDs
+@app.post("/surveys/create")
+def create_survey(data: SurveyCreate, db: Session = Depends(get_db)):
+    print(f"[SURVEY_CREATE] Request: {data.name} ({data.scope_type} {data.scope_value})")
+    
+    # 1. Create Survey Entry
+    new_survey = Survey(
+        name=data.name,
+        # Defaulting simple fields for now since UI doesn't send hierarchy
+        district_name="Yadadri Bhuvanagiri", 
+        mandal_name="Choutuppal",
+        village_name="Aregudem",
+        ward_no=data.scope_value, # Assuming Ward No is passed
+        scope_type=data.scope_type,
+        scope_value=data.scope_value,
+        status="ACTIVE",
+        survey_type="PHASE-1",
+        survey_code=f"SUR-{int(datetime.utcnow().timestamp())}"
+    )
+    db.add(new_survey)
+    db.commit() # Get ID
+    
+    # 2. POPULATE VOTERS FROM MASTER
+    # This is the critical step for "Production Mode"
+    if data.scope_type == "WARD":
+        try:
+            ward_num = int(data.scope_value)
+            master_voters = db.query(VoterMaster).filter(VoterMaster.ward_no == ward_num).all()
+            
+            if not master_voters:
+                print(f"[SURVEY_CREATE] WARNING: No Master Voters found for Ward {ward_num}")
+                return {"status": "success", "message": f"Survey Created (ID: {new_survey.id}), but NO voters found in Master for Ward {ward_num}."}
 
-                 dummy_voters = [
-                     SurveyVoter(survey_id=survey.id, master_voter_id=master_voters[0].voter_id, voter_name="Raju One", mobile_no="9000000001", age=30, gender="M", ward_no="1", house_no="1-1"),
-                     SurveyVoter(survey_id=survey.id, master_voter_id=master_voters[1].voter_id, voter_name="Rani Two", mobile_no="9000000002", age=28, gender="F", ward_no="1", house_no="1-2"),
-                     SurveyVoter(survey_id=survey.id, master_voter_id=master_voters[2].voter_id, voter_name="Suresh Three", mobile_no="9000000003", age=45, gender="M", ward_no="1", house_no="1-3"),
-                     SurveyVoter(survey_id=survey.id, master_voter_id=master_voters[3].voter_id, voter_name="Mahesh Four", mobile_no="9000000004", age=50, gender="M", ward_no="1", house_no="1-4"),
-                     SurveyVoter(survey_id=survey.id, master_voter_id=master_voters[4].voter_id, voter_name="Latha Five", mobile_no="9000000005", age=35, gender="F", ward_no="1", house_no="1-5"),
-                 ]
-                 db.add_all(dummy_voters)
-                 db.commit()
+            print(f"[SURVEY_CREATE] Found {len(master_voters)} Master Voters for Ward {ward_num}. Seeding...")
+            
+            survey_voters = []
+            for mv in master_voters:
+                sv = SurveyVoter(
+                    survey_id=new_survey.id,
+                    master_voter_id=mv.voter_id,
+                    voter_name=mv.voter_name,
+                    mobile_no=mv.mobile_no,
+                    age=mv.age,
+                    gender=mv.gender,
+                    ward_no=mv.ward_no,
+                    house_no=mv.house_no,
+                    voter_status="AVAILABLE"
+                )
+                survey_voters.append(sv)
+            
+            db.add_all(survey_voters)
+            db.commit()
+            print(f"[SURVEY_CREATE] Successfully seeded {len(survey_voters)} voters.")
+            
+        except ValueError:
+             print(f"[SURVEY_CREATE] Error: Ward '{data.scope_value}' is not a valid integer.")
+    
+    return {"status": "success", "message": f"Survey '{data.name}' Created Successfully with {len(master_voters)} Voters."}
                  
              print("[STARTUP] Location & Survey Seeding Complete.")
     except Exception as e:
