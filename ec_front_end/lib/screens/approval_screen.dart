@@ -64,9 +64,10 @@ class _ApprovalScreenState extends State<ApprovalScreen> {
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Still Pending... Please wait for approval."),
+          SnackBar(
+            content: Text("Still Pending... (Server says: '$status')"),
             backgroundColor: Colors.orange,
+            duration: const Duration(seconds: 4),
           ),
         );
       }
@@ -128,13 +129,6 @@ class _ApprovalScreenState extends State<ApprovalScreen> {
             const SizedBox(height: 40),
 
             // Status Card
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.grey[50],
-                border: Border.all(color: Colors.grey[200]!),
-                borderRadius: BorderRadius.circular(12),
-              ),
               child: Row(
                 children: [
                   const Icon(Icons.info_outline, color: Colors.blue),
@@ -160,6 +154,13 @@ class _ApprovalScreenState extends State<ApprovalScreen> {
                             color: Colors.grey[800],
                           ),
                         ),
+                        // --- DEBUG OVERLAY ---
+                        const SizedBox(height: 8),
+                        Text(
+                          "Debugging Info:\nMobile: ${ApiService.loggedInMobile}\nBackend URL: ${ApiService.baseUrl}",
+                          style: TextStyle(fontSize: 10, color: Colors.blueGrey),
+                        ),
+                        // ---------------------
                       ],
                     ),
                   ),
