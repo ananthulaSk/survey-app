@@ -229,7 +229,7 @@ class _VoterProfileScreenState extends State<VoterProfileScreen> {
             ),
             if (_stats != null && _currentVoter != null)
               Text(
-                "Ward ${_currentVoter!.ward} | Voter: ${_stats!['current_index']} / ${_stats!['total']}",
+                "Ward ${_currentVoter!.ward} | Voter: ${_stats!['current_index']} / ${_stats!['total']} | Saved: ${_stats!['completed']}",
                 style: const TextStyle(
                   color: Colors.green,
                   fontSize: 12,
@@ -524,24 +524,6 @@ class _VoterProfileScreenState extends State<VoterProfileScreen> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.purple[50],
                       foregroundColor: Colors.purple,
-                    ),
-                  ),
-                  ElevatedButton(
-                    onPressed: () => _save(silent: false),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 40,
-                        vertical: 12,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(25),
-                      ),
-                    ),
-                    child: const Text(
-                      "Save",
-                      style: TextStyle(fontWeight: FontWeight.bold),
                     ),
                   ),
                   ElevatedButton.icon(
