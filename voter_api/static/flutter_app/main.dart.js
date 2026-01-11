@@ -7279,26 +7279,23 @@ _.w=d
 _.x=e
 _.y=f
 _.at=_.as=_.Q=_.z=null
-_.CW=g
+_.ax=g
 _.c=_.a=null},
 akz:function akz(a,b){this.a=a
 this.b=b},
 akA:function akA(a){this.a=a},
-akB:function akB(a,b,c){this.a=a
-this.b=b
-this.c=c},
+akB:function akB(a,b){this.a=a
+this.b=b},
 akC:function akC(a,b){this.a=a
 this.b=b},
 akD:function akD(a){this.a=a},
-akE:function akE(a,b,c){this.a=a
-this.b=b
-this.c=c},
+akE:function akE(a,b){this.a=a
+this.b=b},
 akF:function akF(a,b){this.a=a
 this.b=b},
 akG:function akG(a){this.a=a},
-akH:function akH(a,b,c){this.a=a
-this.b=b
-this.c=c},
+akH:function akH(a,b){this.a=a
+this.b=b},
 akI:function akI(a,b){this.a=a
 this.b=b},
 akN:function akN(){},
@@ -40066,7 +40063,7 @@ A.afp.prototype={
 $0(){A.at8(new A.afo(),this.a,t.z)},
 $S:0}
 A.afo.prototype={
-$1(a){return A.aqu(A.c([A.tO(B.VX,new A.afm(a),null),A.tO(B.zD,new A.afn(a),null)],t.p),B.EC,B.zF)},
+$1(a){return A.aqu(A.c([A.tO(B.VW,new A.afm(a),null),A.tO(B.zD,new A.afn(a),null)],t.p),B.EC,B.zF)},
 $S:99}
 A.afm.prototype={
 $0(){A.dF(this.a,!1).kl(null)
@@ -40086,7 +40083,7 @@ wx(){var s=0,r=A.N(t.H),q=1,p=[],o=this,n,m,l,k
 var $async$wx=A.O(function(a,b){if(a===1){p.push(b)
 s=q}for(;;)switch(s){case 0:q=3
 s=6
-return A.P(o.CW.v6(),$async$wx)
+return A.P(o.ax.v6(),$async$wx)
 case 6:n=b
 o.a8(new A.akz(o,n))
 q=1
@@ -40107,10 +40104,10 @@ wL(a){return this.aal(a)},
 aal(a){var s=0,r=A.N(t.H),q=1,p=[],o=this,n,m,l,k,j
 var $async$wL=A.O(function(b,c){if(b===1){p.push(c)
 s=q}for(;;)switch(s){case 0:k=J.dQ(J.aqp(o.r,new A.akA(a)),"id")
-o.a8(new A.akB(o,a,k))
+o.a8(new A.akB(o,a))
 q=3
 s=6
-return A.P(o.CW.v8(k),$async$wL)
+return A.P(o.ax.v8(k),$async$wL)
 case 6:n=c
 o.a8(new A.akC(o,n))
 q=1
@@ -40131,10 +40128,10 @@ wM(a){return this.aaD(a)},
 aaD(a){var s=0,r=A.N(t.H),q=1,p=[],o=this,n,m,l,k,j
 var $async$wM=A.O(function(b,c){if(b===1){p.push(c)
 s=q}for(;;)switch(s){case 0:k=J.dQ(J.aqp(o.w,new A.akD(a)),"id")
-o.a8(new A.akE(o,a,k))
+o.a8(new A.akE(o,a))
 q=3
 s=6
-return A.P(o.CW.ve(k),$async$wM)
+return A.P(o.ax.ve(k),$async$wM)
 case 6:n=c
 o.a8(new A.akF(o,n))
 q=1
@@ -40155,10 +40152,10 @@ wP(a){return this.ab5(a)},
 ab5(a){var s=0,r=A.N(t.H),q=1,p=[],o=this,n,m,l,k,j
 var $async$wP=A.O(function(b,c){if(b===1){p.push(c)
 s=q}for(;;)switch(s){case 0:k=J.dQ(J.aqp(o.x,new A.akG(a)),"id")
-o.a8(new A.akH(o,a,k))
+o.a8(new A.akH(o,a))
 q=3
 s=6
-return A.P(o.CW.vf(k),$async$wP)
+return A.P(o.ax.vf(k),$async$wP)
 case 6:n=c
 o.a8(new A.akI(o,n))
 q=1
@@ -40192,7 +40189,7 @@ i=A.a_(i,i.$ti.i("ag.E"))
 q=t.p
 m=A.auj(new A.bU(B.jr,A.eo(A.c([l,B.c9,k,B.c9,j,B.c9,h,B.c9,s,B.c9,p.vS(i,"Ward",new A.akR(p),r)],q),B.T,B.V,B.a7),o),8,o,B.Dt,new A.ck(m,B.n))
 l=p.f?B.iN:A.a0a(!1,B.VH,o,o,o,o,o,o,new A.akS(p,a),o,A.Iq(o,o,B.mV,o,o,o,4,o,o,o,o,o,B.FM,o,new A.ck(A.dT(12),B.n),o,o,o,o,o))
-return A.A1(o,o,A.eG(o,A.zY(!0,A.arO(A.eo(A.c([B.lj,B.CM,B.c9,B.W5,B.dO,n,B.f6,m,B.f6,l,B.f6,A.hC(A.c([A.kg(B.GC,B.bw,o,16),B.lh,B.VV],q),B.T,B.cX,B.a7,0)],q),B.cK,B.V,B.a7),B.jr,B.ak),B.aC,!0),B.u,o,o,B.AW,o,o,o,o,o,o,o),o)},
+return A.A1(o,o,A.eG(o,A.zY(!0,A.arO(A.eo(A.c([B.lj,B.CM,B.c9,B.W5,B.dO,n,B.f6,m,B.f6,l,B.f6,A.hC(A.c([A.kg(B.GC,B.bw,o,16),B.lh,B.W1],q),B.T,B.cX,B.a7,0)],q),B.cK,B.V,B.a7),B.jr,B.ak),B.aC,!0),B.u,o,o,B.AW,o,o,o,o,o,o,o),o)},
 KA(a,b,c,d){var s=null,r=c?B.lq:B.R9,q=A.kg(b,B.uf,s,s)
 return A.axx(a,A.a2V(s,new A.fv(4,A.dT(12),B.iJ),s,s,s,s,s,s,!0,s,s,s,s,s,s,B.fC,!0,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s,d,!0,!0,s,q,s,s,s,s,s,s,s,s,s,s,s,s),r)},
 a2x(a,b,c){return this.KA(a,b,!1,c)},
@@ -40511,7 +40508,7 @@ r.I$=0
 s.aD()},
 M(a){var s,r,q,p,o,n,m,l=this,k=null
 if(l.f)return A.A1(A.X5(k,!0,k,k,k,B.zE),k,B.iN,k)
-if(l.e==null)return A.A1(A.X5(k,!0,k,k,k,B.zE),k,A.hn(A.a0a(!1,B.VY,k,k,k,k,k,k,l.ga9u(),k,k),k,k),k)
+if(l.e==null)return A.A1(A.X5(k,!0,k,k,k,B.zE),k,A.hn(A.a0a(!1,B.VX,k,k,k,k,k,k,l.ga9u(),k,k),k,k),k)
 s=t.p
 r=A.c([B.VS],s)
 q=l.at
@@ -40630,7 +40627,7 @@ A.at8(new A.ao4(q,s),r,t.z)}else q.a8(new A.ao5(q,s))},
 $S:0}
 A.ao4.prototype={
 $1(a){var s=null
-return A.aqu(A.c([A.tO(B.VT,new A.ao2(a),s),A.a0a(!1,B.W0,s,s,s,s,s,s,new A.ao3(this.a,this.b,a),s,A.Iq(s,s,B.dw,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s))],t.p),B.W1,B.W_)},
+return A.aqu(A.c([A.tO(B.VT,new A.ao2(a),s),A.a0a(!1,B.W_,s,s,s,s,s,s,new A.ao3(this.a,this.b,a),s,A.Iq(s,s,B.dw,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s,s))],t.p),B.W0,B.VZ)},
 $S:99}
 A.ao2.prototype={
 $0(){return A.dF(this.a,!1).e7()},
@@ -40882,7 +40879,7 @@ case 1:return A.L(q,r)
 case 2:return A.K(o.at(-1),r)}})
 return A.M($async$xZ,r)}}
 A.GN.prototype={
-M(a){var s=this,r=null,q=t.p,p=A.hn(A.eo(A.c([B.GU,B.li,B.VW,B.lk,A.bF("Official Surveyor Interface",r,r,r,A.dK(r,r,B.bw,r,r,r,r,r,r,r,r,12,r,r,r,r,r,!0,r,r,r,r,r,r,r,r),r,r)],q),B.T,B.V,B.bO),r,r),o=s.vU(a,B.GN,"Home",new A.Xj(a)),n=A.dT(12)
+M(a){var s=this,r=null,q=t.p,p=A.hn(A.eo(A.c([B.GU,B.li,B.VV,B.lk,A.bF("Official Surveyor Interface",r,r,r,A.dK(r,r,B.bw,r,r,r,r,r,r,r,r,12,r,r,r,r,r,!0,r,r,r,r,r,r,r,r),r,r)],q),B.T,B.V,B.bO),r,r),o=s.vU(a,B.GN,"Home",new A.Xj(a)),n=A.dT(12)
 return new A.Ik(16,A.eG(r,A.eo(A.c([new A.Io(B.AV,p,r),B.z4,o,A.eG(r,A.a3J(r,B.H4,new A.Xk(a),r,B.VU,r),B.u,r,r,new A.co(B.iR,r,r,n,r,r,B.ag),r,r,B.FP,r,r,r,r),s.vU(a,B.GO,"Contact Us",new A.Xl(s,a)),s.vU(a,B.k7,"Help / Guidelines",new A.Xm(s,a)),s.vU(a,B.GP,"Approval Status",new A.Xn(a)),B.Qu,B.Ff,A.a3J(B.G0,B.H0,new A.Xo(a),r,B.W8,r),B.lj],q),B.T,B.V,B.a7),B.u,B.Dl,r,r,r,r,r,r,r,r,r),r)},
 vU(a,b,c,d){var s=null
 return A.a3J(B.G_,A.kg(b,B.bv,s,s),d,s,A.bF(c,s,s,s,A.dK(s,s,B.iT,s,s,s,s,s,s,s,s,16,s,s,B.X,s,s,!0,s,s,s,s,s,s,s,s),s,s),s)},
@@ -89430,8 +89427,8 @@ B.VG=new A.bK("Please enter Name and Mobile Number",null,null,null,null,null,nul
 B.Qo=new A.hG(B.VG,null,null,null,null,null,null,null,null,null,null,null,null,B.bx,!1,null,null,null,B.B,null)
 B.W6=new A.bK("Request Rejected by Admin.",null,null,null,null,null,null,null,null)
 B.Qp=new A.hG(B.W6,B.dw,null,null,null,null,null,null,null,null,null,null,null,B.bx,!1,null,null,null,B.B,null)
-B.VZ=new A.bK("Request Approved! Access Granted.",null,null,null,null,null,null,null,null)
-B.Qq=new A.hG(B.VZ,B.kz,null,null,null,null,null,null,null,null,null,null,null,B.bx,!1,null,null,null,B.B,null)
+B.VY=new A.bK("Request Approved! Access Granted.",null,null,null,null,null,null,null,null)
+B.Qq=new A.hG(B.VY,B.kz,null,null,null,null,null,null,null,null,null,null,null,B.bx,!1,null,null,null,B.B,null)
 B.VN=new A.bK("Please select complete location details",null,null,null,null,null,null,null,null)
 B.Qr=new A.hG(B.VN,null,null,null,null,null,null,null,null,null,null,null,null,B.bx,!1,null,null,null,B.B,null)
 B.za=new A.AG(0,"permissive")
@@ -89811,16 +89808,16 @@ B.VS=new A.bK("Voter Profile",null,B.Tg,null,null,null,null,null,null)
 B.VT=new A.bK("Cancel",null,null,null,null,null,null,null,null)
 B.SI=new A.k(!0,B.co,null,null,null,null,null,B.ai,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null)
 B.VU=new A.bK("Start Survey",null,B.SI,null,null,null,null,null,null)
+B.VV=new A.bK("Election Survey Apps",null,B.zA,null,null,null,null,null,null)
+B.VW=new A.bK("Call",null,null,null,null,null,null,null,null)
+B.VX=new A.bK("Retry",null,null,null,null,null,null,null,null)
+B.VZ=new A.bK("Confirm Deceased",null,null,null,null,null,null,null,null)
+B.Su=new A.k(!0,B.k,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null)
+B.W_=new A.bK("Confirm",null,B.Su,null,null,null,null,null,null)
+B.W0=new A.bK("Please confirm this voter is deceased. This action ensures accuracy and cannot be easily undone.",null,null,null,null,null,null,null,null)
 B.DH=new A.n(0.45098039215686275,0,0,0,B.e)
 B.UM=new A.k(!0,B.DH,null,null,null,null,null,B.ai,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null)
-B.VV=new A.bK("v16.0 (GEO-V1)",null,B.UM,null,null,null,null,null,null)
-B.VW=new A.bK("Election Survey Apps",null,B.zA,null,null,null,null,null,null)
-B.VX=new A.bK("Call",null,null,null,null,null,null,null,null)
-B.VY=new A.bK("Retry",null,null,null,null,null,null,null,null)
-B.W_=new A.bK("Confirm Deceased",null,null,null,null,null,null,null,null)
-B.Su=new A.k(!0,B.k,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null)
-B.W0=new A.bK("Confirm",null,B.Su,null,null,null,null,null,null)
-B.W1=new A.bK("Please confirm this voter is deceased. This action ensures accuracy and cannot be easily undone.",null,null,null,null,null,null,null,null)
+B.W1=new A.bK("v16.1 (CLEAN BUILD)",null,B.UM,null,null,null,null,null,null)
 B.V3=new A.k(!0,B.k,null,null,null,null,16,B.ai,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null)
 B.W2=new A.bK("Check Status",null,B.V3,null,null,null,null,null,null)
 B.TJ=new A.k(!0,B.cY,null,null,null,null,12,B.ai,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null)
