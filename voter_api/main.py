@@ -399,9 +399,17 @@ def create_survey(
                 db.add_all(survey_voters)
                 db.commit()
                 copied_count = len(survey_voters)
+            else:
+                # [CHANGED v19.1] Strict Mode: Do not create empty surveys
+                db.rollback() # Undo the survey creation
+                print(f"[SURVEY_CREATE] FAILED: No voters found for Ward {ward_num}")
+                return {
+                     "status": "error",
+                     "message": f"Cannot create survey: No voters found in Master List for Ward {ward_num}. (Survey Blocked)"
+                }
 
         except ValueError:
-            raise HTTPException(status_code=400, detail="Scope value must be an integer for WARD type")
+             raise HTTPException(status_code=400, detail="Scope value must be an integer for WARD type")
 
     return {
         "status": "success",
@@ -904,59 +912,12 @@ def approve_surveyor(request_id: int = Body(...), action: str = Body(...), db: S
     req.status = action
     db.commit() # Commit status change first
 
-    # 2. If Approved -> Auto-Assign Logic (Strict Dedup)
+    # 2. [CHANGED v19.1] REMOVED AUTO-ASSIGN LOGIC
+    # User Explicitly Requested: "I dont want the automatic dummany survey creation part"
+    # We now rely 100% on the Admin Dashboard to "Create Survey" and "Assign Surveyor".
+    
     if action == "APPROVED":
-        # Check if location data exists (Phase 1+)
-        if req.district_name and req.mandal_name and req.village_name and req.ward_no:
-            print(f"[AUTO-ASSIGN] Checking for existing survey: {req.district_name}/{req.mandal_name}/{req.village_name}/{req.ward_no}")
-            
-            # A. FIND EXISTING SURVEY
-            existing_survey = db.query(Survey).filter(
-                Survey.district == req.district_name,
-                Survey.mandal == req.mandal_name,
-                Survey.village == req.village_name,
-                Survey.ward == req.ward_no,
-                Survey.status != "ARCHIVED"
-            ).first()
-            
-            target_survey_id = None
-            if existing_survey:
-                print(f"[AUTO-ASSIGN] Found existing survey ID: {existing_survey.id}")
-                target_survey_id = existing_survey.id
-            else:
-                # B. CREATE NEW SURVEY
-                survey_name = f"{req.village_name} - {req.ward_no}"
-                print(f"[AUTO-ASSIGN] Creating NEW survey: {survey_name}")
-                new_survey = Survey(
-                    name=survey_name,
-                    district=req.district_name,
-                    mandal=req.mandal_name,
-                    village=req.village_name,
-                    ward=req.ward_no,
-                    scope_type="WARD",
-                    scope_value=req.ward_no,
-                    status="ACTIVE",
-                    survey_type="PHASE-1"
-                )
-                db.add(new_survey)
-                db.flush() # Get ID
-                target_survey_id = new_survey.id
-                
-            # C. ASSIGN SURVEYOR
-            # Check if assignment already exists
-            existing_assign = db.query(SurveyAssignment).filter(
-                SurveyAssignment.survey_id == target_survey_id,
-                SurveyAssignment.surveyor_id == req.id
-            ).first()
-            
-            if not existing_assign:
-                new_assign = SurveyAssignment(survey_id=target_survey_id, surveyor_id=req.id)
-                db.add(new_assign)
-                print(f"[AUTO-ASSIGN] Assigned Surveyor {req.id} to Survey {target_survey_id}")
-            
-            db.commit()
-        else:
-            print("[AUTO-ASSIGN] Skipped - Missing Location Data in Request")
+        print(f"[APPROVE] Surveyor {req.name} Approved. Waiting for Manual Assignment.")
 
     return {"status": "success"}
 
