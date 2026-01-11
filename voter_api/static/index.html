@@ -50,6 +50,36 @@
                 </div>
             </header>
 
+            <!-- FILTERS BAR (Phase 1) -->
+            <div class="filters-bar"
+                style="padding: 15px 30px; background: white; border-bottom: 1px solid #eee; display: flex; gap: 15px; flex-wrap: wrap;">
+                <select id="filterDistrict" class="form-control" style="width: 150px;">
+                    <option value="">All Districts</option>
+                </select>
+                <select id="filterMandal" class="form-control" style="width: 150px;">
+                    <option value="">All Mandals</option>
+                </select>
+                <select id="filterVillage" class="form-control" style="width: 150px;">
+                    <option value="">All Villages</option>
+                </select>
+                <select id="filterWard" class="form-control" style="width: 120px;">
+                    <option value="">All Wards</option>
+                </select>
+                <div style="width: 1px; background: #ddd; margin: 0 10px;"></div>
+                <select id="filterAge" class="form-control" style="width: 120px;">
+                    <option value="">All Ages</option>
+                    <option value="18-30">18-30</option>
+                    <option value="30-50">30-50</option>
+                    <option value="50+">50+</option>
+                </select>
+                <select id="filterGender" class="form-control" style="width: 120px;">
+                    <option value="">All Genders</option>
+                    <option value="M">Male</option>
+                    <option value="F">Female</option>
+                </select>
+                <button class="btn-primary" onclick="loadDashboardData()">Apply Filters</button>
+            </div>
+
             <!-- Dashboard Tab -->
             <div id="dashboard-tab" class="tab-content active">
                 <div class="stats-grid">
@@ -105,6 +135,7 @@
                                 <th>ID</th>
                                 <th>Name</th>
                                 <th>Mobile</th>
+                                <th>Location</th>
                                 <th>Date</th>
                                 <th>Actions</th>
                             </tr>

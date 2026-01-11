@@ -59,9 +59,17 @@ async function loadDashboardData() {
     currentSurveyId = document.getElementById('surveySelect').value;
     if (!currentSurveyId) return;
 
+    // Get Filters
+    const ward = document.getElementById('filterWard').value;
+    // const age = document.getElementById('filterAge').value; // Phase 2 Backend Support needed
+    // const gender = document.getElementById('filterGender').value;
+
+    let queryParams = `?survey_id=${currentSurveyId}`;
+    if (ward) queryParams += `&ward=${ward}`;
+
     try {
         // Summary
-        const sumRes = await fetch(`${API_BASE}/dashboard/summary?survey_id=${currentSurveyId}`);
+        const sumRes = await fetch(`${API_BASE}/dashboard/summary${queryParams}`);
         const summary = (await sumRes.json()).data;
 
         document.getElementById('totalVoters').textContent = summary.total_voters;
@@ -69,11 +77,15 @@ async function loadDashboardData() {
         document.getElementById('completedSurveys').textContent = summary.completed_surveys;
         document.getElementById('completionPercentage').textContent = `${summary.completion_percentage}%`;
 
-        // Progress
+        // Progress (Always Ward Wise so no filter needed essentially, or filter filters the list)
         const progRes = await fetch(`${API_BASE}/dashboard/progress?survey_id=${currentSurveyId}`);
         const progress = (await progRes.json()).data;
+
+        // Filter Progress Table locally if Ward selected
+        const filteredProgress = ward ? progress.filter(p => p.ward_no == ward) : progress;
+
         const progBody = document.getElementById('progressTableBody');
-        progBody.innerHTML = progress.map(p => `
+        progBody.innerHTML = filteredProgress.map(p => `
             <tr>
                 <td>Ward ${p.ward_no}</td>
                 <td>${p.completed} / ${p.effective_voters}</td>
@@ -82,8 +94,8 @@ async function loadDashboardData() {
             </tr>
         `).join('');
 
-        // Analytics
-        const analRes = await fetch(`${API_BASE}/dashboard/analytics?survey_id=${currentSurveyId}`);
+        // Analytics (Apply same filters)
+        const analRes = await fetch(`${API_BASE}/dashboard/analytics${queryParams}`);
         const analytics = (await analRes.json()).data;
 
         renderChart(analytics);
@@ -127,6 +139,7 @@ async function loadApprovals() {
                 <td>${a.id}</td>
                 <td>${a.name}</td>
                 <td>${a.mobile}</td>
+                <td><small>${a.district || '-'}<br>${a.mandal || '-'}<br>${a.village || '-'}<br>Ward ${a.ward || '-'}</small></td>
                 <td>${new Date(a.date).toLocaleDateString()}</td>
                 <td>
                     <button class="btn-approve" onclick="handleApproval(${a.id}, 'APPROVED')">Approve</button>

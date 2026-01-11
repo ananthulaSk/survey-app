@@ -279,10 +279,53 @@ class ApiService {
     return response.statusCode == 200;
   }
 
+  // --- Location APIs (Phase 1) ---
+  Future<List<Map<String, dynamic>>> getDistricts() async {
+    final response = await http.get(Uri.parse('$baseUrl/locations/districts'));
+    if (response.statusCode == 200) {
+      return List<Map<String, dynamic>>.from(jsonDecode(response.body));
+    }
+    return [];
+  }
+
+  Future<List<Map<String, dynamic>>> getMandals(int districtId) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/locations/mandals/$districtId'),
+    );
+    if (response.statusCode == 200) {
+      return List<Map<String, dynamic>>.from(jsonDecode(response.body));
+    }
+    return [];
+  }
+
+  Future<List<Map<String, dynamic>>> getVillages(int mandalId) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/locations/villages/$mandalId'),
+    );
+    if (response.statusCode == 200) {
+      return List<Map<String, dynamic>>.from(jsonDecode(response.body));
+    }
+    return [];
+  }
+
+  Future<List<Map<String, dynamic>>> getWards(int villageId) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/locations/wards/$villageId'),
+    );
+    if (response.statusCode == 200) {
+      return List<Map<String, dynamic>>.from(jsonDecode(response.body));
+    }
+    return [];
+  }
+
   Future<Map<String, dynamic>> registerSurveyor(
     String name,
-    String mobile,
-  ) async {
+    String mobile, {
+    required String district,
+    required String mandal,
+    required String village,
+    required String ward,
+  }) async {
     final url = Uri.parse('$baseUrl/register/surveyor');
     print("Attempting Registration to: $url");
 
@@ -296,6 +339,10 @@ class ApiService {
         "name": name,
         "mobile": mobile,
         "device_id": "device_${DateTime.now().millisecondsSinceEpoch}",
+        "district_name": district,
+        "mandal_name": mandal,
+        "village_name": village,
+        "ward_no": ward,
       }),
     );
 

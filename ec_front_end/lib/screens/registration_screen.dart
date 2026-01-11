@@ -16,6 +16,97 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   final TextEditingController _nameController = TextEditingController();
   bool _isSubmitting = false;
 
+  // --- Location State ---
+  List<Map<String, dynamic>> _districts = [];
+  List<Map<String, dynamic>> _mandals = [];
+  List<Map<String, dynamic>> _villages = [];
+  List<Map<String, dynamic>> _wards = [];
+
+  String? _selectedDistrict;
+  String? _selectedMandal;
+  String? _selectedVillage;
+  String? _selectedWard;
+
+  final _api = ApiService();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDistricts();
+  }
+
+  Future<void> _loadDistricts() async {
+    try {
+      final list = await _api.getDistricts();
+      setState(() => _districts = list);
+    } catch (e) {
+      print("Error loading districts: $e");
+    }
+  }
+
+  Future<void> _onDistrictChanged(String? name) async {
+    if (name == null) return;
+    final id = _districts.firstWhere((e) => e['name'] == name)['id'];
+
+    setState(() {
+      _selectedDistrict = name;
+      _selectedDistrict = name;
+      _mandals = [];
+      _selectedMandal = null;
+      _villages = [];
+      _selectedVillage = null;
+      _wards = [];
+      _selectedWard = null;
+    });
+
+    try {
+      final list = await _api.getMandals(id);
+      setState(() => _mandals = list);
+    } catch (e) {
+      print("Error: $e");
+    }
+  }
+
+  Future<void> _onMandalChanged(String? name) async {
+    if (name == null) return;
+    final id = _mandals.firstWhere((e) => e['name'] == name)['id'];
+
+    setState(() {
+      _selectedMandal = name;
+      _selectedMandal = name;
+      _villages = [];
+      _selectedVillage = null;
+      _wards = [];
+      _selectedWard = null;
+    });
+
+    try {
+      final list = await _api.getVillages(id);
+      setState(() => _villages = list);
+    } catch (e) {
+      print("Error: $e");
+    }
+  }
+
+  Future<void> _onVillageChanged(String? name) async {
+    if (name == null) return;
+    final id = _villages.firstWhere((e) => e['name'] == name)['id'];
+
+    setState(() {
+      _selectedVillage = name;
+      _selectedVillage = name;
+      _wards = [];
+      _selectedWard = null;
+    });
+
+    try {
+      final list = await _api.getWards(id);
+      setState(() => _wards = list);
+    } catch (e) {
+      print("Error: $e");
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -84,24 +175,42 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                           icon: Icons.person,
                         ),
                         const SizedBox(height: 16),
-                        _buildDropdown(
+
+                        // --- DYNAMIC LOCATION DROPDOWNS ---
+                        _buildDynamicDropdown(
                           label: "District",
-                          items: ["District A", "District B"],
+                          value: _selectedDistrict,
+                          items: _districts
+                              .map((e) => e['name'] as String)
+                              .toList(),
+                          onChanged: _onDistrictChanged,
                         ),
                         const SizedBox(height: 16),
-                        _buildDropdown(
+                        _buildDynamicDropdown(
                           label: "Mandal",
-                          items: ["Mandal X", "Mandal Y"],
+                          value: _selectedMandal,
+                          items: _mandals
+                              .map((e) => e['name'] as String)
+                              .toList(),
+                          onChanged: _onMandalChanged,
                         ),
                         const SizedBox(height: 16),
-                        _buildDropdown(
+                        _buildDynamicDropdown(
                           label: "Village",
-                          items: ["Village 1", "Village 2"],
+                          value: _selectedVillage,
+                          items: _villages
+                              .map((e) => e['name'] as String)
+                              .toList(),
+                          onChanged: _onVillageChanged,
                         ),
                         const SizedBox(height: 16),
-                        _buildDropdown(
+                        _buildDynamicDropdown(
                           label: "Ward",
-                          items: ["Ward 1", "Ward 2"],
+                          value: _selectedWard,
+                          items: _wards
+                              .map((e) => e['name'] as String)
+                              .toList(),
+                          onChanged: (v) => setState(() => _selectedWard = v),
                         ),
                       ],
                     ),
@@ -126,13 +235,28 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                             return;
                           }
 
+                          if (_selectedWard == null) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  "Please select complete location details",
+                                ),
+                              ),
+                            );
+                            return;
+                          }
+
                           setState(() => _isSubmitting = true);
 
                           try {
-                            // 1. Send Request to Backend
+                            // 1. Send Request to Backend (With Locations)
                             await ApiService().registerSurveyor(
                               _nameController.text.trim(),
                               _mobileController.text.trim(),
+                              district: _selectedDistrict!,
+                              mandal: _selectedMandal!,
+                              village: _selectedVillage!,
+                              ward: _selectedWard!,
                             );
 
                             // 2. Save Session locally
@@ -141,15 +265,12 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                               null,
                             );
 
-                            print("Logged in as: ${ApiService.loggedInMobile}");
-
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
                                 content: Text("Request Sent! Redirecting..."),
                               ),
                             );
 
-                            // 3. Navigate
                             if (context.mounted) {
                               Navigator.pushReplacement(
                                 context,
@@ -183,24 +304,17 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                           ),
                         ),
                       ),
-                const SizedBox(height: 12),
-                Text(
-                  "Access will be approved by village coordinator",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.grey[600], fontSize: 13),
-                ),
-
+                // Legacy Footer
                 const SizedBox(height: 40),
-                // --- Footer Trust Line ---
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(Icons.lock_outline, size: 16, color: Colors.grey[600]),
                     const SizedBox(width: 8),
-                    Text(
-                      "v15.1 (UI UPDATE - VISIBLE)",
+                    const Text(
+                      "v16.0 (GEO-V1)",
                       style: TextStyle(
-                        color: Colors.red,
+                        color: Colors.black45,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -233,7 +347,12 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     );
   }
 
-  Widget _buildDropdown({required String label, required List<String> items}) {
+  Widget _buildDynamicDropdown({
+    required String label,
+    required String? value,
+    required List<String> items,
+    required Function(String?) onChanged,
+  }) {
     return DropdownButtonFormField<String>(
       decoration: InputDecoration(
         labelText: label,
@@ -241,10 +360,11 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
         filled: true,
         fillColor: Colors.grey[50],
       ),
+      value: value,
       items: items
           .map((e) => DropdownMenuItem(value: e, child: Text(e)))
           .toList(),
-      onChanged: (v) {},
+      onChanged: onChanged,
     );
   }
 }

@@ -11,6 +11,30 @@ from pydantic import BaseModel
 # Import robust database setup
 from database import engine, SessionLocal, Base, get_db
 
+# --- 0. GEO MASTER TABLES (Hierarchy) ---
+class DistrictMaster(Base):
+    __tablename__ = "district_master"
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    name = Column(String, unique=True, index=True)
+
+class MandalMaster(Base):
+    __tablename__ = "mandal_master"
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    name = Column(String, index=True)
+    district_id = Column(Integer, ForeignKey("district_master.id"))
+
+class VillageMaster(Base):
+    __tablename__ = "village_master"
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    name = Column(String, index=True)
+    mandal_id = Column(Integer, ForeignKey("mandal_master.id"))
+
+class WardMaster(Base):
+    __tablename__ = "ward_master"
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    name = Column(String)
+    village_id = Column(Integer, ForeignKey("village_master.id"))
+
 # --- 1. VOTER MASTER (Production Data - Read Only) ---
 class VoterMaster(Base):
     __tablename__ = "voters"  # Existing table
@@ -40,6 +64,13 @@ class Survey(Base):
     __tablename__ = "surveys"
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     name = Column(String, nullable=False)
+    
+    # Geo-Scope (Full Hierarchy)
+    district = Column(String)
+    mandal = Column(String)
+    village = Column(String)
+    ward = Column(String)
+
     scope_type = Column(String) # e.g., "WARD", "VILLAGE"
     scope_value = Column(String) 
     status = Column(String, default="CREATED") # CREATED, ACTIVE, COMPLETED, ARCHIVED
@@ -85,6 +116,13 @@ class SurveyorRequest(Base):
     name = Column(String)
     mobile_no = Column(String)
     device_id = Column(String, nullable=True) # To uniquely identify app installation
+    
+    # Requested Location (Full Hierarchy)
+    district_name = Column(String)
+    mandal_name = Column(String)
+    village_name = Column(String)
+    ward_no = Column(String)
+
     status = Column(String, default="PENDING") # PENDING, APPROVED, REJECTED
     created_at = Column(DateTime, default=datetime.utcnow)
 
@@ -140,6 +178,32 @@ def startup_event():
             print("[STARTUP] Seeding complete.")
         else:
             print(f"[STARTUP] Database has {count} voters. Skipping seed.")
+        
+        # --- PHASE 1: GEO SEEDING (Always Check/Run) ---
+        print("[STARTUP] Checking Master Location Data...")
+        if db.query(DistrictMaster).count() == 0:
+             print("[STARTUP] Seeding Locations for Phase 1...")
+             # 1. District
+             dist = DistrictMaster(name="Yadadri Bhuvanagiri")
+             db.add(dist)
+             db.flush() # Get ID
+             
+             # 2. Mandal
+             mandal = MandalMaster(name="Choutuppal", district_id=dist.id)
+             db.add(mandal)
+             db.flush()
+             
+             # 3. Village
+             village = VillageMaster(name="Aregudem", mandal_id=mandal.id)
+             db.add(village)
+             db.flush()
+             
+             # 4. Wards
+             db.add(WardMaster(name="Ward 1", village_id=village.id))
+             db.add(WardMaster(name="Ward 2", village_id=village.id))
+             
+             db.commit()
+             print("[STARTUP] Location Seeding Complete.")
     except Exception as e:
         print(f"[STARTUP] Error checking/seeding DB: {e}")
     finally:
@@ -735,25 +799,118 @@ def approve_surveyor(request_id: int = Body(...), action: str = Body(...), db: S
         
     if action not in ["APPROVED", "REJECTED"]:
         raise HTTPException(status_code=400, detail="Invalid action")
-        
+    
+    # 1. Update Request Status
     req.status = action
-    db.commit()
+    db.commit() # Commit status change first
+
+    # 2. If Approved -> Auto-Assign Logic (Strict Dedup)
+    if action == "APPROVED":
+        # Check if location data exists (Phase 1+)
+        if req.district_name and req.mandal_name and req.village_name and req.ward_no:
+            print(f"[AUTO-ASSIGN] Checking for existing survey: {req.district_name}/{req.mandal_name}/{req.village_name}/{req.ward_no}")
+            
+            # A. FIND EXISTING SURVEY
+            existing_survey = db.query(Survey).filter(
+                Survey.district == req.district_name,
+                Survey.mandal == req.mandal_name,
+                Survey.village == req.village_name,
+                Survey.ward == req.ward_no,
+                Survey.status != "ARCHIVED"
+            ).first()
+            
+            target_survey_id = None
+            if existing_survey:
+                print(f"[AUTO-ASSIGN] Found existing survey ID: {existing_survey.id}")
+                target_survey_id = existing_survey.id
+            else:
+                # B. CREATE NEW SURVEY
+                survey_name = f"{req.village_name} - {req.ward_no}"
+                print(f"[AUTO-ASSIGN] Creating NEW survey: {survey_name}")
+                new_survey = Survey(
+                    name=survey_name,
+                    district=req.district_name,
+                    mandal=req.mandal_name,
+                    village=req.village_name,
+                    ward=req.ward_no,
+                    scope_type="WARD",
+                    scope_value=req.ward_no,
+                    status="ACTIVE",
+                    survey_type="PHASE-1"
+                )
+                db.add(new_survey)
+                db.flush() # Get ID
+                target_survey_id = new_survey.id
+                
+            # C. ASSIGN SURVEYOR
+            # Check if assignment already exists
+            existing_assign = db.query(SurveyAssignment).filter(
+                SurveyAssignment.survey_id == target_survey_id,
+                SurveyAssignment.surveyor_id == req.id
+            ).first()
+            
+            if not existing_assign:
+                new_assign = SurveyAssignment(survey_id=target_survey_id, surveyor_id=req.id)
+                db.add(new_assign)
+                print(f"[AUTO-ASSIGN] Assigned Surveyor {req.id} to Survey {target_survey_id}")
+            
+            db.commit()
+        else:
+            print("[AUTO-ASSIGN] Skipped - Missing Location Data in Request")
+
     return {"status": "success"}
 
 # --- PUBLIC ENDPOINT FOR APP REGISTRATION (To feed into approvals) ---
 @app.post("/register/surveyor")
-def register_surveyor(name: str = Body(...), mobile: str = Body(...), device_id: str = Body(None), db: Session = Depends(get_db)):
+def register_surveyor(
+    name: str = Body(...), 
+    mobile: str = Body(...), 
+    device_id: str = Body(None),
+    # Phase 1: Location Payload
+    district_name: str = Body(None),
+    mandal_name: str = Body(None),
+    village_name: str = Body(None),
+    ward_no: str = Body(None),
+    db: Session = Depends(get_db)
+):
     mobile = clean_mobile(mobile)
-    print(f"[DEBUG] Registering surveyor: Name={name}, Mobile={mobile}")
+    print(f"[DEBUG] Registering surveyor: Name={name}, Mobile={mobile}, Loc={district_name}/{mandal_name}/{village_name}/{ward_no}")
+    
     # Check if already exists
     existing = db.query(SurveyorRequest).filter(SurveyorRequest.mobile_no == mobile).first()
     if existing:
         return {"status": "exists", "id": existing.id, "current_status": existing.status}
         
-    new_req = SurveyorRequest(name=name, mobile_no=mobile, device_id=device_id)
+    new_req = SurveyorRequest(
+        name=name, 
+        mobile_no=mobile, 
+        device_id=device_id,
+        # Save Location
+        district_name=district_name,
+        mandal_name=mandal_name,
+        village_name=village_name,
+        ward_no=ward_no
+    )
     db.add(new_req)
     db.commit()
     return {"status": "success", "id": new_req.id, "current_status": "PENDING"}
+
+# --- LOCATION APIS (For Dropdowns) ---
+@app.get("/locations/districts")
+def get_districts(db: Session = Depends(get_db)):
+    return db.query(DistrictMaster).all()
+
+@app.get("/locations/mandals/{district_id}")
+def get_mandals(district_id: int, db: Session = Depends(get_db)):
+    return db.query(MandalMaster).filter(MandalMaster.district_id == district_id).all()
+
+@app.get("/locations/villages/{mandal_id}")
+def get_villages(mandal_id: int, db: Session = Depends(get_db)):
+    return db.query(VillageMaster).filter(VillageMaster.mandal_id == mandal_id).all()
+
+@app.get("/locations/wards/{village_id}")
+def get_wards(village_id: int, db: Session = Depends(get_db)):
+    return db.query(WardMaster).filter(WardMaster.village_id == village_id).all()
 
 
 
