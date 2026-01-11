@@ -312,9 +312,9 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                     Icon(Icons.lock_outline, size: 16, color: Colors.grey[600]),
                     const SizedBox(width: 8),
                     const Text(
-                      "v17.0 (PROD MODE)",
+                      "v18.0 (FORCE REBUILD)",
                       style: TextStyle(
-                        color: Colors.green,
+                        color: Colors.blue,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
