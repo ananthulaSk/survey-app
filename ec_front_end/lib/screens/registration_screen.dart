@@ -198,8 +198,11 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                     Icon(Icons.lock_outline, size: 16, color: Colors.grey[600]),
                     const SizedBox(width: 8),
                     Text(
-                      "v15.0 (UI UPDATE - SAVED COUNT)",
-                      style: TextStyle(color: Colors.white.withOpacity(0.5)),
+                      "v15.1 (UI UPDATE - VISIBLE)",
+                      style: TextStyle(
+                        color: Colors.red,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ],
                 ),
