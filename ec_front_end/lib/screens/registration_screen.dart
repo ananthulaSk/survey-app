@@ -28,11 +28,33 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   String? _selectedWard;
 
   final _api = ApiService();
+  String? _backendVersion;
 
   @override
   void initState() {
     super.initState();
     _loadDistricts();
+    _checkVersion();
+  }
+
+  Future<void> _checkVersion() async {
+    final status = await _api.checkBackendVersion();
+    if (mounted) {
+      setState(() {
+        _backendVersion = status["version"];
+      });
+      if (_backendVersion != "v19.0") {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              "Warning: Backend is $_backendVersion (Expected v19.0). Refresh Page.",
+            ),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 10),
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _loadDistricts() async {
@@ -312,9 +334,9 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                     Icon(Icons.lock_outline, size: 16, color: Colors.grey[600]),
                     const SizedBox(width: 8),
                     const Text(
-                      "v18.0 (FORCE REBUILD)",
+                      "v19.0 (HANSDHAKE)",
                       style: TextStyle(
-                        color: Colors.blue,
+                        color: Colors.purple,
                         fontWeight: FontWeight.bold,
                       ),
                     ),

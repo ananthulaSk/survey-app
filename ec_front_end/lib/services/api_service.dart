@@ -53,6 +53,21 @@ class ApiService {
     return "https://survey-app-75558224521.asia-south1.run.app";
   }
 
+  // Check Backend Version
+  Future<Map<String, dynamic>> checkBackendVersion() async {
+    try {
+      final response = await http
+          .get(Uri.parse('$baseUrl/version'))
+          .timeout(const Duration(seconds: 3));
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+    } catch (e) {
+      print("Version check failed: $e");
+    }
+    return {"version": "UNKNOWN", "env": "UNKNOWN"};
+  }
+
   // --- Survey Management ---
 
   Future<Map<String, dynamic>> createSurvey(

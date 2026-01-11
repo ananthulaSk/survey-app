@@ -280,6 +280,15 @@ def create_survey(data: SurveyCreate, db: Session = Depends(get_db)):
     
     return {"status": "success", "message": f"Survey '{data.name}' Created Successfully with {len(master_voters)} Voters."}
 
+# --- VERSION HANDSHAKE ---
+@app.get("/version")
+def get_version():
+    return {
+        "version": "v19.0",
+        "env": "PROD",
+        "last_updated": datetime.utcnow().isoformat()
+    }
+
 # Serve Flutter Mobile App (Web Version)
 from fastapi.responses import FileResponse
 
