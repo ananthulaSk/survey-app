@@ -776,6 +776,11 @@ def check_registration_status(request_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Request not found")
     return {"status": "success", "approval_status": req.status}
 
+# --- FINAL FALLBACK: Serve Flutter App at Root ---
+# This ensures that /flutter_bootstrap.js, /main.dart.js, etc. are found.
+# API routes defined above take precedence.
+app.mount("/", StaticFiles(directory="static/flutter_app", html=True), name="flutter_app")
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="127.0.0.1", port=8000)
