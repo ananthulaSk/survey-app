@@ -205,8 +205,10 @@ def startup_event():
              db.commit()
              
              # 5. Check/Seed Phase 1 Survey (Aregudem - Ward 1)
-             if db.query(Survey).filter(Survey.name == "Aregudem - Ward 1").count() == 0:
-                 print("[STARTUP] Seeding Phase 1 Survey...")
+             survey = db.query(Survey).filter(Survey.name == "Aregudem - Ward 1").first()
+             
+             if not survey:
+                 print("[STARTUP] Seeding Phase 1 Survey (Creating New)...")
                  survey = Survey(
                      name="Aregudem - Ward 1", 
                      survey_code="SUR-001", 
@@ -218,9 +220,10 @@ def startup_event():
                  )
                  db.add(survey)
                  db.commit() # Get ID
-                 
-                 # 6. Seed Dummy Voters for this Survey
-                 print(f"[STARTUP] Seeding Dummy Voters for Survey {survey.id}...")
+             
+             # 6. Check/Seed Dummy Voters for this Survey
+             if db.query(SurveyVoter).filter(SurveyVoter.survey_id == survey.id).count() == 0:
+                 print(f"[STARTUP] Seeding Dummy Voters for Survey {survey.id} (Forcing)...")
                  dummy_voters = [
                      SurveyVoter(survey_id=survey.id, voter_name="Raju One", mobile_no="9000000001", age=30, gender="M", ward_no="1", house_no="1-1"),
                      SurveyVoter(survey_id=survey.id, voter_name="Rani Two", mobile_no="9000000002", age=28, gender="F", ward_no="1", house_no="1-2"),
