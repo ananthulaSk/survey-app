@@ -755,12 +755,7 @@ def register_surveyor(name: str = Body(...), mobile: str = Body(...), device_id:
     db.commit()
     return {"status": "success", "id": new_req.id, "current_status": "PENDING"}
 
-@app.get("/register/status/{request_id}")
-def check_registration_status(request_id: int, db: Session = Depends(get_db)):
-    req = db.query(SurveyorRequest).filter(SurveyorRequest.id == request_id).first()
-    if not req:
-        raise HTTPException(status_code=404, detail="Request not found")
-    return {"status": "success", "approval_status": req.status}
+
 
 @app.get("/register/status/mobile")
 def check_registration_status_by_mobile(mobile_no: str, db: Session = Depends(get_db)):
@@ -773,6 +768,13 @@ def check_registration_status_by_mobile(mobile_no: str, db: Session = Depends(ge
     
     print(f"[DEBUG] STATUS CHECK: {mobile_no} -> {req.status}")
     return {"status": "success", "approval_status": req.status, "surveyor_id": req.id}
+
+@app.get("/register/status/{request_id}")
+def check_registration_status(request_id: int, db: Session = Depends(get_db)):
+    req = db.query(SurveyorRequest).filter(SurveyorRequest.id == request_id).first()
+    if not req:
+        raise HTTPException(status_code=404, detail="Request not found")
+    return {"status": "success", "approval_status": req.status}
 
 if __name__ == "__main__":
     import uvicorn
