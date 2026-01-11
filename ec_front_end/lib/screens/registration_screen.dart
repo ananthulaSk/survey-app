@@ -198,7 +198,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                     Icon(Icons.lock_outline, size: 16, color: Colors.grey[600]),
                     const SizedBox(width: 8),
                     Text(
-                      "v14.0 (AUTO-SAVE FIX)",
+                      "v15.0 (UI UPDATE - SAVED COUNT)",
                       style: TextStyle(color: Colors.white.withOpacity(0.5)),
                     ),
                   ],
