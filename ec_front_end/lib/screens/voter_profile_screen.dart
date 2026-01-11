@@ -157,7 +157,7 @@ class _VoterProfileScreenState extends State<VoterProfileScreen> {
     }
   }
 
-  Future<void> _save() async {
+  Future<void> _save({bool silent = false}) async {
     if (_currentVoter == null) return;
 
     final updates = {
@@ -170,23 +170,19 @@ class _VoterProfileScreenState extends State<VoterProfileScreen> {
       "voter_status": _voterStatus,
     };
 
-    // NOTE: We no longer nullify fields here if status != AVAILABLE.
-    // We send whatever data is collected so the backend can store it safely.
-
     final success = await _apiService.updateVoter(_currentVoter!.id, updates);
     if (success && mounted) {
       await _refreshStats(); // Update counters immediately
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Survey Data Saved Successfully!"),
-          backgroundColor: Colors.green,
-          duration: Duration(seconds: 1),
-        ),
-      );
-
-      // Auto-advance after save
-      // _navigate(true);
+      if (!silent) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Survey Data Saved Successfully!"),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 1),
+          ),
+        );
+      }
     }
   }
 
@@ -531,7 +527,7 @@ class _VoterProfileScreenState extends State<VoterProfileScreen> {
                     ),
                   ),
                   ElevatedButton(
-                    onPressed: _save,
+                    onPressed: () => _save(silent: false),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.green,
                       foregroundColor: Colors.white,
@@ -549,9 +545,13 @@ class _VoterProfileScreenState extends State<VoterProfileScreen> {
                     ),
                   ),
                   ElevatedButton.icon(
-                    onPressed: () => _navigate(true),
+                    onPressed: () async {
+                      // Auto-Save before moving Next
+                      await _save(silent: true);
+                      _navigate(true);
+                    },
                     icon: const Icon(Icons.arrow_forward),
-                    label: const Text("Next"),
+                    label: const Text("Save & Next"),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.purple[50],
                       foregroundColor: Colors.purple,
@@ -571,7 +571,10 @@ class _VoterProfileScreenState extends State<VoterProfileScreen> {
   Widget _buildPartyButton(String label, IconData icon, Color activeColor) {
     bool isSelected = _selectedParty == label;
     return GestureDetector(
-      onTap: () => setState(() => _selectedParty = label),
+      onTap: () {
+        setState(() => _selectedParty = label);
+        _save(silent: true);
+      },
       child: Container(
         decoration: BoxDecoration(
           // Active: Show activeColor. Inactive: White.
@@ -654,6 +657,7 @@ class _VoterProfileScreenState extends State<VoterProfileScreen> {
           onChanged: (val) {
             if (val != null) {
               setState(() => controller.text = val);
+              _save(silent: true);
             }
           },
         ),
