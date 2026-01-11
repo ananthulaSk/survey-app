@@ -203,7 +203,35 @@ def startup_event():
              db.add(WardMaster(name="Ward 2", village_id=village.id))
              
              db.commit()
-             print("[STARTUP] Location Seeding Complete.")
+             
+             # 5. Check/Seed Phase 1 Survey (Aregudem - Ward 1)
+             if db.query(Survey).filter(Survey.name == "Aregudem - Ward 1").count() == 0:
+                 print("[STARTUP] Seeding Phase 1 Survey...")
+                 survey = Survey(
+                     name="Aregudem - Ward 1", 
+                     survey_code="SUR-001", 
+                     status="ACTIVE",
+                     district_name="Yadadri Bhuvanagiri",
+                     mandal_name="Choutuppal",
+                     village_name="Aregudem",
+                     ward_no="1"
+                 )
+                 db.add(survey)
+                 db.commit() # Get ID
+                 
+                 # 6. Seed Dummy Voters for this Survey
+                 print(f"[STARTUP] Seeding Dummy Voters for Survey {survey.id}...")
+                 dummy_voters = [
+                     SurveyVoter(survey_id=survey.id, voter_name="Raju One", mobile_no="9000000001", age=30, gender="M", ward_no="1", house_no="1-1"),
+                     SurveyVoter(survey_id=survey.id, voter_name="Rani Two", mobile_no="9000000002", age=28, gender="F", ward_no="1", house_no="1-2"),
+                     SurveyVoter(survey_id=survey.id, voter_name="Suresh Three", mobile_no="9000000003", age=45, gender="M", ward_no="1", house_no="1-3"),
+                     SurveyVoter(survey_id=survey.id, voter_name="Mahesh Four", mobile_no="9000000004", age=50, gender="M", ward_no="1", house_no="1-4"),
+                     SurveyVoter(survey_id=survey.id, voter_name="Latha Five", mobile_no="9000000005", age=35, gender="F", ward_no="1", house_no="1-5"),
+                 ]
+                 db.add_all(dummy_voters)
+                 db.commit()
+                 
+             print("[STARTUP] Location & Survey Seeding Complete.")
     except Exception as e:
         print(f"[STARTUP] Error checking/seeding DB: {e}")
     finally:
