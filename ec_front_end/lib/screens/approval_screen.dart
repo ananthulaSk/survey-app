@@ -129,6 +129,13 @@ class _ApprovalScreenState extends State<ApprovalScreen> {
             const SizedBox(height: 40),
 
             // Status Card
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.grey[100],
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey[300]!),
+              ),
               child: Row(
                 children: [
                   const Icon(Icons.info_outline, color: Colors.blue),
@@ -158,7 +165,10 @@ class _ApprovalScreenState extends State<ApprovalScreen> {
                         const SizedBox(height: 8),
                         Text(
                           "Debugging Info:\nMobile: ${ApiService.loggedInMobile}\nBackend URL: ${ApiService.baseUrl}",
-                          style: TextStyle(fontSize: 10, color: Colors.blueGrey),
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: Colors.blueGrey,
+                          ),
                         ),
                         // ---------------------
                       ],
