@@ -762,15 +762,35 @@ def get_surveyor_requests(db: Session = Depends(get_db)):
     # Return ALL requests (Pending + History)
     requests = db.query(SurveyorRequest).order_by(desc(SurveyorRequest.created_at)).all()
     print(f"[DEBUG] Total Requests Found: {len(requests)}")
-    return [
-        {
+    # Fetch all surveys to map assignments (Optimization: Fetch all assignments)
+    # For now, simplest approach:
+    response_data = []
+    for r in requests:
+        assigned_survey_name = "-"
+        if r.status == "APPROVED":
+            # Find surveyor user by mobile
+            # Assuming SurveyorRequest.mobile_no links to User/Surveyor
+            surveyor = db.query(Surveyor).filter(Surveyor.mobile_no == r.mobile_no).first()
+            if surveyor:
+                assignment = db.query(SurveyAssignment).filter(SurveyAssignment.surveyor_id == surveyor.id).first()
+                if assignment:
+                     survey = db.query(Survey).filter(Survey.id == assignment.survey_id).first()
+                     if survey:
+                         assigned_survey_name = survey.name
+
+        response_data.append({
             "id": r.id, 
             "name": r.name, 
             "mobile": r.mobile_no, 
             "date": r.created_at,
-            "status": r.status 
-        } for r in requests
-    ]
+            "status": r.status,
+            "district": r.district_name,
+            "mandal": r.mandal_name,
+            "village": r.village_name,
+            "ward": r.ward_no,
+            "assigned_survey": assigned_survey_name
+        })
+    return response_data
 
 # --- DELETE SURVEYOR FEATURE ---
 @app.delete("/dashboard/surveyor/{surveyor_id}")

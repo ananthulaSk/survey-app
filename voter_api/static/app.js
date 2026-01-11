@@ -150,13 +150,14 @@ async function loadApprovals() {
         `).join('');
 
         // 2. Render History
-        const historyBody = document.getElementById('approvalsHistoryTableBody');
         if (historyBody) {
             historyBody.innerHTML = history.map(a => `
                 <tr>
                     <td>${a.id}</td>
                     <td>${a.name}</td>
                     <td>${a.mobile}</td>
+                    <td><small>${a.district || '-'}<br>${a.mandal || '-'}<br>${a.village || '-'}<br>Ward ${a.ward || '-'}</small></td>
+                    <td>${a.assigned_survey || '-'}</td>
                     <td>${new Date(a.date).toLocaleDateString()}</td>
                     <td>
                         <span class="badge" style="background:${a.status === 'APPROVED' ? '#10b981' : (a.status === 'REJECTED' ? '#ef4444' : '#6b7280')}">${a.status || 'PENDING'}</span>
