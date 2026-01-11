@@ -198,12 +198,8 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                     Icon(Icons.lock_outline, size: 16, color: Colors.grey[600]),
                     const SizedBox(width: 8),
                     Text(
-                      "v13.2 (HARDCODED FIX)",
-                      style: TextStyle(
-                        color: Colors.red,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w900,
-                      ),
+                      "v14.0 (AUTO-SAVE FIX)",
+                      style: TextStyle(color: Colors.white.withOpacity(0.5)),
                     ),
                   ],
                 ),
