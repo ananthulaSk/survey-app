@@ -222,6 +222,12 @@ def startup_event():
                  db.commit() # Get ID
              
              # 6. Check/Seed Dummy Voters for this Survey
+             # FIX: First, remove any "Broken" voters (null master_id) from previous bad seeds
+             deleted_bad = db.query(SurveyVoter).filter(SurveyVoter.master_voter_id == None).delete()
+             if deleted_bad > 0:
+                 db.commit()
+                 print(f"[STARTUP] Cleaned up {deleted_bad} broken voter records (no master_id).")
+
              if db.query(SurveyVoter).filter(SurveyVoter.survey_id == survey.id).count() == 0:
                  print(f"[STARTUP] Seeding Dummy Voters for Survey {survey.id} (Forcing)...")
                  

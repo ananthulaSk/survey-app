@@ -312,7 +312,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                     Icon(Icons.lock_outline, size: 16, color: Colors.grey[600]),
                     const SizedBox(width: 8),
                     const Text(
-                      "v16.0 (GEO-V1)",
+                      "v16.1 (CLEAN BUILD)",
                       style: TextStyle(
                         color: Colors.black45,
                         fontWeight: FontWeight.bold,
