@@ -204,7 +204,23 @@ def startup_event():
              
              db.commit()
              
-             # 5. Check/Seed Phase 1 Survey (Aregudem - Ward 1)
+             db.commit() # Get ID
+             
+             # 5. [FIX v16.2] DETECT & DESTROY ROTTEN SURVEY (The one with null code)
+             # The user screenshot showed Survey 1 has 'null' code. This is the root cause.
+             # We must delete it so a fresh, valid one (SUR-001) is created.
+             rotten_survey = db.query(Survey).filter(Survey.name == "Aregudem - Ward 1", Survey.survey_code == None).first()
+             if rotten_survey:
+                 print(f"[STARTUP] Found Rotten Survey {rotten_survey.id} (Null Code). destroying...")
+                 # Delete its voters first
+                 db.query(SurveyVoter).filter(SurveyVoter.survey_id == rotten_survey.id).delete()
+                 # Delete the survey
+                 db.delete(rotten_survey)
+                 db.commit()
+                 print("[STARTUP] Rotten Survey Destroyed. Ready for clean seed.")
+
+             # 6. Check/Seed Phase 1 Survey (Standard Logic)
+             # Now, if we deleted the bad one, this will returns None, and we create a NEW one.
              survey = db.query(Survey).filter(Survey.name == "Aregudem - Ward 1").first()
              
              if not survey:
@@ -221,16 +237,20 @@ def startup_event():
                  db.add(survey)
                  db.commit() # Get ID
              
-             # 6. Check/Seed Dummy Voters for this Survey
-             # FIX: First, remove any "Broken" voters (null master_id) from previous bad seeds
-             deleted_bad = db.query(SurveyVoter).filter(SurveyVoter.master_voter_id == None).delete()
-             if deleted_bad > 0:
-                 db.commit()
-                 print(f"[STARTUP] Cleaned up {deleted_bad} broken voter records (no master_id).")
-
-             if db.query(SurveyVoter).filter(SurveyVoter.survey_id == survey.id).count() == 0:
+             # 7. Check/Seed Dummy Voters for this Survey
+             # Double check: ensure we have valid voters (master_id > 0)
+             valid_voters_count = db.query(SurveyVoter).filter(
+                SurveyVoter.survey_id == survey.id, 
+                SurveyVoter.master_voter_id > 0
+             ).count()
+             
+             if valid_voters_count == 0:
                  print(f"[STARTUP] Seeding Dummy Voters for Survey {survey.id} (Forcing)...")
                  
+                 # Clean up any potential junk (count was 0 valid, but maybe junk exists)
+                 db.query(SurveyVoter).filter(SurveyVoter.survey_id == survey.id).delete()
+                 db.commit()
+
                  # Create Master Voters first to satisfy Foreign Keys and Pagination
                  master_voters = [
                      VoterMaster(voter_name="Raju One", mobile_no="9000000001", age=30, gender="M", ward_no=1, house_no="1-1"),
