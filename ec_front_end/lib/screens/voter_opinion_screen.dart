@@ -31,8 +31,6 @@ class _VoterOpinionScreenState extends State<VoterOpinionScreen> {
       }
 
       final response = await http.get(
-        // FIX: Use ApiService
-        // Uri.parse('http://127.0.0.1:8000/voters/next?current_id=$currentId'),
         Uri.parse('${ApiService.baseUrl}/voters/next?current_id=$currentId'),
       );
 
@@ -45,7 +43,6 @@ class _VoterOpinionScreenState extends State<VoterOpinionScreen> {
             _selectedParty = _voterData?['expected_party'];
           });
         } else {
-          // Handle finished or error
           setState(() => _isLoading = false);
           ScaffoldMessenger.of(
             context,
@@ -60,6 +57,41 @@ class _VoterOpinionScreenState extends State<VoterOpinionScreen> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text("Error: $e")));
+    }
+  }
+
+  // --- AUTO SAVE LOGIC ---
+  Future<void> _saveVoterData({bool silent = false}) async {
+    if (_voterData == null) return;
+
+    try {
+      final updateData = {
+        "voter_id": _voterData!['voter_id'],
+        "party": _selectedParty,
+        "occupation": _voterData!['occupation'],
+        "religion": _voterData!['religion'],
+        "caste": _voterData!['caste'],
+        "sub_caste": _voterData!['sub_caste'],
+        "mobile_no": _voterData!['mobile_no'],
+      };
+
+      await http.put(
+        Uri.parse('${ApiService.baseUrl}/voters/update'),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode(updateData),
+      );
+
+      if (!silent && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Voter Data Saved Successfully!")),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Save Error: $e")));
+      }
     }
   }
 
@@ -224,38 +256,7 @@ class _VoterOpinionScreenState extends State<VoterOpinionScreen> {
           children: [
             Expanded(
               child: ElevatedButton(
-                onPressed: () async {
-                  // Update Logic
-                  try {
-                    final updateData = {
-                      "voter_id": _voterData!['voter_id'],
-                      "party": _selectedParty,
-                      "occupation":
-                          _voterData!['occupation'], // In real app, bind these to state
-                      "mobile_no": _voterData!['mobile_no'],
-                    };
-
-                    await http.put(
-                      // FIX: Use ApiService
-                      // Uri.parse('http://127.0.0.1:8000/voters/update'),
-                      Uri.parse('${ApiService.baseUrl}/voters/update'),
-                      headers: {"Content-Type": "application/json"},
-                      body: jsonEncode(updateData),
-                    );
-
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text("Voter Data Saved Successfully!"),
-                      ),
-                    );
-                    // Fetch next
-                    _fetchNextVoter();
-                  } catch (e) {
-                    ScaffoldMessenger.of(
-                      context,
-                    ).showSnackBar(SnackBar(content: Text("Save Error: $e")));
-                  }
-                },
+                onPressed: () => _saveVoterData(silent: false),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green,
                   padding: const EdgeInsets.symmetric(vertical: 16),
@@ -264,7 +265,7 @@ class _VoterOpinionScreenState extends State<VoterOpinionScreen> {
                   ),
                 ),
                 child: const Text(
-                  "Save / Update Voter",
+                  "Save / Update",
                   style: TextStyle(
                     fontSize: 16,
                     color: Colors.white,
@@ -275,8 +276,9 @@ class _VoterOpinionScreenState extends State<VoterOpinionScreen> {
             ),
             const SizedBox(width: 12),
             OutlinedButton(
-              onPressed: () {
-                // Skip / Next
+              onPressed: () async {
+                // Auto-Save before moving to Next
+                await _saveVoterData(silent: true);
                 _fetchNextVoter();
               },
               style: OutlinedButton.styleFrom(
@@ -290,7 +292,7 @@ class _VoterOpinionScreenState extends State<VoterOpinionScreen> {
                 ),
               ),
               child: const Text(
-                "Next Voter →",
+                "Save & Next →",
                 style: TextStyle(
                   color: Colors.indigo,
                   fontWeight: FontWeight.bold,
@@ -322,7 +324,10 @@ class _VoterOpinionScreenState extends State<VoterOpinionScreen> {
   Widget _buildPartyButton(String party, Color color) {
     final isSelected = _selectedParty == party;
     return GestureDetector(
-      onTap: () => setState(() => _selectedParty = party),
+      onTap: () {
+        setState(() => _selectedParty = party);
+        _saveVoterData(silent: true);
+      },
       child: Container(
         width: 100,
         height: 60,
@@ -370,12 +375,12 @@ class _VoterOpinionScreenState extends State<VoterOpinionScreen> {
           .toList(),
       onChanged: (v) {
         setState(() {
-          // Simplistic binding for demo
           if (label == 'Occupation') _voterData!['occupation'] = v;
           if (label == 'Religion') _voterData!['religion'] = v;
           if (label == 'Caste') _voterData!['caste'] = v;
           if (label == 'Sub-Caste') _voterData!['sub_caste'] = v;
         });
+        _saveVoterData(silent: true);
       },
     );
   }
