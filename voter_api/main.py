@@ -209,6 +209,12 @@ def startup_event():
              # 5. [PROD MODE] Clean Startup - No Dummy Survey/Voters
              # We rely on Manual Creation via Dashboard now.
              print("[STARTUP] v17.0 PROD MODE: Skipping dummy survey creation. Waiting for admin action.")
+             
+             print("[STARTUP] Location & Survey Seeding Complete.")
+    except Exception as e:
+        print(f"[STARTUP] Error checking/seeding DB: {e}")
+    finally:
+        db.close()
 
 # --- MANUAL SURVEY CREATION ENDPOINT (For Dashboard) ---
 class SurveyCreate(BaseModel):
@@ -273,12 +279,6 @@ def create_survey(data: SurveyCreate, db: Session = Depends(get_db)):
              print(f"[SURVEY_CREATE] Error: Ward '{data.scope_value}' is not a valid integer.")
     
     return {"status": "success", "message": f"Survey '{data.name}' Created Successfully with {len(master_voters)} Voters."}
-                 
-             print("[STARTUP] Location & Survey Seeding Complete.")
-    except Exception as e:
-        print(f"[STARTUP] Error checking/seeding DB: {e}")
-    finally:
-        db.close()
 
 # Serve Flutter Mobile App (Web Version)
 from fastapi.responses import FileResponse
