@@ -217,77 +217,26 @@ def startup_event():
         db.close()
 
 # --- MANUAL SURVEY CREATION ENDPOINT (For Dashboard) ---
-class SurveyCreate(BaseModel):
-    name: str
-    scope_type: str
-    scope_value: str
-
-@app.post("/surveys/create")
-def create_survey(data: SurveyCreate, db: Session = Depends(get_db)):
-    print(f"[SURVEY_CREATE] Request: {data.name} ({data.scope_type} {data.scope_value})")
-    
-    # 1. Create Survey Entry
-    new_survey = Survey(
-        name=data.name,
-        # Defaulting simple fields for now since UI doesn't send hierarchy
-        district_name="Yadadri Bhuvanagiri", 
-        mandal_name="Choutuppal",
-        village_name="Aregudem",
-        ward_no=data.scope_value, # Assuming Ward No is passed
-        scope_type=data.scope_type,
-        scope_value=data.scope_value,
-        status="ACTIVE",
-        survey_type="PHASE-1",
-        survey_code=f"SUR-{int(datetime.utcnow().timestamp())}"
-    )
-    db.add(new_survey)
-    db.commit() # Get ID
-    
-    # 2. POPULATE VOTERS FROM MASTER
-    # This is the critical step for "Production Mode"
-    if data.scope_type == "WARD":
-        try:
-            ward_num = int(data.scope_value)
-            master_voters = db.query(VoterMaster).filter(VoterMaster.ward_no == ward_num).all()
-            
-            if not master_voters:
-                print(f"[SURVEY_CREATE] WARNING: No Master Voters found for Ward {ward_num}")
-                return {"status": "success", "message": f"Survey Created (ID: {new_survey.id}), but NO voters found in Master for Ward {ward_num}."}
-
-            print(f"[SURVEY_CREATE] Found {len(master_voters)} Master Voters for Ward {ward_num}. Seeding...")
-            
-            survey_voters = []
-            for mv in master_voters:
-                sv = SurveyVoter(
-                    survey_id=new_survey.id,
-                    master_voter_id=mv.voter_id,
-                    voter_name=mv.voter_name,
-                    mobile_no=mv.mobile_no,
-                    age=mv.age,
-                    gender=mv.gender,
-                    ward_no=mv.ward_no,
-                    house_no=mv.house_no,
-                    voter_status="AVAILABLE"
-                )
-                survey_voters.append(sv)
-            
-            db.add_all(survey_voters)
-            db.commit()
-            print(f"[SURVEY_CREATE] Successfully seeded {len(survey_voters)} voters.")
-            
-        except ValueError:
-             print(f"[SURVEY_CREATE] Error: Ward '{data.scope_value}' is not a valid integer.")
-    
-    return {"status": "success", "message": f"Survey '{data.name}' Created Successfully with {len(master_voters)} Voters."}
+# [DELETED] Duplicate create_survey and SurveyCreate model removed to fix logic conflict.
+# The correct implementation is further down with security checks and rollback logic.
 
 # --- VERSION HANDSHAKE ---
 @app.get("/version")
 def get_version():
     return {
-        "version": "v19.2",
+        "version": "v19.3",
         "env": "PROD",
         "last_updated": datetime.utcnow().isoformat()
     }
+
+@app.post("/admin/reset_db")
+def reset_database(x_admin_token: Optional[str] = Header(None)):
+    if x_admin_token != "admin-secret-123":
+        raise HTTPException(status_code=403, detail="Forbidden")
+    
+    from seed_db import seed_data
+    seed_data()
+    return {"status": "success", "message": "Database Reset and Seeded from CSV."}
 
 # Serve Flutter Mobile App (Web Version)
 from fastapi.responses import FileResponse
