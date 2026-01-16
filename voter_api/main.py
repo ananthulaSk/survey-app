@@ -805,15 +805,12 @@ def get_surveyor_requests(db: Session = Depends(get_db)):
     for r in requests:
         assigned_survey_name = "-"
         if r.status == "APPROVED":
-            # Find surveyor user by mobile
-            # Assuming SurveyorRequest.mobile_no links to User/Surveyor
-            surveyor = db.query(Surveyor).filter(Surveyor.mobile_no == r.mobile_no).first()
-            if surveyor:
-                assignment = db.query(SurveyAssignment).filter(SurveyAssignment.surveyor_id == surveyor.id).first()
-                if assignment:
-                     survey = db.query(Survey).filter(Survey.id == assignment.survey_id).first()
-                     if survey:
-                         assigned_survey_name = survey.name
+            # Check for existing assignment using SurveyorRequest.id
+            assignment = db.query(SurveyAssignment).filter(SurveyAssignment.surveyor_id == r.id).first()
+            if assignment:
+                 survey = db.query(Survey).filter(Survey.id == assignment.survey_id).first()
+                 if survey:
+                     assigned_survey_name = survey.name
 
         response_data.append({
             "id": r.id, 
