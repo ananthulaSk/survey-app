@@ -284,7 +284,7 @@ def create_survey(data: SurveyCreate, db: Session = Depends(get_db)):
 @app.get("/version")
 def get_version():
     return {
-        "version": "v19.0",
+        "version": "v19.1",
         "env": "PROD",
         "last_updated": datetime.utcnow().isoformat()
     }
