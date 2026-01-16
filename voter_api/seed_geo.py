@@ -35,10 +35,26 @@ def seed_geo_data():
         if yadadri:
             sample_mandals = ["Choutuppal", "Bhuvanagiri", "Alair", "Mothkur", "Turkapally"]
             for m_name in sample_mandals:
-                exists = db.query(MandalMaster).filter(MandalMaster.name == m_name, MandalMaster.district_id == yadadri.id).first()
-                if not exists:
-                    print(f" -> Adding Mandal: {m_name} (in Yadadri)")
-                    db.add(MandalMaster(name=m_name, district_id=yadadri.id))
+                mandal = db.query(MandalMaster).filter(MandalMaster.name == m_name, MandalMaster.district_id == yadadri.id).first()
+                if not mandal:
+                    print(f" -> Adding Mandal: {m_name}")
+                    mandal = MandalMaster(name=m_name, district_id=yadadri.id)
+                    db.add(mandal)
+                    db.flush() # Need ID for village
+                
+                # 3. Seed Village (Generic "Main Village" for each Mandal for now)
+                v_name = f"{m_name} Village"
+                village = db.query(VillageMaster).filter(VillageMaster.name == v_name, VillageMaster.mandal_id == mandal.id).first()
+                if not village:
+                    print(f"   -> Adding Village: {v_name}")
+                    village = VillageMaster(name=v_name, mandal_id=mandal.id)
+                    db.add(village)
+                    db.flush()
+                    
+                    # 4. Seed Wards (1 to 10)
+                    for i in range(1, 11):
+                        db.add(WardMaster(name=f"Ward {i}", village_id=village.id))
+            
             db.commit()
 
         # Ranga Reddy (Sample)
