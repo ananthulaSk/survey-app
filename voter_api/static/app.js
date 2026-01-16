@@ -106,13 +106,33 @@ function renderChart(data) {
     const ctx = document.getElementById('analyticsChart').getContext('2d');
     if (chartInstance) chartInstance.destroy();
 
+    // PARTY COLORS MAPPING
+    const partyColors = {
+        'TRS': '#FF00FF', // Pink
+        'BRS': '#FF00FF', // Pink
+        'INC': '#0000FF', // Blue
+        'CONGRESS': '#0000FF',
+        'BJP': '#FF9933', // Saffron
+        'CPM': '#FF0000', // Red
+        'CPI': '#FF5252',
+        'AIMIM': '#008000', // Green
+        'TDP': '#FFFF00', // Yellow
+        'OTHER': '#808080' // Grey
+    };
+
+    const bgColors = data.map(d => {
+        const party = d.party ? d.party.toUpperCase().trim() : 'OTHER';
+        return partyColors[party] || '#808080';
+    });
+
     chartInstance = new Chart(ctx, {
         type: 'doughnut',
         data: {
             labels: data.map(d => d.party),
             datasets: [{
                 data: data.map(d => d.count),
-                backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF']
+                backgroundColor: bgColors,
+                borderWidth: 1
             }]
         },
         options: {
