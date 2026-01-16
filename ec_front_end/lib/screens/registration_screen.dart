@@ -43,11 +43,11 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
       setState(() {
         _backendVersion = status["version"];
       });
-      if (_backendVersion != "v19.1") {
+      if (_backendVersion != "v19.2") {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              "Warning: Backend is $_backendVersion (Expected v19.1). Refresh Page.",
+              "Warning: Backend is $_backendVersion (Expected v19.2). SW Cache Issue.",
             ),
             backgroundColor: Colors.red,
             duration: const Duration(seconds: 10),
@@ -334,7 +334,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                     Icon(Icons.lock_outline, size: 16, color: Colors.grey[600]),
                     const SizedBox(width: 8),
                     const Text(
-                      "v19.1 (STABLE)",
+                      "v19.2 (FRESH)",
                       style: TextStyle(
                         color: Colors.green,
                         fontWeight: FontWeight.bold,
