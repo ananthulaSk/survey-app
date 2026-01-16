@@ -182,29 +182,9 @@ def startup_event():
         # --- PHASE 1: GEO SEEDING (Always Check/Run) ---
         print("[STARTUP] Checking Master Location Data...")
         if db.query(DistrictMaster).count() == 0:
-             print("[STARTUP] Seeding Locations for Phase 1...")
-             # 1. District
-             dist = DistrictMaster(name="Yadadri Bhuvanagiri")
-             db.add(dist)
-             db.flush() # Get ID
-             
-             # 2. Mandal
-             mandal = MandalMaster(name="Choutuppal", district_id=dist.id)
-             db.add(mandal)
-             db.flush()
-             
-             # 3. Village
-             village = VillageMaster(name="Aregudem", mandal_id=mandal.id)
-             db.add(village)
-             db.flush()
-             
-             # 4. Wards
-             db.add(WardMaster(name="Ward 1", village_id=village.id))
-             db.add(WardMaster(name="Ward 2", village_id=village.id))
-             
-             db.commit()
-             
-             db.commit() # Get ID
+             print("[STARTUP] Seeding Full State Geo Data (Phase 3)...")
+             from seed_geo import seed_geo_data
+             seed_geo_data()
              
              # 5. [PROD MODE] Clean Startup - No Dummy Survey/Voters
              # We rely on Manual Creation via Dashboard now.

@@ -72,7 +72,6 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
 
     setState(() {
       _selectedDistrict = name;
-      _selectedDistrict = name;
       _mandals = [];
       _selectedMandal = null;
       _villages = [];
@@ -94,7 +93,6 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     final id = _mandals.firstWhere((e) => e['name'] == name)['id'];
 
     setState(() {
-      _selectedMandal = name;
       _selectedMandal = name;
       _villages = [];
       _selectedVillage = null;
