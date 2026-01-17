@@ -226,8 +226,172 @@ async function deleteSurveyor(id) {
     }
 }
 
-function showCreateSurveyModal() { document.getElementById('createModal').style.display = 'flex'; }
+
+function showCreateSurveyModal() {
+    document.getElementById('createModal').style.display = 'flex';
+    loadDistricts(); // Fetch districts when modal opens
+}
+
 function closeModal() { document.getElementById('createModal').style.display = 'none'; }
+
+// --- LOCATION LOGIC ---
+
+async function loadDistricts() {
+    try {
+        const res = await fetch(`${API_BASE}/locations/districts`);
+        const districts = await res.json();
+        const select = document.getElementById('scope-district');
+        select.innerHTML = '<option value="">Select District</option>';
+        districts.forEach(d => {
+            select.innerHTML += `<option value="${d.id}">${d.name}</option>`;
+        });
+    } catch (e) { console.error("Error loading districts", e); }
+}
+
+async function loadDistrictMandals(distId) {
+    if (!distId) return;
+    try {
+        const res = await fetch(`${API_BASE}/locations/mandals/${distId}`);
+        const mandals = await res.json();
+
+        // Populate Checklist
+        const container = document.getElementById('mandal-list-container');
+        container.innerHTML = mandals.map(m => `
+            <div>
+                <label>
+                    <input type="checkbox" class="mandal-check" value="${m.id}" onchange="refreshVillages()"> 
+                    ${m.name}
+                </label>
+            </div>
+        `).join('');
+
+        // Show Mandal Section
+        document.getElementById('section-mandal').style.display = 'block';
+
+        // Reset Villages
+        document.getElementById('section-village').style.display = 'none';
+
+        // Trigger generic update (defaults to ALL)
+        refreshVillages();
+    } catch (e) { console.error(e); }
+}
+
+function toggleMandalMode() {
+    const mode = document.querySelector('input[name="mandalMode"]:checked').value;
+    const list = document.getElementById('mandal-list-container');
+    if (mode === 'SPECIFIC') {
+        list.style.display = 'block';
+    } else {
+        list.style.display = 'none';
+        refreshVillages(); // "All" selected
+    }
+}
+
+async function refreshVillages() {
+    // 1. Determine Scope of Mandals
+    const distId = document.getElementById('scope-district').value;
+    if (!distId) return;
+
+    const mandalMode = document.querySelector('input[name="mandalMode"]:checked').value;
+    let mandalIds = [];
+
+    if (mandalMode === 'SPECIFIC') {
+        const checks = document.querySelectorAll('.mandal-check:checked');
+        if (checks.length === 0) {
+            document.getElementById('village-list-container').innerHTML = '<div style="padding:10px;">Select at least one Mandal</div>';
+            return;
+        }
+        mandalIds = Array.from(checks).map(c => c.value);
+    } else {
+        // "ALL" - we need to fetch all mandal IDs for this district? 
+        // Actually, for "ALL", we can just pass "ALL" to the VILLAGE fetch if the API supports it?
+        // Our /locations/villages API takes a single mandal_id usually. 
+        // Let's check main.py. It has /locations/villages/{mandal_id} which returns villages for ONE mandal.
+        // We might need a bulk endpoint or just fetch for all mandals if "SPECIFIC" is small.
+        // BUT wait, create_survey API accepts "ALL". 
+        // For UI display of villages, if "All Mandals" is selected, listing ALL villages of a district is HUGE (hundreds).
+        // So maybe we hide the specific village list if "All Mandals" is selected?
+        // YES. If "All Mandals", we assume "All Villages" by default or force it.
+        // Let's simplify: If "All Mandals", we enable "All Villages" and hide specific list.
+    }
+
+    document.getElementById('section-village').style.display = 'block';
+    // Update summary text
+    updateSummary();
+}
+
+function toggleVillageMode() {
+    const mode = document.querySelector('input[name="villageMode"]:checked').value;
+    const list = document.getElementById('village-list-container');
+
+    if (mode === 'SPECIFIC') {
+        // Check if we can show list
+        const mandalMode = document.querySelector('input[name="mandalMode"]:checked').value;
+        if (mandalMode === 'ALL') {
+            alert("To select specific villages, please select specific Mandals first (to avoid loading too many villages).");
+            document.querySelector('input[name="villageMode"][value="ALL"]').checked = true;
+            return;
+        }
+
+        list.style.display = 'block';
+        loadSpecificVillages();
+    } else {
+        list.style.display = 'none';
+    }
+    updateSummary();
+}
+
+async function loadSpecificVillages() {
+    const list = document.getElementById('village-list-container');
+    list.innerHTML = 'Loading...';
+
+    const mChecks = document.querySelectorAll('.mandal-check:checked');
+    const mandalIds = Array.from(mChecks).map(c => c.value);
+
+    // Fetch for each mandal
+    let allVillages = [];
+    for (const mid of mandalIds) {
+        try {
+            const res = await fetch(`${API_BASE}/locations/villages/${mid}`);
+            const villages = await res.json();
+            allVillages = allVillages.concat(villages);
+        } catch (e) { }
+    }
+
+    list.innerHTML = allVillages.map(v => `
+        <div>
+            <label>
+                <input type="checkbox" class="village-check" value="${v.id}" onchange="updateSummary()"> 
+                ${v.name}
+            </label>
+        </div>
+    `).join('');
+}
+
+function updateSummary() {
+    const distText = document.getElementById('scope-district').options[document.getElementById('scope-district').selectedIndex]?.text || "None";
+    const mandalMode = document.querySelector('input[name="mandalMode"]:checked').value;
+    const villageMode = document.querySelector('input[name="villageMode"]:checked').value;
+
+    let text = `District: ${distText}. `;
+
+    if (mandalMode === 'ALL') text += "All Mandals. ";
+    else {
+        const count = document.querySelectorAll('.mandal-check:checked').length;
+        text += `${count} Mandals. `;
+    }
+
+    if (villageMode === 'ALL') text += "All Villages (Auto-Wards).";
+    else {
+        const count = document.querySelectorAll('.village-check:checked').length;
+        text += `${count} Villages (Auto-Wards).`;
+    }
+
+    document.getElementById('summary-text').textContent = text;
+    document.getElementById('coverage-summary').style.display = 'block';
+}
+
+
 
 async function seedGeoData() {
     if (!confirm("Initialize Data: This will attempt to seed the database again. Continue?")) return;
