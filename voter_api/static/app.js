@@ -231,25 +231,78 @@ function closeModal() { document.getElementById('createModal').style.display = '
 
 async function createSurvey() {
     const name = document.getElementById('newSurveyName').value;
-    const ward = document.getElementById('newSurveyWard').value;
+    if (!name) return alert("Enter Survey Name");
 
-    if (!name || !ward) return alert("Fill all fields");
+    const districtId = document.getElementById('scope-district').value;
+    if (!districtId) return alert("Select a District");
 
-    const res = await fetch(`${API_BASE}/surveys/create`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-Admin-Token': 'admin-secret-123'
-        },
-        body: JSON.stringify({ name: name, scope_type: 'WARD', scope_value: ward })
-    });
+    // Check if new UI elements exist (Coverage Selector)
+    const mandalModeEl = document.querySelector('input[name="mandalMode"]:checked');
 
-    const result = await res.json();
-    alert(result.message);
-    closeModal();
-    loadSurveys();
-    loadSurveyList();
-    loadAssignmentOptions();
+    // Fallback or Error if UI not ready
+    if (!mandalModeEl) {
+        return alert("UI Error: Coverage Selector not initialized. Refresh page.");
+    }
+
+    const mandalMode = mandalModeEl.value;
+    const villageMode = document.querySelector('input[name="villageMode"]:checked').value;
+
+    // Prepare Payload
+    let payload = {
+        name: name,
+        district_id: parseInt(districtId),
+        scope_type: "CUSTOM", // Backend logic will infer intent or we pass it
+        survey_type: "TEST"
+    };
+
+    // Calc Mandals
+    if (mandalMode === 'ALL') {
+        payload.mandal_ids = "ALL";
+    } else {
+        const mChecks = document.querySelectorAll('.mandal-check:checked');
+        if (mChecks.length === 0) return alert("Select at least one Mandal");
+        const ids = Array.from(mChecks).map(cb => parseInt(cb.value));
+        payload.mandal_ids = JSON.stringify(ids);
+    }
+
+    // Calc Villages
+    if (villageMode === 'ALL') {
+        payload.village_ids = "ALL";
+    } else {
+        const vChecks = document.querySelectorAll('.village-check:checked');
+        if (vChecks.length === 0) return alert("Select at least one Village");
+        const ids = Array.from(vChecks).map(cb => parseInt(cb.value));
+        payload.village_ids = JSON.stringify(ids);
+    }
+
+    // Infer Scope Type for Backend (High level label)
+    if (mandalMode === 'ALL' && villageMode === 'ALL') payload.scope_type = "DISTRICT";
+    else if (villageMode === 'ALL') payload.scope_type = "MANDAL";
+    else payload.scope_type = "VILLAGE";
+
+    try {
+        const res = await fetch(`${API_BASE}/surveys/create`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Admin-Token': 'admin-secret-123'
+            },
+            body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+
+        if (data.status === 'success') {
+            alert(data.message);
+            closeModal();
+            loadSurveyList();
+            loadAssignmentOptions();
+        } else {
+            alert("Error: " + (data.message || data.detail));
+        }
+    } catch (e) {
+        console.error(e);
+        alert("Creation Failed");
+    }
 }
 
 // --- 5. ASSIGNMENTS LOGIC (FIXED: DROPDOWNS) ---
