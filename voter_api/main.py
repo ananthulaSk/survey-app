@@ -219,6 +219,15 @@ def reset_database(x_admin_token: Optional[str] = Header(None)):
     seed_data()
     return {"status": "success", "message": "Database Reset and Seeded from CSV."}
 
+@app.post("/admin/seed_geo")
+def seed_geo_endpoint(x_admin_token: Optional[str] = Header(None)):
+    if x_admin_token != "admin-secret-123":
+        raise HTTPException(status_code=403, detail="Forbidden")
+    
+    from seed_geo import seed_geo_data
+    seed_geo_data()
+    return {"status": "success", "message": "Geographic Data (Districts/Mandals) Seeded Successfully."}
+
 # Serve Flutter Mobile App (Web Version)
 from fastapi.responses import FileResponse
 
