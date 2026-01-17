@@ -187,11 +187,20 @@ def startup_event():
              from seed_geo import seed_geo_data
              seed_geo_data()
              
-             # 5. [PROD MODE] Clean Startup - No Dummy Survey/Voters
-             # We rely on Manual Creation via Dashboard now.
-             print("[STARTUP] v17.0 PROD MODE: Skipping dummy survey creation. Waiting for admin action.")
+             # 5. [PROD MODE] Auto-Seed Geographic Data if Missing
+             # This ensures the "Select District" dropdown is never empty on first deploy.
              
-             print("[STARTUP] Location & Survey Seeding Complete.")
+             # Check for Districts
+             dist_count = db.query(DistrictMaster).count()
+             if dist_count == 0:
+                 print("[STARTUP] District Table OK but EMPTY. Triggering Auto-Seed...")
+                 from seed_geo import seed_geo_data
+                 seed_geo_data()
+                 print("[STARTUP] Auto-Seed Complete.")
+             else:
+                 print(f"[STARTUP] District Table has {dist_count} records. Skipping Auto-Seed.")
+
+             print("[STARTUP] v19.5 Startup Checks Complete.")
     except Exception as e:
         print(f"[STARTUP] Error checking/seeding DB: {e}")
     finally:
