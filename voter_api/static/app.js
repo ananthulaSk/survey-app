@@ -238,14 +238,33 @@ function closeModal() { document.getElementById('createModal').style.display = '
 
 async function loadDistricts() {
     try {
+        console.log("Fetching districts...");
         const res = await fetch(`${API_BASE}/locations/districts`);
+        if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
+
         const districts = await res.json();
+        console.log("Districts loaded:", districts);
+
         const select = document.getElementById('scope-district');
+        if (!select) return alert("UI Error: Cannot find District Dropdown");
+
         select.innerHTML = '<option value="">Select District</option>';
-        districts.forEach(d => {
-            select.innerHTML += `<option value="${d.id}">${d.name}</option>`;
-        });
-    } catch (e) { console.error("Error loading districts", e); }
+
+        if (districts.length === 0) {
+            // alert("DEBUG: API returned 0 districts. Did you click Initialize Data?");
+            select.innerHTML += '<option disabled>No Districts Found (Try Initialize)</option>';
+        } else {
+            districts.forEach(d => {
+                select.innerHTML += `<option value="${d.id}">${d.name}</option>`;
+            });
+            // Auto select if only one (UX improvement)
+            if (districts.length === 1) select.value = districts[0].id;
+        }
+
+    } catch (e) {
+        console.error("Error loading districts", e);
+        alert("Failed to load districts: " + e.message);
+    }
 }
 
 async function loadDistrictMandals(distId) {
