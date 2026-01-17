@@ -1,9 +1,11 @@
 from sqlalchemy.orm import Session
 from database import SessionLocal, engine
-from main import DistrictMaster, MandalMaster, VillageMaster, WardMaster
 
-# Full 33 Districts of Telangana
-TELANGANA_DISTRICTS = [
+def seed_geo_data():
+    # Import locally to avoid circular dependency with main.py
+    from main import DistrictMaster, MandalMaster, VillageMaster, WardMaster
+    
+    db = SessionLocal()
     "Adilabad", "Bhadradri Kothagudem", "Hanumakonda", "Hyderabad", "Jagtial", 
     "Jangaon", "Jayashankar Bhupalpally", "Jogulamba Gadwal", "Kamareddy", "Karimnagar", 
     "Khammam", "Komaram Bheem Asifabad", "Mahabubabad", "Mahabubnagar", "Mancherial", 
