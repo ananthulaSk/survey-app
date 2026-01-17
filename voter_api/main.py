@@ -233,9 +233,37 @@ def seed_geo_endpoint(x_admin_token: Optional[str] = Header(None)):
     if x_admin_token != "admin-secret-123":
         raise HTTPException(status_code=403, detail="Forbidden")
     
-    from seed_geo import seed_geo_data
-    seed_geo_data()
-    return {"status": "success", "message": "Geographic Data (Districts/Mandals) Seeded Successfully."}
+    try:
+        from seed_geo import seed_geo_data
+        seed_geo_data()
+        
+        # Verify
+        db = SessionLocal()
+        d_count = db.query(DistrictMaster).count()
+        m_count = db.query(MandalMaster).count()
+        v_count = db.query(VillageMaster).count()
+        db.close()
+        
+        return {
+            "status": "success", 
+            "message": f"Seeding Run Complete. DB Now Has: {d_count} Districts, {m_count} Mandals, {v_count} Villages.",
+            "counts": {"districts": d_count}
+        }
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@app.get("/debug/geo")
+def debug_geo_data(db: Session = Depends(get_db)):
+    d_count = db.query(DistrictMaster).count()
+    districts = db.query(DistrictMaster).limit(5).all()
+    d_names = [d.name for d in districts]
+    
+    return {
+        "status": "online",
+        "district_count": d_count,
+        "sample_districts": d_names,
+        "db_info": str(engine.url)
+    }
 
 # Serve Flutter Mobile App (Web Version)
 from fastapi.responses import FileResponse
