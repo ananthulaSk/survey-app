@@ -229,6 +229,39 @@ async function deleteSurveyor(id) {
 function showCreateSurveyModal() { document.getElementById('createModal').style.display = 'flex'; }
 function closeModal() { document.getElementById('createModal').style.display = 'none'; }
 
+async function seedGeoData() {
+    if (!confirm("Initialize Data: This will attempt to seed the database again. Continue?")) return;
+    try {
+        const res = await fetch(`${API_BASE}/admin/seed_geo`, {
+            method: 'POST',
+            headers: { 'X-Admin-Token': 'admin-secret-123' }
+        });
+        const data = await res.json();
+
+        // Show detailed message from server
+        alert(`Server Says:\n${data.message}`);
+
+        // Auto-Verify by calling debug endpoint
+        try {
+            const diffRes = await fetch(`${API_BASE}/debug/geo`);
+            const diffData = await diffRes.json();
+            console.log("Debug Data:", diffData);
+            if (diffData.district_count > 0) {
+                alert(`Verification Success: Found ${diffData.district_count} Districts.`);
+            } else {
+                alert(`Verification Warning: Still 0 Districts found.`);
+            }
+        } catch (err) {
+            console.warn("Debug check failed", err);
+        }
+
+        location.reload();
+    } catch (e) {
+        console.error(e);
+        alert(`Failed to connect to API: ${e.message}`);
+    }
+}
+
 async function createSurvey() {
     const name = document.getElementById('newSurveyName').value;
     if (!name) return alert("Enter Survey Name");
