@@ -42,18 +42,23 @@ def seed_geo_data():
                     db.add(mandal)
                     db.flush() # Need ID for village
                 
-                # 3. Seed Village (Generic "Main Village" for each Mandal for now)
-                v_name = f"{m_name} Village"
-                village = db.query(VillageMaster).filter(VillageMaster.name == v_name, VillageMaster.mandal_id == mandal.id).first()
-                if not village:
-                    print(f"   -> Adding Village: {v_name}")
-                    village = VillageMaster(name=v_name, mandal_id=mandal.id)
-                    db.add(village)
-                    db.flush()
-                    
-                    # 4. Seed Wards (1 to 10)
-                    for i in range(1, 11):
-                        db.add(WardMaster(name=f"Ward {i}", village_id=village.id))
+                # 3. Seed Villages
+                # Special Case: Choutuppal needs "Aregudem"
+                villages_to_seed = [f"{m_name} Village"]
+                if m_name == "Choutuppal":
+                    villages_to_seed.append("Aregudem")
+                
+                for v_name in villages_to_seed:
+                    village = db.query(VillageMaster).filter(VillageMaster.name == v_name, VillageMaster.mandal_id == mandal.id).first()
+                    if not village:
+                        print(f"   -> Adding Village: {v_name}")
+                        village = VillageMaster(name=v_name, mandal_id=mandal.id)
+                        db.add(village)
+                        db.flush()
+                        
+                        # 4. Seed Wards (1 to 10)
+                        for i in range(1, 11):
+                            db.add(WardMaster(name=f"Ward {i}", village_id=village.id))
             
             db.commit()
 
