@@ -200,57 +200,57 @@
                                 placeholder="e.g. Mandal Survey Jan 2026">
                         </div>
 
-                        <div class="form-group" style="margin-top:15px;">
-                            <label>Scope Level</label>
-                            <div style="display:flex; gap:15px; margin-top:5px;">
-                                <label><input type="radio" name="scopeType" value="DISTRICT" onchange="updateScopeUI()">
-                                    District</label>
-                                <label><input type="radio" name="scopeType" value="MANDAL" onchange="updateScopeUI()">
-                                    Mandal</label>
-                                <label><input type="radio" name="scopeType" value="VILLAGE" onchange="updateScopeUI()">
-                                    Village</label>
-                                <label><input type="radio" name="scopeType" value="WARD" checked
-                                        onchange="updateScopeUI()"> Ward</label>
-                            </div>
-                        </div>
-
-                        <!-- Dynamic Scope UI -->
+                        <!-- Dynamic Scope UI: Coverage Selector -->
                         <div id="scope-selector-container"
-                            style="margin-top:15px; padding:15px; background:#f8fafc; border-radius:8px;">
-                            <!-- District Dropdown -->
-                            <div class="form-group" id="group-district" style="display:none;">
-                                <label>Select District</label>
+                            style="margin-top:15px; padding:15px; background:#f8fafc; border-radius:8px; border: 1px solid #e2e8f0;">
+
+                            <!-- 1. District (Mandatory) -->
+                            <div class="form-group">
+                                <label style="font-weight:600;">1. District (Required)</label>
                                 <select id="scope-district" class="form-control"
-                                    onchange="loadScopeMandals(this.value)">
-                                    <option value="">Loading...</option>
+                                    onchange="loadDistrictMandals(this.value)">
+                                    <option value="">Select District</option>
                                 </select>
                             </div>
 
-                            <!-- Mandal Dropdown -->
-                            <div class="form-group" id="group-mandal" style="display:none; margin-top:10px;">
-                                <label>Select Mandal</label>
-                                <select id="scope-mandal" class="form-control" onchange="loadScopeVillages(this.value)">
-                                    <option value="">Select District First</option>
-                                </select>
+                            <!-- 2. Mandal Selection -->
+                            <div class="form-group" id="section-mandal" style="margin-top:15px; display:none;">
+                                <label style="font-weight:600;">2. Mandals</label>
+                                <div style="display:flex; gap:15px; margin-bottom:5px;">
+                                    <label><input type="radio" name="mandalMode" value="ALL" checked
+                                            onchange="toggleMandalMode()"> All Mandals</label>
+                                    <label><input type="radio" name="mandalMode" value="SPECIFIC"
+                                            onchange="toggleMandalMode()"> Select Specific</label>
+                                </div>
+                                <div id="mandal-list-container"
+                                    style="max-height:150px; overflow-y:auto; border:1px solid #ddd; padding:5px; display:none; background:white;">
+                                    <!-- Checkboxes injected here -->
+                                    <div style="padding:10px; color:#666;">Select a District first</div>
+                                </div>
                             </div>
 
-                            <!-- Village Dropdown -->
-                            <div class="form-group" id="group-village" style="display:none; margin-top:10px;">
-                                <label>Select Village</label>
-                                <select id="scope-village" class="form-control" onchange="loadScopeWards(this.value)">
-                                    <option value="">Select Mandal First</option>
-                                </select>
+                            <!-- 3. Village Selection -->
+                            <div class="form-group" id="section-village" style="margin-top:15px; display:none;">
+                                <label style="font-weight:600;">3. Villages</label>
+                                <div style="display:flex; gap:15px; margin-bottom:5px;">
+                                    <label><input type="radio" name="villageMode" value="ALL" checked
+                                            onchange="toggleVillageMode()"> All Villages (in selected Mandals)</label>
+                                    <label><input type="radio" name="villageMode" value="SPECIFIC"
+                                            onchange="toggleVillageMode()"> Select Specific</label>
+                                </div>
+                                <div id="village-list-container"
+                                    style="max-height:150px; overflow-y:auto; border:1px solid #ddd; padding:5px; display:none; background:white;">
+                                    <!-- Checkboxes injected here -->
+                                    <div style="padding:10px; color:#666;">Select Mandals first</div>
+                                </div>
                             </div>
 
-                            <!-- Ward Dropdown (or Input for legacy compatibility) -->
-                            <div class="form-group" id="group-ward" style="margin-top:10px;">
-                                <label>Select Ward</label>
-                                <select id="scope-ward-select" class="form-control" style="display:none;">
-                                    <option value="">Select Village First</option>
-                                </select>
-                                <input type="number" id="newSurveyWard" class="form-control"
-                                    placeholder="Ward Number (Legacy)" style="display:block;">
+                            <!-- Summary -->
+                            <div id="coverage-summary"
+                                style="margin-top:15px; padding:10px; background:#e0f2fe; color:#0369a1; border-radius:4px; font-size:0.9em; display:none;">
+                                Summary: <span id="summary-text">Select options...</span>
                             </div>
+
                         </div>
 
                         <div class="modal-actions" style="margin-top:20px;">
