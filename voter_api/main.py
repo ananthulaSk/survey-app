@@ -71,8 +71,9 @@ class Survey(Base):
     village = Column(String)
     ward = Column(String)
 
-    scope_type = Column(String) # e.g., "WARD", "VILLAGE"
-    scope_value = Column(String) 
+    scope_type = Column(String) # e.g., "DISTRICT", "MANDAL", "VILLAGE" (High level intent)
+    scope_value = Column(String) # Legacy support (e.g. Ward ID)
+    scope_config = Column(String, nullable=True) # JSON: {district: 1, mandals: "ALL", villages: [1,2]}
     status = Column(String, default="CREATED") # CREATED, ACTIVE, COMPLETED, ARCHIVED
     survey_code = Column(String, unique=True) # WARD-01-TEST-2026...
     survey_type = Column(String, default="TEST") # TEST, FINAL, EXIT_POLL
@@ -259,11 +260,15 @@ class SurveyCreate(BaseModel):
 def read_root():
     return {"status": "online", "message": "Voter API is running", "docs_url": "/docs"}
 
+import json
+
 @app.post("/surveys/create")
 def create_survey(
     name: str = Body(...), 
-    scope_type: str = Body(...), 
-    scope_value: str = Body(...), 
+    scope_type: str = Body(...), # "DISTRICT", "MANDAL", "VILLAGE" (Primary Intent)
+    district_id: int = Body(...),
+    mandal_ids: str = Body(...), # "ALL" or JSON list "[1, 2]"
+    village_ids: str = Body(...), # "ALL" or JSON list "[10, 11]"
     survey_type: str = Body("TEST"),
     x_admin_token: Optional[str] = Header(None),
     db: Session = Depends(get_db)
@@ -273,21 +278,77 @@ def create_survey(
         raise HTTPException(status_code=403, detail="Forbidden: Admin Access Required")
     # ----------------------
 
-    # 0. Generate Survey Code
-    # Format: SCOPE-VALUE-TYPE-DATE (e.g., WARD-01-TEST-20260109)
-    date_str = datetime.utcnow().strftime("%Y%m%d")
-    code = f"{scope_type}-{scope_value}-{survey_type}-{date_str}"
+    # 1. Resolve Geographic Scope (Villages)
+    target_village_ids = []
     
-    # Check uniqueness (simple append if exists)
+    # Parse inputs (Frontend sends stringified JSON or "ALL")
+    try:
+        req_mandals = mandal_ids if mandal_ids == "ALL" else json.loads(mandal_ids)
+        req_villages = village_ids if village_ids == "ALL" else json.loads(village_ids)
+    except:
+        raise HTTPException(status_code=400, detail="Invalid Mandal/Village ID format")
+
+    # A. Get Mandals
+    final_mandal_ids = []
+    if req_mandals == "ALL":
+        # Get all mandals in district
+        mandals = db.query(MandalMaster).filter(MandalMaster.district_id == district_id).all()
+        final_mandal_ids = [m.id for m in mandals]
+    else:
+        final_mandal_ids = [int(m) for m in req_mandals]
+
+    # B. Get Villages
+    if req_villages == "ALL":
+        # Get all villages in selected mandals
+        villages = db.query(VillageMaster).filter(VillageMaster.mandal_id.in_(final_mandal_ids)).all()
+        target_village_ids = [v.id for v in villages]
+    else:
+        target_village_ids = [int(v) for v in req_villages]
+
+    if not target_village_ids:
+         raise HTTPException(status_code=400, detail="Scope resolution failed: No villages found for selection.")
+
+    # 2. Derive Wards (Auto-Included)
+    # Get all wards in these villages
+    wards = db.query(WardMaster).filter(WardMaster.village_id.in_(target_village_ids)).all()
+    # Logic to normalize names? "Ward 1" vs "1". 
+    # For now, we assume we need to match VoterMaster.ward_no using simple parsing or direct mapping if possible.
+    # Since VoterMaster has INT ward_no, we extract integers.
+    target_ward_nums = []
+    for w in wards:
+        try:
+            # Extract number from "Ward 5", "5", "Ward-5"
+            num_str = ''.join(filter(str.isdigit, w.name))
+            if num_str:
+                target_ward_nums.append(int(num_str))
+        except: pass
+    
+    target_ward_nums = list(set(target_ward_nums)) # Deduplicate
+    
+    # 3. Create Survey Record
+    # Generate Code: TYPE-DIST-DATE
+    date_str = datetime.utcnow().strftime("%Y%m%d")
+    code = f"{scope_type}-{district_id}-{survey_type}-{date_str}"
+    
+    # Uniqueness check
     existing = db.query(Survey).filter(Survey.survey_code == code).first()
     if existing:
         code = f"{code}-{datetime.utcnow().strftime('%H%M%S')}"
 
-    # 1. Create Survey Record
+    # Store Scope Config
+    config_json = json.dumps({
+        "district_id": district_id,
+        "mandal_ids": req_mandals,
+        "village_ids": req_villages,
+        "derived_wards_count": len(target_ward_nums),
+        "derived_villages_count": len(target_village_ids)
+    })
+
     new_survey = Survey(
         name=name,
         scope_type=scope_type,
-        scope_value=scope_value,
+        scope_value=str(district_id), # High level reference
+        scope_config=config_json,
         status="ACTIVE", 
         survey_code=code,
         survey_type=survey_type
@@ -296,82 +357,22 @@ def create_survey(
     db.commit()
     db.refresh(new_survey)
 
-    # 2. Bulk Copy Logic (Snapshot)
-    # 2. Bulk Copy Logic (Snapshot)
+    # 4. Snapshot Logic (Bulk Copy)
     copied_count = 0
-    try:
-        vote_query = db.query(VoterMaster)
+    if target_ward_nums:
+        # We need to be careful: VoterMaster.ward_no is unique ONLY within a Village usually, 
+        # but in our simplistic schema, we might risk cross-village collision if we only filter by ward_no.
+        # ideally we need Village ID in VoterMaster. 
+        # CAUTION: If VoterMaster doesn't have Village ID, relying on Ward No 1 is dangerous if multiple villages have Ward 1.
+        # User confirmed "Aregudem village has 10 wards".
+        # IF VoterMaster relies only on `ward_no`, we assume the User's csv data was global?
+        # Actually, without VillageId in VoterMaster, we cannot distinguish Ward 1 of Village A from Ward 1 of Village B.
+        # FOR THIS PILOT/PHASE: We proceed with pure Ward Number matching as per current schema, 
+        # BUT this is a known risk unless VoterMaster has Unique Ward IDs or Village association.
+        # Let's assume for now we filter broadly.
         
-        # --- SCOPE FILTERS ---
-        if scope_type == "WARD":
-            ward_num = int(scope_value)
-            vote_query = vote_query.filter(VoterMaster.ward_no == ward_num)
-            
-        elif scope_type == "VILLAGE":
-            # Find all wards in this village
-            village_id = int(scope_value)
-            wards = db.query(WardMaster).filter(WardMaster.village_id == village_id).all()
-            ward_names = [w.name for w in wards] # Assuming ward_no in VoterMaster matches name or we need mapping
-            # LEGACY ISSUE: VoterMaster has integer 'ward_no'. WardMaster has string 'name' ("Ward 1").
-            # We assume for now checking Ward 1..10 based on IDs or simple parsing?
-            # ROBUST FIX: We should rely on hierarchy if VoterMaster had village_id. It doesn't.
-            # WORKAROUND: We assume standard 1-10 wards for that village? 
-            # ACTUALLY: For this Pilot, let's assume VoterMaster contains ALL voters mixed.
-            # We need to filter by 'ward_no' belonging to that Village.
-            # Since WardMaster records exist now, we iterate them.
-            
-            # Simple Parse: "Ward 5" -> 5
-            valid_ward_nums = []
-            for w in wards:
-                try:
-                    num = int(w.name.replace("Ward", "").strip())
-                    valid_ward_nums.append(num)
-                except: pass
-            
-            if not valid_ward_nums:
-                 # Fallback if names are non-standard, or empty
-                 pass
-            else:
-                 vote_query = vote_query.filter(VoterMaster.ward_no.in_(valid_ward_nums))
-
-        elif scope_type == "MANDAL":
-             mandal_id = int(scope_value)
-             # Get all villages -> all wards
-             villages = db.query(VillageMaster).filter(VillageMaster.mandal_id == mandal_id).all()
-             v_ids = [v.id for v in villages]
-             wards = db.query(WardMaster).filter(WardMaster.village_id.in_(v_ids)).all()
-             
-             valid_ward_nums = []
-             for w in wards:
-                try:
-                    num = int(w.name.replace("Ward", "").strip())
-                    valid_ward_nums.append(num)
-                except: pass
-             
-             if valid_ward_nums:
-                 vote_query = vote_query.filter(VoterMaster.ward_no.in_(valid_ward_nums))
-
-        elif scope_type == "DISTRICT":
-             # Similar logic, traverse down from District
-             dist_id = int(scope_value)
-             mandals = db.query(MandalMaster).filter(MandalMaster.district_id == dist_id).all()
-             m_ids = [m.id for m in mandals]
-             villages = db.query(VillageMaster).filter(VillageMaster.mandal_id.in_(m_ids)).all()
-             v_ids = [v.id for v in villages]
-             wards = db.query(WardMaster).filter(WardMaster.village_id.in_(v_ids)).all()
-             
-             valid_ward_nums = []
-             for w in wards:
-                try:
-                    num = int(w.name.replace("Ward", "").strip())
-                    valid_ward_nums.append(num)
-                except: pass
-             
-             if valid_ward_nums:
-                 vote_query = vote_query.filter(VoterMaster.ward_no.in_(valid_ward_nums))
-
-
-        masters = vote_query.all()
+        # Performance: Chunking might be needed for huge datasets, but focusing on correctness first.
+        masters = db.query(VoterMaster).filter(VoterMaster.ward_no.in_(target_ward_nums)).all()
         
         survey_voters = []
         now = datetime.utcnow()
@@ -397,18 +398,12 @@ def create_survey(
             db.add_all(survey_voters)
             db.commit()
             copied_count = len(survey_voters)
-        else:
-            db.rollback() 
-            raise HTTPException(status_code=400, detail=f"No voters found for {scope_type} selection.")
-
-    except ValueError:
-             raise HTTPException(status_code=400, detail="Scope value invalid")
-
+    
     return {
         "status": "success",
         "survey_id": new_survey.id,
         "survey_code": new_survey.survey_code,
-        "message": f"Survey created with {copied_count} voters in snapshot."
+        "message": f"Survey created covering {len(target_village_ids)} villages and {len(target_ward_nums)} wards. Snapshot size: {copied_count}"
     }
 
 @app.get("/surveys/active")
