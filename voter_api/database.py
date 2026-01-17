@@ -2,15 +2,29 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
-# --- DATABASE CONFIG ---
-# FALLBACK: Use SQLite for local development to ensure it runs immediately
-# without network/firewall issues.
-# CLOUD RUN FIX: Use /tmp/voters.db because the /app directory might be read-only.
-SQLALCHEMY_DATABASE_URL = "sqlite:////tmp/voters.db"
+import os
 
-engine = create_engine(
-    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
-)
+# --- DATABASE CONFIG ---
+# PRIORITY 1: Environment Variable (Cloud SQL / Production)
+# PRIORITY 2: Local SQLite Fallback
+
+DATABASE_URL = os.getenv("DATABASE_URL")
+
+if DATABASE_URL:
+    # Production (PostgreSQL / Cloud SQL)
+    # Ensure sqlalchemy compatible postgresql:// scheme
+    if DATABASE_URL.startswith("postgres://"):
+        DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+    
+    engine = create_engine(DATABASE_URL)
+else:
+    # Local Development / Cloud Run Ephemeral Fallback
+    # CLOUD RUN FIX: Use /tmp/voters.db because the /app directory might be read-only.
+    SQLALCHEMY_DATABASE_URL = "sqlite:////tmp/voters.db"
+    
+    engine = create_engine(
+        SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
+    )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
