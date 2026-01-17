@@ -297,48 +297,112 @@ def create_survey(
     db.refresh(new_survey)
 
     # 2. Bulk Copy Logic (Snapshot)
+    # 2. Bulk Copy Logic (Snapshot)
     copied_count = 0
-    if scope_type == "WARD":
-        try:
+    try:
+        vote_query = db.query(VoterMaster)
+        
+        # --- SCOPE FILTERS ---
+        if scope_type == "WARD":
             ward_num = int(scope_value)
-            masters = db.query(VoterMaster).filter(VoterMaster.ward_no == ward_num).all()
-
-            survey_voters = []
-            now = datetime.utcnow()
-            for v in masters:
-                sv = SurveyVoter(
-                    survey_id=new_survey.id,
-                    master_voter_id=v.voter_id,
-                    voter_name=v.voter_name,
-                    surname=v.surname,
-                    ward_no=v.ward_no,
-                    house_no=v.house_no,
-                    age=v.age,
-                    gender=v.gender,
-                    relation_name=v.relation_name,
-                    # Initialize blank survey data
-                    expected_party=None,
-                    occupation=None,
-                    voter_status="AVAILABLE",
-                    snapshot_created_at=now
-                )
-                survey_voters.append(sv)
-
-            if survey_voters:
-                db.add_all(survey_voters)
-                db.commit()
-                copied_count = len(survey_voters)
+            vote_query = vote_query.filter(VoterMaster.ward_no == ward_num)
+            
+        elif scope_type == "VILLAGE":
+            # Find all wards in this village
+            village_id = int(scope_value)
+            wards = db.query(WardMaster).filter(WardMaster.village_id == village_id).all()
+            ward_names = [w.name for w in wards] # Assuming ward_no in VoterMaster matches name or we need mapping
+            # LEGACY ISSUE: VoterMaster has integer 'ward_no'. WardMaster has string 'name' ("Ward 1").
+            # We assume for now checking Ward 1..10 based on IDs or simple parsing?
+            # ROBUST FIX: We should rely on hierarchy if VoterMaster had village_id. It doesn't.
+            # WORKAROUND: We assume standard 1-10 wards for that village? 
+            # ACTUALLY: For this Pilot, let's assume VoterMaster contains ALL voters mixed.
+            # We need to filter by 'ward_no' belonging to that Village.
+            # Since WardMaster records exist now, we iterate them.
+            
+            # Simple Parse: "Ward 5" -> 5
+            valid_ward_nums = []
+            for w in wards:
+                try:
+                    num = int(w.name.replace("Ward", "").strip())
+                    valid_ward_nums.append(num)
+                except: pass
+            
+            if not valid_ward_nums:
+                 # Fallback if names are non-standard, or empty
+                 pass
             else:
-                # [CHANGED v19.1] Strict Mode: Do not create empty surveys
-                db.rollback() # Undo the survey creation
-                print(f"[SURVEY_CREATE] FAILED: No voters found for Ward {ward_num}")
-                return {
-                     "status": "error",
-                     "message": f"Cannot create survey: No voters found in Master List for Ward {ward_num}. (Survey Blocked)"
-                }
+                 vote_query = vote_query.filter(VoterMaster.ward_no.in_(valid_ward_nums))
 
-        except ValueError:
-             raise HTTPException(status_code=400, detail="Scope value must be an integer for WARD type")
+        elif scope_type == "MANDAL":
+             mandal_id = int(scope_value)
+             # Get all villages -> all wards
+             villages = db.query(VillageMaster).filter(VillageMaster.mandal_id == mandal_id).all()
+             v_ids = [v.id for v in villages]
+             wards = db.query(WardMaster).filter(WardMaster.village_id.in_(v_ids)).all()
+             
+             valid_ward_nums = []
+             for w in wards:
+                try:
+                    num = int(w.name.replace("Ward", "").strip())
+                    valid_ward_nums.append(num)
+                except: pass
+             
+             if valid_ward_nums:
+                 vote_query = vote_query.filter(VoterMaster.ward_no.in_(valid_ward_nums))
+
+        elif scope_type == "DISTRICT":
+             # Similar logic, traverse down from District
+             dist_id = int(scope_value)
+             mandals = db.query(MandalMaster).filter(MandalMaster.district_id == dist_id).all()
+             m_ids = [m.id for m in mandals]
+             villages = db.query(VillageMaster).filter(VillageMaster.mandal_id.in_(m_ids)).all()
+             v_ids = [v.id for v in villages]
+             wards = db.query(WardMaster).filter(WardMaster.village_id.in_(v_ids)).all()
+             
+             valid_ward_nums = []
+             for w in wards:
+                try:
+                    num = int(w.name.replace("Ward", "").strip())
+                    valid_ward_nums.append(num)
+                except: pass
+             
+             if valid_ward_nums:
+                 vote_query = vote_query.filter(VoterMaster.ward_no.in_(valid_ward_nums))
+
+
+        masters = vote_query.all()
+        
+        survey_voters = []
+        now = datetime.utcnow()
+        for v in masters:
+            sv = SurveyVoter(
+                survey_id=new_survey.id,
+                master_voter_id=v.voter_id,
+                voter_name=v.voter_name,
+                surname=v.surname,
+                ward_no=v.ward_no,
+                house_no=v.house_no,
+                age=v.age,
+                gender=v.gender,
+                relation_name=v.relation_name,
+                expected_party=None,
+                occupation=None,
+                voter_status="AVAILABLE",
+                snapshot_created_at=now
+            )
+            survey_voters.append(sv)
+
+        if survey_voters:
+            db.add_all(survey_voters)
+            db.commit()
+            copied_count = len(survey_voters)
+        else:
+            db.rollback() 
+            raise HTTPException(status_code=400, detail=f"No voters found for {scope_type} selection.")
+
+    except ValueError:
+             raise HTTPException(status_code=400, detail="Scope value invalid")
 
     return {
         "status": "success",

@@ -192,13 +192,70 @@
 
                 <!-- Simple Modal for Creation -->
                 <div id="createModal" class="modal" style="display:none;">
-                    <div class="modal-content">
+                    <div class="modal-content" style="max-width: 500px;">
                         <h3>New Survey</h3>
-                        <input type="text" id="newSurveyName" placeholder="Survey Name (e.g. Ward 5 2026)">
-                        <input type="number" id="newSurveyWard" placeholder="Ward Number">
-                        <div class="modal-actions">
-                            <button onclick="closeModal()">Cancel</button>
-                            <button class="btn-primary" onclick="createSurvey()">Create</button>
+                        <div class="form-group">
+                            <label>Survey Name</label>
+                            <input type="text" id="newSurveyName" class="form-control"
+                                placeholder="e.g. Mandal Survey Jan 2026">
+                        </div>
+
+                        <div class="form-group" style="margin-top:15px;">
+                            <label>Scope Level</label>
+                            <div style="display:flex; gap:15px; margin-top:5px;">
+                                <label><input type="radio" name="scopeType" value="DISTRICT" onchange="updateScopeUI()">
+                                    District</label>
+                                <label><input type="radio" name="scopeType" value="MANDAL" onchange="updateScopeUI()">
+                                    Mandal</label>
+                                <label><input type="radio" name="scopeType" value="VILLAGE" onchange="updateScopeUI()">
+                                    Village</label>
+                                <label><input type="radio" name="scopeType" value="WARD" checked
+                                        onchange="updateScopeUI()"> Ward</label>
+                            </div>
+                        </div>
+
+                        <!-- Dynamic Scope UI -->
+                        <div id="scope-selector-container"
+                            style="margin-top:15px; padding:15px; background:#f8fafc; border-radius:8px;">
+                            <!-- District Dropdown -->
+                            <div class="form-group" id="group-district" style="display:none;">
+                                <label>Select District</label>
+                                <select id="scope-district" class="form-control"
+                                    onchange="loadScopeMandals(this.value)">
+                                    <option value="">Loading...</option>
+                                </select>
+                            </div>
+
+                            <!-- Mandal Dropdown -->
+                            <div class="form-group" id="group-mandal" style="display:none; margin-top:10px;">
+                                <label>Select Mandal</label>
+                                <select id="scope-mandal" class="form-control" onchange="loadScopeVillages(this.value)">
+                                    <option value="">Select District First</option>
+                                </select>
+                            </div>
+
+                            <!-- Village Dropdown -->
+                            <div class="form-group" id="group-village" style="display:none; margin-top:10px;">
+                                <label>Select Village</label>
+                                <select id="scope-village" class="form-control" onchange="loadScopeWards(this.value)">
+                                    <option value="">Select Mandal First</option>
+                                </select>
+                            </div>
+
+                            <!-- Ward Dropdown (or Input for legacy compatibility) -->
+                            <div class="form-group" id="group-ward" style="margin-top:10px;">
+                                <label>Select Ward</label>
+                                <select id="scope-ward-select" class="form-control" style="display:none;">
+                                    <option value="">Select Village First</option>
+                                </select>
+                                <input type="number" id="newSurveyWard" class="form-control"
+                                    placeholder="Ward Number (Legacy)" style="display:block;">
+                            </div>
+                        </div>
+
+                        <div class="modal-actions" style="margin-top:20px;">
+                            <button onclick="closeModal()" class="btn-reject">Cancel</button>
+                            <button class="btn-primary" onclick="createSurvey()">Create Survey</button>
                         </div>
                     </div>
                 </div>
