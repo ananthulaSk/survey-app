@@ -28,9 +28,9 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   String? _selectedWard;
 
   // Version Handshake
-  static const String EXPECTED_BACKEND_VERSION = "v19.13";
+  static const String EXPECTED_BACKEND_VERSION = "v19.14";
   String _backendVersion = "Fetching...";
-  String _appVersionDisplay = "v19.13 (PHASE 4)";
+  String _appVersionDisplay = "v19.14 (PHASE 4)";
 
   // API Service
   final _api = ApiService();
@@ -337,8 +337,8 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                   children: [
                     Icon(Icons.lock_outline, size: 16, color: Colors.grey[600]),
                     const SizedBox(width: 8),
-                    const Text(
-                      "v19.5 (PHASE 4)",
+                    Text(
+                      _appVersionDisplay,
                       style: TextStyle(
                         color: Colors.green,
                         fontWeight: FontWeight.bold,

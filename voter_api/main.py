@@ -9,8 +9,8 @@ from datetime import datetime
 from pydantic import BaseModel
 
 # --- CONFIGURATION ---
-MAIN_VERSION = "v19.13" # Rebuild Trigger: Sun Jan 18 13:45 PM
-EXPECTED_FRONTEND_VERSION = "v19.13"
+MAIN_VERSION = "v19.14" # Rebuild Trigger: Sun Jan 18 14:00 PM
+EXPECTED_FRONTEND_VERSION = "v19.14"
 
 # Import robust database setup
 from database import engine, SessionLocal, Base, get_db
@@ -206,7 +206,7 @@ def startup_event():
 @app.get("/version")
 def get_version():
     return {
-        "version": "v19.13",
+        "version": "v19.14",
         "env": "PROD",
         "last_updated": datetime.utcnow().isoformat()
     }
