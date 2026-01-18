@@ -599,6 +599,47 @@ async function assignSurveyorFromDropdown() {
     }
 }
 
+async function fetchAssignmentData() {
+    const surveyId = document.getElementById('assignment-survey-select').value;
+    console.log("Fetching assignments for survey ID:", surveyId);
+    if (!surveyId) {
+        const list = document.getElementById('assigned-surveyors-list');
+        if (list) list.innerHTML = '';
+        return;
+    }
+
+    try {
+        const assignedResponse = await fetch(`${API_BASE}/assignments/list?survey_id=${surveyId}`);
+        const assigned = await assignedResponse.json();
+        console.log("Assignments Received:", assigned);
+
+        const assignedList = document.getElementById('assigned-surveyors-list');
+        if (!assignedList) return;
+
+        assignedList.innerHTML = '';
+        if (assigned.length === 0) {
+            assignedList.innerHTML = '<li class="list-group-item text-muted">No one assigned yet</li>';
+        }
+
+        assigned.forEach(a => {
+            const name = a.surveyor_name || `Surveyor #${a.surveyor_id}`;
+            const mobile = a.surveyor_mobile || '';
+
+            assignedList.innerHTML += `
+                <li class="list-group-item" style="display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #eee;">
+                    <div>
+                        <strong>${name}</strong><br>
+                        <small class="text-muted">${mobile}</small>
+                    </div>
+                    <span class="badge" style="background:#10b981; color:white; padding: 4px 8px; border-radius: 4px;">Assigned</span>
+                </li>`;
+        });
+
+    } catch (e) {
+        console.error("Error fetching assignments:", e);
+    }
+}
+
 
 // --- 7. DELETE LOGIC ---
 
