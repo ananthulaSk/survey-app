@@ -1,21 +1,21 @@
 from sqlalchemy.orm import Session
 from database import SessionLocal, engine
+import sys
 
 def seed_geo_data():
     # Import locally to avoid circular dependency with main.py
     from main import DistrictMaster, MandalMaster, VillageMaster, WardMaster
     
-    db = SessionLocal()
-    "Adilabad", "Bhadradri Kothagudem", "Hanumakonda", "Hyderabad", "Jagtial", 
-    "Jangaon", "Jayashankar Bhupalpally", "Jogulamba Gadwal", "Kamareddy", "Karimnagar", 
-    "Khammam", "Komaram Bheem Asifabad", "Mahabubabad", "Mahabubnagar", "Mancherial", 
-    "Medak", "Medchal-Malkajgiri", "Mulugu", "Nagarkurnool", "Nalgonda", 
-    "Narayanpet", "Nirmal", "Nizamabad", "Peddapalli", "Rajanna Sircilla", 
-    "Ranga Reddy", "Sangareddy", "Siddipet", "Suryapet", "Vikarabad", 
-    "Wanaparthy", "Warangal", "Yadadri Bhuvanagiri"
-]
+    TELANGANA_DISTRICTS = [
+        "Adilabad", "Bhadradri Kothagudem", "Hanumakonda", "Hyderabad", "Jagtial", 
+        "Jangaon", "Jayashankar Bhupalpally", "Jogulamba Gadwal", "Kamareddy", "Karimnagar", 
+        "Khammam", "Komaram Bheem Asifabad", "Mahabubabad", "Mahabubnagar", "Mancherial", 
+        "Medak", "Medchal-Malkajgiri", "Mulugu", "Nagarkurnool", "Nalgonda", 
+        "Narayanpet", "Nirmal", "Nizamabad", "Peddapalli", "Rajanna Sircilla", 
+        "Ranga Reddy", "Sangareddy", "Siddipet", "Suryapet", "Vikarabad", 
+        "Wanaparthy", "Warangal", "Yadadri Bhuvanagiri"
+    ]
 
-def seed_geo_data():
     db = SessionLocal()
     try:
         print("[GEO-SEED] Starting District Seeding...")
@@ -77,6 +77,7 @@ def seed_geo_data():
     except Exception as e:
         print(f"[GEO-SEED] Error: {e}")
         db.rollback()
+        raise e # Re-raise to ensure caller knows it failed
     finally:
         db.close()
 
