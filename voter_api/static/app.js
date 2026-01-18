@@ -138,6 +138,14 @@ function showDashboard() {
         // Or just header...
     }
 
+    // Update User Display
+    const userDisplay = document.getElementById('user-display');
+    if (userDisplay) {
+        let displayRole = CURRENT_USER.role;
+        if (displayRole === 'COORDINATOR') displayRole = `COORD: ${CURRENT_USER.village_name || ''}`;
+        userDisplay.innerHTML = `<strong>${CURRENT_USER.name || displayRole}</strong><br><small>${displayRole}</small>`;
+    }
+
     // Load Data
     loadSurveys();
     loadApprovals(); // Logic inside will handle filtering
