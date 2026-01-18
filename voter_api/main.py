@@ -203,6 +203,29 @@ def startup_event():
         except Exception as e:
              print(f"[STARTUP] Migration Check: {e}")
 
+        # --- PHASE 4.2: SEED DEMO COORDINATOR (Auto-Fix) ---
+        # Ensure the test user 9999999999 exists for the User to log in
+        demo_coord = db.query(SurveyorRequest).filter(SurveyorRequest.mobile_no == '9999999999').first()
+        if not demo_coord:
+            print("[STARTUP] Creating Demo Coordinator (9999999999)...")
+            new_coord = SurveyorRequest(
+                name="Demo Coordinator",
+                mobile_no="9999999999",
+                district_name="Yadadri Bhuvanagiri",
+                mandal_name="Choutuppal",
+                village_name="Aregudem",
+                ward_no="0",
+                role="COORDINATOR",
+                assigned_village_id=1,
+                status="APPROVED", # Pre-approved
+                device_id="auto-seed"
+            )
+            db.add(new_coord)
+            db.commit()
+            print("[STARTUP] Demo Coordinator Created!")
+        else:
+            print("[STARTUP] Demo Coordinator already exists.")
+
         print("[STARTUP] v19.14 Startup Checks Complete.")
     except Exception as e:
         print(f"[STARTUP] Error checking/seeding DB: {e}")
