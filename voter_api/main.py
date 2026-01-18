@@ -479,14 +479,34 @@ def create_survey(
     }
 
 @app.get("/surveys/active")
-def get_active_surveys(mobile_no: Optional[str] = None, village_filter: Optional[str] = None, db: Session = Depends(get_db)):
+def get_active_surveys(
+    mobile_no: Optional[str] = None, 
+    village_filter: Optional[str] = None, 
+    mandal_filter: Optional[str] = None,
+    district_filter: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    from sqlalchemy import or_, and_
     query = db.query(Survey).filter(Survey.status == "ACTIVE")
     
-    # FILTER 1: Coordinator Scope (Show all surveys in my village)
-    if village_filter:
-        print(f"[DEBUG] Filtering surveys for Village: {village_filter}")
-        # Case Insensitive Match
-        query = query.filter(func.lower(Survey.village) == village_filter.lower().strip())
+    # FILTER 1: Coordinator Scope (Hierarchical Match)
+    # detailed logic: Show surveys if they match District OR Mandal OR Village
+    if village_filter or mandal_filter or district_filter:
+        print(f"[DEBUG] Filtering surveys for Loc: {district_filter} -> {mandal_filter} -> {village_filter}")
+        
+        conditions = []
+        if district_filter:
+            # Matches District Level Survey
+            conditions.append(and_(Survey.scope_type=="DISTRICT", func.lower(Survey.district) == district_filter.lower().strip()))
+        if mandal_filter:
+            # Matches Mandal Level Survey
+            conditions.append(and_(Survey.scope_type=="MANDAL", func.lower(Survey.mandal) == mandal_filter.lower().strip()))
+        if village_filter:
+            # Matches Village Level Survey (Target specific village)
+            conditions.append(func.lower(Survey.village) == village_filter.lower().strip())
+
+        if conditions:
+            query = query.filter(or_(*conditions))
 
     # FILTER 2: Mobile App Surveyor (Show only assigned surveys)
     elif mobile_no:
@@ -1053,10 +1073,12 @@ def coordinator_login(login: LoginRequest, db: Session = Depends(get_db)):
 
     return {
         "status": "success",
-        "role": "COORDINATOR",
+        "role": user.role,
         "name": user.name,
         "village_id": user.assigned_village_id,
-        "village_name": village_name
+        "village_name": user.village_name,
+        "mandal_name": user.mandal_name,
+        "district_name": user.district_name
     }
 
 # --- LOCATION APIS (For Dropdowns) ---

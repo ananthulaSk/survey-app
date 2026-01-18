@@ -92,6 +92,8 @@ async function handleLogin() {
                     mobile: mobile,
                     village_id: data.village_id,
                     village_name: data.village_name,
+                    mandal_name: data.mandal_name,   // NEW
+                    district_name: data.district_name, // NEW
                     name: data.name // Added Name
                 };
                 saveSession();
@@ -184,6 +186,8 @@ async function loadSurveys() {
         // --- ADD COORDINATOR FILTER ---
         if (CURRENT_USER.role === 'COORDINATOR' && CURRENT_USER.village_name) {
             url += `?village_filter=${encodeURIComponent(CURRENT_USER.village_name)}`;
+            if (CURRENT_USER.mandal_name) url += `&mandal_filter=${encodeURIComponent(CURRENT_USER.mandal_name)}`;
+            if (CURRENT_USER.district_name) url += `&district_filter=${encodeURIComponent(CURRENT_USER.district_name)}`;
         }
         // ------------------------------
 
