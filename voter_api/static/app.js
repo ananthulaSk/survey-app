@@ -91,7 +91,8 @@ async function handleLogin() {
                     role: 'COORDINATOR',
                     mobile: mobile,
                     village_id: data.village_id,
-                    village_name: data.village_name
+                    village_name: data.village_name,
+                    name: data.name // Added Name
                 };
                 saveSession();
                 showDashboard();
