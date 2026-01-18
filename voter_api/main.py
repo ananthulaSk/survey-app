@@ -189,6 +189,7 @@ def startup_event():
         
         # --- PHASE 1: GEO SEEDING (Always Check/Run) ---
         print("[STARTUP] Checking Master Location Data...")
+        if db.query(DistrictMaster).count() == 0:
              print("[STARTUP] District Table is Empty. Seeding Full Geo Data...")
              from seed_geo import seed_geo_data
              seed_geo_data()
