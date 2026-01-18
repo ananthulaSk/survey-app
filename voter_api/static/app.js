@@ -293,15 +293,17 @@ function renderChart(data) {
                 legend: { position: 'right' }
             }
         }
+    });
+}
 // --- ADD COORDINATOR FEATURES ---
 
 function openAddCoordinatorModal() {
-        const modal = document.getElementById('addCoordinatorModal');
-        modal.style.display = 'block';
+    const modal = document.getElementById('addCoordinatorModal');
+    modal.style.display = 'block';
 
-        // Load Districts if empty
-        const distSelect = document.getElementById('coord-district');
-        if(distSelect.options.length <= 1) {
+    // Load Districts if empty
+    const distSelect = document.getElementById('coord-district');
+    if (distSelect.options.length <= 1) {
         fetch(`${API_BASE}/locations/districts`)
             .then(res => res.json())
             .then(data => {
