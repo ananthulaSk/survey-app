@@ -200,7 +200,7 @@ def startup_event():
              else:
                  print(f"[STARTUP] District Table has {dist_count} records. Skipping Auto-Seed.")
 
-             print("[STARTUP] v19.5 Startup Checks Complete.")
+             print("[STARTUP] v19.11 Startup Checks Complete.")
     except Exception as e:
         print(f"[STARTUP] Error checking/seeding DB: {e}")
     finally:
@@ -214,7 +214,7 @@ def startup_event():
 @app.get("/version")
 def get_version():
     return {
-        "version": "v19.10",
+        "version": "v19.11",
         "env": "PROD",
         "last_updated": datetime.utcnow().isoformat()
     }

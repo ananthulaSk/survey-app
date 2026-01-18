@@ -18,7 +18,7 @@
                 <h2>EC Survey</h2>
                 <span class="badge"
                     style="background-color: #2563eb; color: #ffffff; padding: 4px 8px; border-radius: 4px; font-weight: bold;">Admin
-                    v19.10</span>
+                    v19.11</span>
                 <button onclick="seedGeoData()" class="btn btn-sm btn-warning"
                     style="margin-top:10px; font-size:10px; width:100%;">⚡ Initialize Data</button>
             </div>
@@ -264,43 +264,41 @@
                 </div>
 
 
-            </div>
-    </div>
-    </div> <!-- End Surveys Tab -->
+            </div> <!-- End Surveys Tab -->
 
-    <!-- Assignments Tab -->
-    <div id="assignments-tab" class="tab-content">
-        <div class="content-grid">
-            <div class="card full-width">
-                <h3>Manage Assignments</h3>
-                <p>Select a survey to assign surveyors.</p>
+            <!-- Assignments Tab -->
+            <div id="assignments-tab" class="tab-content">
+                <div class="content-grid">
+                    <div class="card full-width">
+                        <h3>Manage Assignments</h3>
+                        <p>Select a survey to assign surveyors.</p>
 
-                <div class="form-group" style="margin: 20px 0;">
-                    <label>Select Survey:</label>
-                    <select id="assignment-survey-select" class="form-control" style="max-width: 400px;">
-                        <option value="">Loading...</option>
-                    </select>
-                </div>
+                        <div class="form-group" style="margin: 20px 0;">
+                            <label>Select Survey:</label>
+                            <select id="assignment-survey-select" class="form-control" style="max-width: 400px;">
+                                <option value="">Loading...</option>
+                            </select>
+                        </div>
 
-                <div class="row" style="display:flex; gap: 20px;">
-                    <div class="col" style="flex:1">
-                        <h4>Available Surveyors (Manual Entry)</h4>
-                        <ul id="available-surveyors-list" class="list-group">
-                            <!-- Populated by JS -->
-                        </ul>
+                        <div class="row" style="display:flex; gap: 20px;">
+                            <div class="col" style="flex:1">
+                                <h4>Available Surveyors (Manual Entry)</h4>
+                                <ul id="available-surveyors-list" class="list-group">
+                                    <!-- Populated by JS -->
+                                </ul>
+                            </div>
+                            <div class="col" style="flex:1">
+                                <h4>Assigned Surveyors</h4>
+                                <ul id="assigned-surveyors-list" class="list-group">
+                                    <!-- Populated by JS -->
+                                </ul>
+                            </div>
+                        </div>
                     </div>
-                    <div class="col" style="flex:1">
-                        <h4>Assigned Surveyors</h4>
-                        <ul id="assigned-surveyors-list" class="list-group">
-                            <!-- Populated by JS -->
-                        </ul>
-                    </div>
                 </div>
             </div>
-        </div>
-    </div>
 
-    </main>
+        </main>
     </div>
     <script src="app.js?v=phase4-debug"></script>
 </body>
