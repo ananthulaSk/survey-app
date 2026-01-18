@@ -27,8 +27,10 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   String? _selectedVillage;
   String? _selectedWard;
 
-  final _api = ApiService();
-  String? _backendVersion;
+  // Version Handshake
+  static const String EXPECTED_BACKEND_VERSION = "v19.7";
+  String _backendVersion = "Fetching...";
+  String _appVersionDisplay = "v19.7 (PHASE 4)";
 
   @override
   void initState() {
@@ -43,12 +45,12 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
       setState(() {
         _backendVersion = status["version"];
       });
-      // EXPECTATION: v19.6
-      if (_backendVersion != "v19.6") {
+      // EXPECTATION: v19.7
+      if (_backendVersion != "v19.7") {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              "Warning: Backend is $_backendVersion (Expected v19.6). Refresh Needed.",
+              "Warning: Backend is $_backendVersion (Expected v19.7). Refresh Needed.",
             ),
             backgroundColor: Colors.red,
             duration: const Duration(seconds: 10),
