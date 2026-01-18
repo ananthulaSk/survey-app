@@ -584,12 +584,17 @@ async function loadAssignmentOptions() {
 
 async function fetchAssignmentData() {
     const surveyId = document.getElementById('assignment-survey-select').value;
-    if (!surveyId) return;
+    console.log("Fetching assignments for survey ID:", surveyId);
+    if (!surveyId) {
+        document.getElementById('assigned-surveyors-list').innerHTML = '';
+        return;
+    }
 
     try {
         // A. Get Assignments for this Survey
-        const assignedResponse = await fetch(`/assignments/list?survey_id=${surveyId}`);
+        const assignedResponse = await fetch(`${API_BASE}/assignments/list?survey_id=${surveyId}`);
         const assigned = await assignedResponse.json();
+        console.log("Assignments Received:", assigned);
 
         const assignedList = document.getElementById('assigned-surveyors-list');
 
@@ -599,18 +604,24 @@ async function fetchAssignmentData() {
         }
 
         assigned.forEach(a => {
+            console.log("Rendering assignment:", a);
+            // Check if surveyor_name exists, if not use ID or fallback
+            // Backend should return 'surveyor_name'
+            const name = a.surveyor_name || `Surveyor #${a.id}`;
+            const mobile = a.surveyor_mobile || '';
+
             assignedList.innerHTML += `
-                <li class="list-group-item d-flex justify-content-between align-items-center">
+                <li class="list-group-item" style="display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #eee;">
                     <div>
-                        <strong>${a.surveyor_name}</strong><br>
-                        <small class="text-muted">${a.surveyor_mobile}</small>
+                        <strong>${name}</strong><br>
+                        <small class="text-muted">${mobile}</small>
                     </div>
-                    <span class="badge bg-success">Assigned</span>
+                    <span class="badge" style="background:#10b981; color:white; padding: 4px 8px; border-radius: 4px;">Assigned</span>
                 </li>`;
         });
 
     } catch (e) {
-        console.error(e);
+        console.error("Error fetching assignments:", e);
     }
 }
 
