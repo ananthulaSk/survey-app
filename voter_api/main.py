@@ -9,8 +9,8 @@ from datetime import datetime
 from pydantic import BaseModel
 
 # --- CONFIGURATION ---
-MAIN_VERSION = "v19.12" # Rebuild Trigger: Sun Jan 18 13:40 PM
-EXPECTED_FRONTEND_VERSION = "v19.12"
+MAIN_VERSION = "v19.13" # Rebuild Trigger: Sun Jan 18 13:45 PM
+EXPECTED_FRONTEND_VERSION = "v19.13"
 
 # Import robust database setup
 from database import engine, SessionLocal, Base, get_db
@@ -206,7 +206,7 @@ def startup_event():
 @app.get("/version")
 def get_version():
     return {
-        "version": "v19.12",
+        "version": "v19.13",
         "env": "PROD",
         "last_updated": datetime.utcnow().isoformat()
     }
@@ -1020,7 +1020,7 @@ def check_registration_status(request_id: int, db: Session = Depends(get_db)):
 # --- FINAL FALLBACK: Serve Flutter App at Root ---
 # This ensures that /flutter_bootstrap.js, /main.dart.js, etc. are found.
 # API routes defined above take precedence.
-app.mount("/", StaticFiles(directory="static/flutter_app", html=True), name="flutter_app")
+app.mount("/flutter_app", StaticFiles(directory="static/flutter_app", html=True), name="flutter_app")
 
 if __name__ == "__main__":
     import uvicorn
