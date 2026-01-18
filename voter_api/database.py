@@ -19,8 +19,15 @@ if DATABASE_URL:
     engine = create_engine(DATABASE_URL)
 else:
     # Local Development / Cloud Run Ephemeral Fallback
-    # CLOUD RUN FIX: Use /tmp/voters.db because the /app directory might be read-only.
-    SQLALCHEMY_DATABASE_URL = "sqlite:////tmp/voters.db"
+    # Check OS to decide path
+    if os.name == 'nt': # Windows
+        DISPLAY_DB_PATH = "voters.db" # Local file in project root
+        SQLALCHEMY_DATABASE_URL = "sqlite:///./voters.db"
+    else: # Linux / Cloud Run
+        # CLOUD RUN FIX: Use /tmp because system dirs might be read-only
+        # WARNING: This is Ephemeral! Data is lost on restart.
+        DISPLAY_DB_PATH = "/tmp/voters.db"
+        SQLALCHEMY_DATABASE_URL = "sqlite:////tmp/voters.db"
     
     engine = create_engine(
         SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
