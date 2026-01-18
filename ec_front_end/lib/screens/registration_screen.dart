@@ -43,11 +43,11 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
       setState(() {
         _backendVersion = status["version"];
       });
-      if (_backendVersion != "v19.5") {
+      if (_backendVersion != "v19.6") {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              "Warning: Backend is $_backendVersion (Expected v19.5). Refresh Needed.",
+              "Warning: Backend is $_backendVersion (Expected v19.6). Refresh Needed.",
             ),
             backgroundColor: Colors.red,
             duration: const Duration(seconds: 10),
