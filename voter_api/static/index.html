@@ -357,7 +357,52 @@
 
         </main>
     </div>
-    <script src="app.js?v=ui_fix_final_v3"></script>
+    <!-- ADD COORDINATOR MODAL -->
+    <div id="addCoordinatorModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeAddCoordinatorModal()">&times;</span>
+            <h2>Add New Coordinator</h2>
+            <p>Create a login for a Village Coordinator. They will be auto-approved.</p>
+
+            <div class="form-group">
+                <label>Full Name</label>
+                <input type="text" id="coord-name" class="form-control" placeholder="e.g. Ramesh Gupta">
+            </div>
+
+            <div class="form-group">
+                <label>Mobile Number (Login ID)</label>
+                <input type="tel" id="coord-mobile" class="form-control" placeholder="e.g. 9876543210">
+            </div>
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>District</label>
+                    <select id="coord-district" class="form-control" onchange="loadCoordMandals()">
+                        <option value="">Select District</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Mandal</label>
+                    <select id="coord-mandal" class="form-control" onchange="loadCoordVillages()">
+                        <option value="">Select Mandal</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Village (Scope)</label>
+                    <select id="coord-village" class="form-control">
+                        <option value="">Select Village</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="modal-actions" style="margin-top:20px;">
+                <button onclick="closeAddCoordinatorModal()" class="btn-reject">Cancel</button>
+                <button class="btn-primary" onclick="createCoordinator()">Create & Approve</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js?v=add_coord_ui_v1"></script>
 </body>
 
 </html>

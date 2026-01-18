@@ -153,6 +153,9 @@ function showDashboard() {
 
     if (CURRENT_USER.role === 'ADMIN') {
         loadSurveyList();
+        // Show Add Coordinator Button
+        const addBtn = document.getElementById('btn-add-coordinator');
+        if (addBtn) addBtn.style.display = 'block';
     }
 }
 
@@ -290,7 +293,134 @@ function renderChart(data) {
                 legend: { position: 'right' }
             }
         }
-    });
+// --- ADD COORDINATOR FEATURES ---
+
+function openAddCoordinatorModal() {
+        const modal = document.getElementById('addCoordinatorModal');
+        modal.style.display = 'block';
+
+        // Load Districts if empty
+        const distSelect = document.getElementById('coord-district');
+        if(distSelect.options.length <= 1) {
+        fetch(`${API_BASE}/locations/districts`)
+            .then(res => res.json())
+            .then(data => {
+                distSelect.innerHTML = '<option value="">Select District</option>';
+                data.forEach(d => {
+                    const opt = document.createElement('option');
+                    opt.value = d.id;
+                    opt.textContent = d.name;
+                    distSelect.appendChild(opt);
+                });
+            });
+    }
+}
+
+function closeAddCoordinatorModal() {
+    document.getElementById('addCoordinatorModal').style.display = 'none';
+}
+
+async function loadCoordMandals() {
+    const distId = document.getElementById('coord-district').value;
+    const mandalSelect = document.getElementById('coord-mandal');
+    mandalSelect.innerHTML = '<option value="">Loading...</option>';
+
+    if (!distId) return;
+
+    try {
+        const res = await fetch(`${API_BASE}/locations/mandals/${distId}`);
+        const data = await res.json();
+        mandalSelect.innerHTML = '<option value="">Select Mandal</option>';
+        data.forEach(m => {
+            const opt = document.createElement('option');
+            opt.value = m.id;
+            opt.textContent = m.name;
+            mandalSelect.appendChild(opt);
+        });
+    } catch (e) { }
+}
+
+async function loadCoordVillages() {
+    const mandalId = document.getElementById('coord-mandal').value;
+    const villageSelect = document.getElementById('coord-village');
+    villageSelect.innerHTML = '<option value="">Loading...</option>';
+
+    if (!mandalId) return;
+
+    try {
+        const res = await fetch(`${API_BASE}/locations/villages/${mandalId}`);
+        const data = await res.json();
+        villageSelect.innerHTML = '<option value="">Select Village</option>';
+        data.forEach(v => {
+            const opt = document.createElement('option');
+            opt.value = v.id;
+            opt.textContent = v.name;
+            villageSelect.appendChild(opt);
+        });
+    } catch (e) { }
+}
+
+async function createCoordinator() {
+    const name = document.getElementById('coord-name').value;
+    const mobile = document.getElementById('coord-mobile').value;
+
+    // Location
+    const distSelect = document.getElementById('coord-district');
+    const mandalSelect = document.getElementById('coord-mandal');
+    const villageSelect = document.getElementById('coord-village');
+
+    const distName = distSelect.options[distSelect.selectedIndex]?.text;
+    const mandalName = mandalSelect.options[mandalSelect.selectedIndex]?.text;
+    const villageName = villageSelect.options[villageSelect.selectedIndex]?.text;
+    const villageId = villageSelect.value;
+
+    if (!name || !mobile || !villageId) {
+        alert("Please fill all fields (Name, Mobile, Village)");
+        return;
+    }
+
+    // 1. Register as COORDINATOR
+    const payload = {
+        name: name,
+        mobile: mobile,
+        district_name: distName,
+        mandal_name: mandalName,
+        village_name: villageName,
+        ward_no: "0", // Default
+        role: "COORDINATOR",
+        village_id: parseInt(villageId)
+    };
+
+    try {
+        // Register
+        const res1 = await fetch(`${API_BASE}/register/surveyor`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const data1 = await res1.json();
+
+        if (data1.status === 'success' || data1.status === 'exists') {
+            const reqId = data1.id;
+
+            // 2. Approve Immediately
+            const res2 = await fetch(`${API_BASE}/dashboard/approve`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ request_id: reqId, action: 'APPROVED' })
+            });
+
+            alert(`Success! Coordinator '${name}' (Mobile: ${mobile}) created and approved.`);
+            closeAddCoordinatorModal();
+            loadApprovals(); // Refresh list
+        } else {
+            alert("Failed to create coordinator. " + JSON.stringify(data1));
+        }
+
+    } catch (e) {
+        console.error(e);
+        alert("Error creating coordinator");
+    }
 }
 
 async function loadApprovals() {
