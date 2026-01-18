@@ -189,13 +189,20 @@ def startup_event():
         
         # --- PHASE 1: GEO SEEDING (Always Check/Run) ---
         print("[STARTUP] Checking Master Location Data...")
-        if db.query(DistrictMaster).count() == 0:
              print("[STARTUP] District Table is Empty. Seeding Full Geo Data...")
              from seed_geo import seed_geo_data
              seed_geo_data()
              print("[STARTUP] Geo Seeding Complete.")
 
-        print("[STARTUP] v19.12 Startup Checks Complete.")
+        # --- PHASE 4.2: AUTO-MIGRATE (Schema Updates) ---
+        print("[STARTUP] Checking Phase 4.2 Schema...")
+        try:
+             from migrate_phase4_2 import migrate
+             migrate()
+        except Exception as e:
+             print(f"[STARTUP] Migration Check: {e}")
+
+        print("[STARTUP] v19.14 Startup Checks Complete.")
     except Exception as e:
         print(f"[STARTUP] Error checking/seeding DB: {e}")
     finally:
