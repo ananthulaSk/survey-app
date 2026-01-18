@@ -43,6 +43,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
       setState(() {
         _backendVersion = status["version"];
       });
+      // EXPECTATION: v19.6
       if (_backendVersion != "v19.6") {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
