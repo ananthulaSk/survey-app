@@ -128,12 +128,16 @@ function showDashboard() {
     // APPLY ROLE RESTRICTIONS
     if (CURRENT_USER.role === 'COORDINATOR') {
         // Hide Restricted Tabs
-        document.querySelector('[data-tab="assignments"]').style.display = 'none';
+        // document.querySelector('[data-tab="assignments"]').style.display = 'none'; // NOW ENABLED
         document.querySelector('[data-tab="surveys"]').style.display = 'none';
 
         // Rename Approvals to "My Team"
         const appTab = document.querySelector('[data-tab="approvals"]');
         appTab.innerHTML = '<span class="icon">👥</span> My Team';
+
+        // Rename Assignments to "Assign Team" to be clear
+        const assignTab = document.querySelector('[data-tab="assignments"]');
+        assignTab.innerHTML = '<span class="icon">⚙️</span> Assign Team';
 
         // Add Logout Button to Sidebar? 
         // Or just header...
@@ -842,7 +846,12 @@ async function loadAssignmentOptions() {
         const res = await fetch(`${API_BASE}/dashboard/approvals`);
         const allRequests = await res.json();
         // Only APPROVED surveyors
-        const approved = allRequests.filter(a => a.status === 'APPROVED');
+        let approved = allRequests.filter(a => a.status === 'APPROVED');
+
+        // FILTER: If Coordinator, only show MY village surveyors
+        if (CURRENT_USER.role === 'COORDINATOR') {
+            approved = approved.filter(a => a.village === CURRENT_USER.village_name);
+        }
 
         const surveyorList = document.getElementById('available-surveyors-list');
         surveyorList.innerHTML = '';
