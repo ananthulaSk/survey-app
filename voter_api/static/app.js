@@ -542,73 +542,103 @@ async function loadAssignmentOptions() {
     } catch (error) {
         console.error("Error loading surveys for assignment:", error);
     }
-    // ... (rest of function)
+    // 2. Populate Surveyor Dropdown (NEW)
+    try {
+        const res = await fetch(`${API_BASE}/dashboard/approvals`);
+        const allRequests = await res.json();
+        // Only APPROVED surveyors
+        const approved = allRequests.filter(a => a.status === 'APPROVED');
 
-    async function assignSurveyorFromDropdown() {
-        const surveyId = document.getElementById('assignment-survey-select').value;
-        const surveyorId = document.getElementById('surveyor-select-dropdown').value;
+        const surveyorList = document.getElementById('available-surveyors-list');
+        surveyorList.innerHTML = '';
 
-        if (!surveyId) return alert("Please SELECT A SURVEY first.");
-        if (!surveyorId) return alert("Please SELECT A SURVEYOR.");
-
-        const res = await fetch(`${API_BASE}/assignments/create`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ survey_id: surveyId, surveyor_id: surveyorId })
-        });
-
-        const data = await res.json();
-        if (data.status === 'success') {
-            alert("Assigned Successfully!");
-            fetchAssignmentData(); // Refresh list
-        } else if (data.status === 'exists') {
-            alert("Surveyor is already assigned to this survey.");
+        if (approved.length === 0) {
+            surveyorList.innerHTML = '<li class="list-group-item">No Approved Surveyors Found</li>';
         } else {
-            alert("Error: " + data.message);
+            surveyorList.innerHTML = `
+                <li class="list-group-item">
+                    <label><strong>Select Surveyor to Assign:</strong></label>
+                    <div class="input-group mt-2">
+                        <select id="surveyor-select-dropdown" class="form-control">
+                            <option value="">-- Choose Surveyor --</option>
+                            ${approved.map(a => `<option value="${a.id}">${a.name} (${a.mobile})</option>`).join('')}
+                        </select>
+                        <button class="btn btn-primary" onclick="assignSurveyorFromDropdown()">Assign</button>
+                    </div>
+                </li>
+             `;
         }
+
+    } catch (e) {
+        console.error("Error loading approved surveyors", e);
+    }
+}
+
+async function assignSurveyorFromDropdown() {
+    const surveyId = document.getElementById('assignment-survey-select').value;
+    const surveyorId = document.getElementById('surveyor-select-dropdown').value;
+
+    if (!surveyId) return alert("Please SELECT A SURVEY first.");
+    if (!surveyorId) return alert("Please SELECT A SURVEYOR.");
+
+    const res = await fetch(`${API_BASE}/assignments/create`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ survey_id: surveyId, surveyor_id: surveyorId })
+    });
+
+    const data = await res.json();
+    if (data.status === 'success') {
+        alert("Assigned Successfully!");
+        fetchAssignmentData(); // Refresh list
+    } else if (data.status === 'exists') {
+        alert("Surveyor is already assigned to this survey.");
+    } else {
+        alert("Error: " + data.message);
+    }
+}
+
+
+// --- 7. DELETE LOGIC ---
+
+async function deleteSurvey(id) {
+    if (!confirm("Are you sure you want to PERMANENTLY delete this survey? All collected data will be lost.")) {
+        return;
     }
 
-
-    // --- 7. DELETE LOGIC ---
-
-    async function deleteSurvey(id) {
-        if (!confirm("Are you sure you want to PERMANENTLY delete this survey? All collected data will be lost.")) {
-            return;
-        }
-
-        try {
-            const res = await fetch(`${API_BASE}/surveys/${id}`, {
-                method: 'DELETE',
-                headers: {
-                    'X-Admin-Token': 'admin-secret-123'
-                }
-            });
-            const data = await res.json();
-
-            if (res.ok) {
-                alert(data.message);
-                location.reload();
-            } else {
-                alert("Error: " + data.detail);
+    try {
+        const res = await fetch(`${API_BASE}/surveys/${id}`, {
+            method: 'DELETE',
+            headers: {
+                'X-Admin-Token': 'admin-secret-123'
             }
-        } catch (e) {
-            console.error(e);
-            alert("Failed to delete survey");
+        });
+        const data = await res.json();
+
+        if (res.ok) {
+            alert(data.message);
+            location.reload();
+        } else {
+            alert("Error: " + data.detail);
         }
+    } catch (e) {
+        console.error(e);
+        alert("Failed to delete survey");
     }
+}
 
-    async function loadSurveyList() {
-        try {
-            const res = await fetch(`${API_BASE}/surveys/active`);
-            if (!res.ok) return;
-            const surveys = await res.json();
+async function loadSurveyList() {
+    try {
+        const res = await fetch(`${API_BASE}/surveys/active`);
+        if (!res.ok) return;
+        const surveys = await res.json();
 
-            const tbody = document.getElementById('surveys-table-body');
-            if (!tbody) return;
+        const tbody = document.getElementById('surveys-table-body');
+        if (!tbody) return;
 
-            tbody.innerHTML = '';
-            surveys.forEach(s => {
-                tbody.innerHTML += `
+        tbody.innerHTML = '';
+        surveys.forEach(s => {
+            tbody.innerHTML += `
                 <tr>
                     <td>${s.id}</td>
                     <td>${s.name}</td>
@@ -620,8 +650,8 @@ async function loadAssignmentOptions() {
                     </td>
                 </tr>
             `;
-            });
-        } catch (e) {
-            console.error("Error loading survey list:", e);
-        }
+        });
+    } catch (e) {
+        console.error("Error loading survey list:", e);
     }
+}
