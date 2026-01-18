@@ -8,6 +8,10 @@ from typing import List, Optional
 from datetime import datetime
 from pydantic import BaseModel
 
+# --- CONFIGURATION ---
+MAIN_VERSION = "v19.12" # Rebuild Trigger: Sun Jan 18 13:40 PM
+EXPECTED_FRONTEND_VERSION = "v19.12"
+
 # Import robust database setup
 from database import engine, SessionLocal, Base, get_db
 
@@ -183,24 +187,12 @@ def startup_event():
         # --- PHASE 1: GEO SEEDING (Always Check/Run) ---
         print("[STARTUP] Checking Master Location Data...")
         if db.query(DistrictMaster).count() == 0:
-             print("[STARTUP] Seeding Full State Geo Data (Phase 3)...")
+             print("[STARTUP] District Table is Empty. Seeding Full Geo Data...")
              from seed_geo import seed_geo_data
              seed_geo_data()
-             
-             # 5. [PROD MODE] Auto-Seed Geographic Data if Missing
-             # This ensures the "Select District" dropdown is never empty on first deploy.
-             
-             # Check for Districts
-             dist_count = db.query(DistrictMaster).count()
-             if dist_count == 0:
-                 print("[STARTUP] District Table OK but EMPTY. Triggering Auto-Seed...")
-                 from seed_geo import seed_geo_data
-                 seed_geo_data()
-                 print("[STARTUP] Auto-Seed Complete.")
-             else:
-                 print(f"[STARTUP] District Table has {dist_count} records. Skipping Auto-Seed.")
+             print("[STARTUP] Geo Seeding Complete.")
 
-             print("[STARTUP] v19.11 Startup Checks Complete.")
+        print("[STARTUP] v19.12 Startup Checks Complete.")
     except Exception as e:
         print(f"[STARTUP] Error checking/seeding DB: {e}")
     finally:
@@ -214,7 +206,7 @@ def startup_event():
 @app.get("/version")
 def get_version():
     return {
-        "version": "v19.11",
+        "version": "v19.12",
         "env": "PROD",
         "last_updated": datetime.utcnow().isoformat()
     }
