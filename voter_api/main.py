@@ -291,6 +291,23 @@ def debug_geo_data(db: Session = Depends(get_db)):
         "db_info": str(engine.url)
     }
 
+@app.get("/debug/dump")
+def debug_dump_data(db: Session = Depends(get_db)):
+    surveys = db.query(Survey).all()
+    s_data = [{
+        "id": s.id, "name": s.name, 
+        "scope": s.scope_type, "val": s.scope_value,
+        "d": s.district, "m": s.mandal, "v": s.village 
+    } for s in surveys]
+    
+    coordinators = db.query(SurveyorRequest).filter(SurveyorRequest.role == "COORDINATOR").all()
+    c_data = [{
+        "mobile": c.mobile_no, "name": c.name,
+        "d": c.district_name, "m": c.mandal_name, "v": c.village_name
+    } for c in coordinators]
+    
+    return {"surveys": s_data, "coordinators": c_data}
+
 # Serve Flutter Mobile App (Web Version)
 from fastapi.responses import FileResponse
 
