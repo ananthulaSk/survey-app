@@ -170,6 +170,7 @@ async function loadApprovals() {
         `).join('');
 
         // 2. Render History
+        const historyBody = document.getElementById('approvalsHistoryTableBody');
         if (historyBody) {
             historyBody.innerHTML = history.map(a => `
                 <tr>
