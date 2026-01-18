@@ -35,7 +35,18 @@
 </head>
 
 <body>
-  <script src="flutter_bootstrap.js?v=19.9" async></script>
+  <!-- SERVICE WORKER KILLER: Force unregister old workers to cache bust -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function (registrations) {
+        for (let registration of registrations) {
+          console.log("Unregistering Service Worker:", registration);
+          registration.unregister();
+        }
+      });
+    }
+  </script>
+  <script src="flutter_bootstrap.js?v=19.10" async></script>
 </body>
 
 </html>
