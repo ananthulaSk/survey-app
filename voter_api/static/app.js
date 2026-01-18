@@ -1,12 +1,27 @@
-const API_BASE = ""; // Relative path for Cloud Deployment
+const API_BASE = "";
 let currentSurveyId = null;
 let chartInstance = null;
+// --- AUTH STATE ---
+let CURRENT_USER = {
+    role: null, // 'ADMIN' or 'COORDINATOR'
+    mobile: null,
+    village_id: null,
+    village_name: null,
+    token: null // For Admin
+};
 
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("Admin Dashboard v7 Loaded");
-    loadSurveys();
-    loadApprovals();
-    loadSurveyList(); // Adding the missing load
+    console.log("Admin/Coord Dashboard Loaded");
+
+    // Check Session
+    const session = localStorage.getItem('ec_session');
+    if (session) {
+        CURRENT_USER = JSON.parse(session);
+        showDashboard();
+    } else {
+        // Show Login (Default)
+        selectRole('ADMIN'); // Default Valid Tab
+    }
 
     // Attach listener for assignment tab
     const assignSelect = document.getElementById('assignment-survey-select');
@@ -14,6 +29,123 @@ document.addEventListener('DOMContentLoaded', () => {
         assignSelect.addEventListener('change', fetchAssignmentData);
     }
 });
+
+function selectRole(role) {
+    const adminBtn = document.getElementById('btn-role-admin');
+    const coordBtn = document.getElementById('btn-role-coordinator');
+    const adminForm = document.getElementById('admin-login-form');
+    const coordForm = document.getElementById('coordinator-login-form');
+    const errorP = document.getElementById('login-error');
+
+    errorP.style.display = 'none';
+
+    if (role === 'ADMIN') {
+        adminBtn.style.background = '#2563eb'; adminBtn.style.color = 'white';
+        coordBtn.style.background = '#e5e7eb'; coordBtn.style.color = '#374151';
+        adminForm.style.display = 'block';
+        coordForm.style.display = 'none';
+    } else {
+        coordBtn.style.background = '#2563eb'; coordBtn.style.color = 'white';
+        adminBtn.style.background = '#e5e7eb'; adminBtn.style.color = '#374151';
+        coordForm.style.display = 'block';
+        adminForm.style.display = 'none';
+    }
+}
+
+async function handleLogin() {
+    const errorP = document.getElementById('login-error');
+    errorP.style.display = 'none';
+
+    const adminFormVisible = document.getElementById('admin-login-form').style.display !== 'none';
+
+    if (adminFormVisible) {
+        // ADMIN LOGIN
+        const secret = document.getElementById('adminSecret').value;
+        if (secret === 'admin-secret-123') { // Hardcoded for Phase 1-5 as per plan
+            CURRENT_USER = { role: 'ADMIN', token: secret };
+            saveSession();
+            showDashboard();
+        } else {
+            errorP.textContent = "Invalid Admin Secret Key";
+            errorP.style.display = 'block';
+        }
+    } else {
+        // COORDINATOR LOGIN
+        const mobile = document.getElementById('coordMobile').value;
+        if (!mobile) {
+            errorP.textContent = "Please enter mobile number";
+            errorP.style.display = 'block';
+            return;
+        }
+
+        try {
+            const res = await fetch(`${API_BASE}/auth/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ mobile_no: mobile })
+            });
+            const data = await res.json();
+
+            if (res.ok && data.status === 'success') {
+                CURRENT_USER = {
+                    role: 'COORDINATOR',
+                    mobile: mobile,
+                    village_id: data.village_id,
+                    village_name: data.village_name
+                };
+                saveSession();
+                showDashboard();
+            } else {
+                errorP.textContent = data.detail || "Login Failed. Verify you are an approved Coordinator.";
+                errorP.style.display = 'block';
+            }
+        } catch (e) {
+            console.error(e);
+            errorP.textContent = "Connection Error";
+            errorP.style.display = 'block';
+        }
+    }
+}
+
+function saveSession() {
+    localStorage.setItem('ec_session', JSON.stringify(CURRENT_USER));
+}
+
+function logout() {
+    localStorage.removeItem('ec_session');
+    location.reload();
+}
+
+function showDashboard() {
+    document.getElementById('login-container').style.display = 'none';
+    document.getElementById('dashboard-container').style.display = 'flex'; // It's flex in CSS usually? Or block. 
+    // Actually the body has no layout, but app-container has flex typically? 
+    // Let's check CSS if needed, but 'block' or 'flex' is fine.
+    // Original app-container display property...
+    document.getElementById('dashboard-container').style.display = 'flex';
+
+    // APPLY ROLE RESTRICTIONS
+    if (CURRENT_USER.role === 'COORDINATOR') {
+        // Hide Restricted Tabs
+        document.querySelector('[data-tab="assignments"]').style.display = 'none';
+        document.querySelector('[data-tab="surveys"]').style.display = 'none';
+
+        // Rename Approvals to "My Team"
+        const appTab = document.querySelector('[data-tab="approvals"]');
+        appTab.innerHTML = '<span class="icon">👥</span> My Team';
+
+        // Add Logout Button to Sidebar? 
+        // Or just header...
+    }
+
+    // Load Data
+    loadSurveys();
+    loadApprovals(); // Logic inside will handle filtering
+
+    if (CURRENT_USER.role === 'ADMIN') {
+        loadSurveyList();
+    }
+}
 
 function switchTab(tabId) {
     document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
@@ -31,7 +163,15 @@ function switchTab(tabId) {
 
 async function loadSurveys() {
     try {
-        const res = await fetch(`${API_BASE}/surveys/active`);
+        let url = `${API_BASE}/surveys/active`;
+
+        // --- ADD COORDINATOR FILTER ---
+        if (CURRENT_USER.role === 'COORDINATOR' && CURRENT_USER.village_name) {
+            url += `?village_filter=${encodeURIComponent(CURRENT_USER.village_name)}`;
+        }
+        // ------------------------------
+
+        const res = await fetch(url);
         if (!res.ok) return;
         const surveys = await res.json();
 
@@ -147,7 +287,16 @@ function renderChart(data) {
 async function loadApprovals() {
     try {
         const res = await fetch(`${API_BASE}/dashboard/approvals`);
-        const allRequests = await res.json();
+        let allRequests = await res.json();
+
+        // --- FILTER FOR COORDINATOR ---
+        if (CURRENT_USER.role === 'COORDINATOR') {
+            // Only show requests for my village
+            // Using lowercase comparison for safety
+            const myVillage = (CURRENT_USER.village_name || "").toLowerCase().trim();
+            allRequests = allRequests.filter(a => (a.village || "").toLowerCase().trim() === myVillage);
+        }
+        // -----------------------------
 
         // Split Data
         const pending = allRequests.filter(a => a.status === 'PENDING');
@@ -157,14 +306,16 @@ async function loadApprovals() {
         document.getElementById('approvalsTableBody').innerHTML = pending.map(a => `
             <tr>
                 <td>${a.id}</td>
-                <td>${a.name}</td>
+                <td>${a.name}
+                    ${a.role === 'COORDINATOR' ? '<br><span class="badge" style="background:#8b5cf6">COORDINATOR</span>' : ''}
+                </td>
                 <td>${a.mobile}</td>
                 <td><small>${a.district || '-'}<br>${a.mandal || '-'}<br>${a.village || '-'}<br>Ward ${a.ward || '-'}</small></td>
                 <td>${new Date(a.date).toLocaleDateString()}</td>
                 <td>
                     <button class="btn-approve" onclick="handleApproval(${a.id}, 'APPROVED')">Approve</button>
                     <button class="btn-reject" onclick="handleApproval(${a.id}, 'REJECTED')">Reject</button>
-                    <button class="btn btn-sm btn-danger ms-2" style="background-color: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 4px;" onclick="deleteSurveyor(${a.id})">Delete</button>
+                    ${CURRENT_USER.role === 'ADMIN' ? `<button class="btn btn-sm btn-danger ms-2" style="background-color: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 4px;" onclick="deleteSurveyor(${a.id})">Delete</button>` : ''}
                 </td>
             </tr>
         `).join('');
@@ -175,14 +326,16 @@ async function loadApprovals() {
             historyBody.innerHTML = history.map(a => `
                 <tr>
                     <td>${a.id}</td>
-                    <td>${a.name}</td>
+                    <td>${a.name} 
+                        ${a.role === 'COORDINATOR' ? '<br><span class="badge" style="background:#8b5cf6">COORDINATOR</span>' : ''}
+                    </td>
                     <td>${a.mobile}</td>
                     <td><small>${a.district || '-'}<br>${a.mandal || '-'}<br>${a.village || '-'}<br>Ward ${a.ward || '-'}</small></td>
                     <td>${a.assigned_survey || '-'}</td>
                     <td>${new Date(a.date).toLocaleDateString()}</td>
                     <td>
                         <span class="badge" style="background:${a.status === 'APPROVED' ? '#10b981' : (a.status === 'REJECTED' ? '#ef4444' : '#6b7280')}">${a.status || 'PENDING'}</span>
-                        <button class="btn btn-sm btn-danger ms-2" style="background-color: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 4px; margin-left: 10px;" onclick="deleteSurveyor(${a.id})">Delete</button>
+                        ${CURRENT_USER.role === 'ADMIN' ? `<button class="btn btn-sm btn-danger ms-2" style="background-color: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 4px; margin-left: 10px;" onclick="deleteSurveyor(${a.id})">Delete</button>` : ''}
                     </td>
                 </tr>
             `).join('');

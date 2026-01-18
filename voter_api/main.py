@@ -129,6 +129,9 @@ class SurveyorRequest(Base):
     ward_no = Column(String)
 
     status = Column(String, default="PENDING") # PENDING, APPROVED, REJECTED
+    role = Column(String, default="SURVEYOR") # SURVEYOR, COORDINATOR
+    assigned_village_id = Column(Integer, nullable=True) # Scope for Coordinator
+    
     created_at = Column(DateTime, default=datetime.utcnow)
 
 # --- 5. SURVEY ASSIGNMENTS (Access Control) ---
@@ -445,11 +448,17 @@ def create_survey(
     }
 
 @app.get("/surveys/active")
-def get_active_surveys(mobile_no: Optional[str] = None, db: Session = Depends(get_db)):
+def get_active_surveys(mobile_no: Optional[str] = None, village_filter: Optional[str] = None, db: Session = Depends(get_db)):
     query = db.query(Survey).filter(Survey.status == "ACTIVE")
     
-    # If mobile_no provided, FILTER by assignment
-    if mobile_no:
+    # FILTER 1: Coordinator Scope (Show all surveys in my village)
+    if village_filter:
+        print(f"[DEBUG] Filtering surveys for Village: {village_filter}")
+        # Case Insensitive Match
+        query = query.filter(func.lower(Survey.village) == village_filter.lower().strip())
+
+    # FILTER 2: Mobile App Surveyor (Show only assigned surveys)
+    elif mobile_no:
         mobile_no = clean_mobile(mobile_no)
         print(f"[DEBUG] Filtering surveys for mobile: {mobile_no}")
         # Find surveyor by mobile
@@ -462,10 +471,10 @@ def get_active_surveys(mobile_no: Optional[str] = None, db: Session = Depends(ge
         query = query.join(SurveyAssignment, Survey.id == SurveyAssignment.survey_id)\
                      .filter(SurveyAssignment.surveyor_id == surveyor.id, SurveyAssignment.status == "ACTIVE")
     else:
-        print(f"[DEBUG] No mobile filter provided. Returning ALL active surveys (Admin view).")
+        print(f"[DEBUG] No filters provided. Returning ALL active surveys (Admin view).")
     
     surveys = query.order_by(desc(Survey.created_at)).all()
-    print(f"[DEBUG] Found {len(surveys)} surveys active for mobile: {mobile_no}")
+    # print(f"[DEBUG] Found {len(surveys)} surveys.")
     return surveys
     
 @app.delete("/surveys/{survey_id}")
@@ -955,10 +964,13 @@ def register_surveyor(
     mandal_name: str = Body(None),
     village_name: str = Body(None),
     ward_no: str = Body(None),
+    # Phase 4.2: Coordinator Role
+    role: str = Body("SURVEYOR"), 
+    village_id: int = Body(None),
     db: Session = Depends(get_db)
 ):
     mobile = clean_mobile(mobile)
-    print(f"[DEBUG] Registering surveyor: Name={name}, Mobile={mobile}, Loc={district_name}/{mandal_name}/{village_name}/{ward_no}")
+    print(f"[DEBUG] Registering {role}: Name={name}, Mobile={mobile}, Loc={district_name}/{mandal_name}/{village_name}/{ward_no}")
     
     # Check if already exists
     existing = db.query(SurveyorRequest).filter(SurveyorRequest.mobile_no == mobile).first()
@@ -973,11 +985,48 @@ def register_surveyor(
         district_name=district_name,
         mandal_name=mandal_name,
         village_name=village_name,
-        ward_no=ward_no
+        ward_no=ward_no,
+        # Role & Scope
+        role=role.upper(),
+        assigned_village_id=village_id
     )
     db.add(new_req)
     db.commit()
     return {"status": "success", "id": new_req.id, "current_status": "PENDING"}
+
+class LoginRequest(BaseModel):
+    mobile_no: str
+
+@app.post("/auth/login")
+def coordinator_login(login: LoginRequest, db: Session = Depends(get_db)):
+    cleaned_mobile = clean_mobile(login.mobile_no)
+    
+    # Coordinator Login Check
+    user = db.query(SurveyorRequest).filter(
+        SurveyorRequest.mobile_no == cleaned_mobile,
+        SurveyorRequest.role == "COORDINATOR",
+        SurveyorRequest.status == "APPROVED"
+    ).first()
+    
+    if not user:
+        # Check if Admin (Hardcoded/Env for now for Mobile Login?)
+        # Actually Admin login usually happens via token in header.
+        # This endpoint is specific for Coordinators as per plan.
+        raise HTTPException(status_code=401, detail="Invalid Mobile Number or Not Authorized as Coordinator")
+    
+    # Fetch Village Name for convenience
+    village_name = user.village_name
+    if not village_name and user.assigned_village_id:
+         v = db.query(VillageMaster).filter(VillageMaster.id == user.assigned_village_id).first()
+         if v: village_name = v.name
+
+    return {
+        "status": "success",
+        "role": "COORDINATOR",
+        "name": user.name,
+        "village_id": user.assigned_village_id,
+        "village_name": village_name
+    }
 
 # --- LOCATION APIS (For Dropdowns) ---
 @app.get("/locations/districts")

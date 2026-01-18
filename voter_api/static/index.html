@@ -11,7 +11,54 @@
 </head>
 
 <body>
-    <div class="app-container">
+    <!-- LOGIN SCREEN -->
+    <div id="login-container"
+        style="display: flex; justify-content: center; align-items: center; height: 100vh; background: #f3f4f6;">
+        <div
+            style="background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); width: 100%; max-width: 400px;">
+            <div style="text-align: center; margin-bottom: 24px;">
+                <h1 style="color: #2563eb; margin: 0;">EC Survey</h1>
+                <p style="color: #6b7280; margin-top: 8px;">Admin & Coordinator Portal</p>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 8px; color: #374151; font-weight: 500;">Select Role</label>
+                <div style="display: flex; gap: 10px;">
+                    <button onclick="selectRole('ADMIN')" id="btn-role-admin" class="btn"
+                        style="flex: 1; background: #2563eb; color: white;">Admin</button>
+                    <button onclick="selectRole('COORDINATOR')" id="btn-role-coordinator" class="btn"
+                        style="flex: 1; background: #e5e7eb; color: #374151;">Coordinator</button>
+                </div>
+            </div>
+
+            <div id="admin-login-form">
+                <div class="form-group" style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; color: #374151; font-weight: 500;">Admin Secret
+                        Key</label>
+                    <input type="password" id="adminSecret" class="form-control" placeholder="Enter Secret Key"
+                        style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px;">
+                </div>
+                <button onclick="handleLogin()" class="btn btn-primary"
+                    style="width: 100%; padding: 12px; justify-content: center;">Login as Admin</button>
+            </div>
+
+            <div id="coordinator-login-form" style="display: none;">
+                <div class="form-group" style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; color: #374151; font-weight: 500;">Mobile
+                        Number</label>
+                    <input type="tel" id="coordMobile" class="form-control" placeholder="Enter Mobile Number"
+                        style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px;">
+                </div>
+                <button onclick="handleLogin()" class="btn btn-primary"
+                    style="width: 100%; padding: 12px; justify-content: center;">Login as Coordinator</button>
+            </div>
+
+            <p id="login-error" style="color: #dc2626; text-align: center; margin-top: 15px; display: none;"></p>
+        </div>
+    </div>
+
+    <!-- MAIN DASHBOARD (Hidden by default) -->
+    <div class="app-container" id="dashboard-container" style="display: none;">
         <!-- Sidebar -->
         <aside class="sidebar">
             <div class="logo">
@@ -301,7 +348,7 @@
 
         </main>
     </div>
-    <script src="app.js?v=phase4-debug"></script>
+    <script src="app.js?v=role_update_v1"></script>
 </body>
 
 </html>
