@@ -214,7 +214,7 @@ def startup_event():
 @app.get("/version")
 def get_version():
     return {
-        "version": "v19.8",
+        "version": "v19.9",
         "env": "PROD",
         "last_updated": datetime.utcnow().isoformat()
     }
