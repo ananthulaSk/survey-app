@@ -339,7 +339,11 @@
 
                         <div class="row" style="display:flex; gap: 20px;">
                             <div class="col" style="flex:1">
-                                <h4>Available Surveyors (Manual Entry)</h4>
+                                <div style="display:flex; justify-content:space-between; align-items:center;">
+                                    <h4>Available Surveyors</h4>
+                                    <button class="btn-primary" onclick="openAddSurveyorModal()"
+                                        style="font-size: 0.8rem;">+ Add Member</button>
+                                </div>
                                 <ul id="available-surveyors-list" class="list-group">
                                     <!-- Populated by JS -->
                                 </ul>
@@ -398,6 +402,37 @@
             <div class="modal-actions" style="margin-top:20px;">
                 <button onclick="closeAddCoordinatorModal()" class="btn-reject">Cancel</button>
                 <button class="btn-primary" onclick="createCoordinator()">Create & Approve</button>
+            </div>
+        </div>
+    </div>
+
+    </div>
+
+    <!-- ADD SURVEYOR MODAL (For Coordinators) -->
+    <div id="addSurveyorModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeAddSurveyorModal()">&times;</span>
+            <h2>Add Team Member</h2>
+            <p>Create a login for a Surveyor in your specific village.</p>
+
+            <div class="form-group">
+                <label>Full Name</label>
+                <input type="text" id="srv-name" class="form-control" placeholder="e.g. Suresh Kumar">
+            </div>
+
+            <div class="form-group">
+                <label>Mobile Number (Login ID)</label>
+                <input type="tel" id="srv-mobile" class="form-control" placeholder="e.g. 9123456789">
+            </div>
+
+            <p style="font-size: 0.9em; color: gray;">
+                * This user will be automatically assigned to your Village:
+                <strong id="srv-location-preview">...</strong>
+            </p>
+
+            <div class="modal-actions" style="margin-top:20px;">
+                <button onclick="closeAddSurveyorModal()" class="btn-reject">Cancel</button>
+                <button class="btn-primary" onclick="createSurveyor()">Create & Approve</button>
             </div>
         </div>
     </div>
