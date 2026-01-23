@@ -9,7 +9,7 @@ from datetime import datetime
 from pydantic import BaseModel
 
 # --- CONFIGURATION ---
-MAIN_VERSION = "v19.14" # Rebuild Trigger: Sun Jan 18 14:00 PM
+MAIN_VERSION = "v19.15 (Phase 5 - CI/CD)" # Rebuild Trigger: Auto-CI
 EXPECTED_FRONTEND_VERSION = "v19.14"
 
 # Import robust database setup
