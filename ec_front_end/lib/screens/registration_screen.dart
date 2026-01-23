@@ -28,9 +28,9 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   String? _selectedWard;
 
   // Version Handshake
-  static const String EXPECTED_BACKEND_VERSION = "v19.14";
+  static const String EXPECTED_BACKEND_VERSION = "v19.15";
   String _backendVersion = "Fetching...";
-  String _appVersionDisplay = "v19.14 (PHASE 4)";
+  final String _appVersionDisplay = "v19.15 (PHASE 5)";
 
   // API Service
   final _api = ApiService();
@@ -386,7 +386,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
         filled: true,
         fillColor: Colors.grey[50],
       ),
-      value: value,
+      initialValue: value,
       items: items
           .map((e) => DropdownMenuItem(value: e, child: Text(e)))
           .toList(),
