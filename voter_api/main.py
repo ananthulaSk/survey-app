@@ -203,6 +203,14 @@ def startup_event():
         except Exception as e:
              print(f"[STARTUP] Migration Check: {e}")
 
+        # --- PHASE 5: ASSIGNMENTS (Schema) ---
+        print("[STARTUP] Checking Phase 5 Schema (Assignments)...")
+        try:
+             from migrate_phase5 import migrate_phase5
+             migrate_phase5()
+        except Exception as e:
+             print(f"[STARTUP] Phase 5 Migration Error: {e}")
+
         # --- PHASE 4.2: SEED DEMO COORDINATOR (Auto-Fix) ---
         # Ensure the test user 9999999999 exists for the User to log in
         demo_coord = db.query(SurveyorRequest).filter(SurveyorRequest.mobile_no == '9999999999').first()

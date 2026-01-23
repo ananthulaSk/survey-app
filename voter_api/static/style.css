@@ -51,8 +51,9 @@ body {
 .logo {
     padding: 30px;
     display: flex;
-    align-items: center;
-    gap: 12px;
+    flex-direction: column;
+    /* align-items: center; */
+    gap: 5px;
 }
 
 .logo h2 {
@@ -73,6 +74,7 @@ body {
     font-weight: 600;
     letter-spacing: 0.5px;
     text-transform: uppercase;
+    align-self: flex-start;
 }
 
 .nav-links {
@@ -269,6 +271,7 @@ td {
     border-bottom: 1px solid #f1f5f9;
     color: #334155;
     font-weight: 500;
+    vertical-align: middle;
 }
 
 tr:last-child td {
@@ -280,6 +283,15 @@ tr:hover td {
 }
 
 /* --- BUTTONS --- */
+.btn {
+    padding: 10px 20px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+
 .btn-primary {
     background: linear-gradient(135deg, var(--primary-blue), var(--primary-indigo));
     color: white;
@@ -301,6 +313,9 @@ tr:hover td {
     background: rgba(16, 185, 129, 0.1);
     color: var(--success-green);
     border: 1px solid var(--success-green);
+    padding: 5px 10px;
+    border-radius: 6px;
+    cursor: pointer;
 }
 
 .btn-approve:hover {
@@ -312,11 +327,19 @@ tr:hover td {
     background: rgba(239, 68, 68, 0.1);
     color: var(--danger-red);
     border: 1px solid var(--danger-red);
+    padding: 5px 10px;
+    border-radius: 6px;
+    cursor: pointer;
 }
 
 .btn-reject:hover {
     background: var(--danger-red);
     color: white;
+}
+
+.btn-sm {
+    padding: 5px 12px;
+    font-size: 0.8rem;
 }
 
 /* --- FILTERS BAR --- */
@@ -329,10 +352,19 @@ tr:hover td {
 }
 
 .form-control {
-    padding: 8px 12px;
+    width: 100%;
+    padding: 10px 12px;
     border-radius: 8px;
     border: 1px solid #e2e8f0;
     color: #475569;
+    font-size: 0.95rem;
+    box-sizing: border-box;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: var(--primary-blue);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
 /* --- TABS --- */
@@ -356,6 +388,98 @@ tr:hover td {
         transform: translateY(0);
     }
 }
+
+/* --- MODALS & OVERLAYS --- */
+.modal {
+    display: none;
+    /* Hidden by default */
+    position: fixed;
+    /* Stay in place */
+    z-index: 1000;
+    /* Sit on top */
+    left: 0;
+    top: 0;
+    width: 100%;
+    /* Full width */
+    height: 100%;
+    /* Full height */
+    overflow: auto;
+    /* Enable scroll if needed */
+    background-color: rgba(0, 0, 0, 0.5);
+    /* Black w/ opacity */
+    backdrop-filter: blur(5px);
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-content {
+    background-color: #fefefe;
+    margin: 10% auto;
+    /* 10% from the top and centered */
+    padding: 30px;
+    border: 1px solid #888;
+    width: 90%;
+    max-width: 500px;
+    border-radius: 16px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    position: relative;
+    animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        transform: translateY(-50px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    line-height: 1;
+}
+
+.close:hover,
+.close:focus {
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+/* --- FORM GROUPS --- */
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 15px;
+    margin-top: 30px;
+}
+
 
 /* --- SCROLLBAR --- */
 ::-webkit-scrollbar {

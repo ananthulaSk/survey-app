@@ -40049,7 +40049,7 @@ case 6:case 1:return A.K(q,r)
 case 2:return A.J(o.at(-1),r)}})
 return A.L($async$vV,r)},
 M(a){var s,r=null,q=A.eG(r,B.H3,B.u,r,r,new A.co(B.mO,r,r,r,r,r,B.fo),r,r,r,B.jr,r,r,r),p=A.bA("Your request to access the survey data has been submitted and is pending approval from the Village Coordinator.",r,r,r,A.du(r,r,B.bw,r,r,r,r,r,r,r,r,16,r,r,r,r,1.5,!0,r,r,r,r,r,r,r,r),B.cb,r),o=A.dT(12),n=A.wb(B.cn),m=t.p
-o=A.eG(r,A.hC(A.c([B.GV,B.Q6,A.rh(A.eo(A.c([B.W2,B.lk,A.bA("Waiting for approval...",r,r,r,A.du(r,r,B.bv,r,r,r,r,r,r,r,r,14,r,r,B.X,r,r,!0,r,r,r,r,r,r,r,r),r,r),B.dO,A.bA("Debugging Info:\nMobile: "+A.j($.w_)+"\nBackend URL: https://survey-app-75558224521.asia-south1.run.app",r,r,r,A.du(r,r,B.ug,r,r,r,r,r,r,r,r,10,r,r,r,r,r,!0,r,r,r,r,r,r,r,r),r,r)],m),B.bI,B.V,B.a7),1)],m),B.T,B.V,B.a7,0),B.u,r,r,new A.co(B.j2,r,n,o,r,r,B.ag),r,r,r,B.jq,r,r,r)
+o=A.eG(r,A.hC(A.c([B.GV,B.Q6,A.rh(A.eo(A.c([B.W2,B.lk,A.bA("Waiting for approval...",r,r,r,A.du(r,r,B.bv,r,r,r,r,r,r,r,r,14,r,r,B.X,r,r,!0,r,r,r,r,r,r,r,r),r,r),B.dO,A.bA("Debugging Info:\nMobile: "+A.j($.w_)+"\nBackend URL: https://survey-app-171882639078.asia-south1.run.app",r,r,r,A.du(r,r,B.ug,r,r,r,r,r,r,r,r,10,r,r,r,r,r,!0,r,r,r,r,r,r,r,r),r,r)],m),B.bI,B.V,B.a7),1)],m),B.T,B.V,B.a7,0),B.u,r,r,new A.co(B.j2,r,n,o,r,r,B.ag),r,r,r,B.jq,r,r,r)
 n=this.d?r:this.ga2X()
 s=A.Iq(r,r,B.co,r,r,r,0,r,r,r,r,r,r,r,new A.ck(A.dT(8),B.n),r,r,r,r,r)
 return A.A2(r,B.k,new A.bU(B.js,A.eo(A.c([q,B.z7,B.VP,B.li,p,B.f6,o,B.f6,A.ex(A.a0a(!1,this.d?B.Qb:B.W0,r,r,r,r,r,r,n,r,s),50,1/0),B.c9,A.tP(B.zG,new A.afp(a),r)],m),B.T,B.cX,B.a7),r),r)}}
@@ -40665,7 +40665,7 @@ y_(){var s=0,r=A.M(t.P),q,p=2,o=[],n,m,l,k,j
 var $async$y_=A.N(function(a,b){if(a===1){o.push(b)
 s=p}for(;;)switch(s){case 0:p=4
 s=7
-return A.P(A.lo(A.da("https://survey-app-75558224521.asia-south1.run.app/version")).Af(B.Fu),$async$y_)
+return A.P(A.lo(A.da("https://survey-app-171882639078.asia-south1.run.app/version")).Af(B.Fu),$async$y_)
 case 7:n=b
 if(n.b===200){l=n
 l=B.av.iE(A.jJ(A.jG(l.e)).dc(l.w),null)
@@ -40690,7 +40690,7 @@ case 2:return A.J(o.at(-1),r)}})
 return A.L($async$y_,r)},
 v1(){var s=0,r=A.M(t.j),q,p=2,o=[],n,m,l,k,j,i
 var $async$v1=A.N(function(a,b){if(a===1){o.push(b)
-s=p}for(;;)switch(s){case 0:k="https://survey-app-75558224521.asia-south1.run.app/surveys/active"
+s=p}for(;;)switch(s){case 0:k="https://survey-app-171882639078.asia-south1.run.app/surveys/active"
 j=$.w_
 if(j!=null)k=J.aqn(k,"?mobile_no="+A.X3(j))
 A.ff("Fetching surveys from: "+A.j(k))
@@ -40728,7 +40728,7 @@ n=A.r(o,t.z)
 n.m(0,"voter_id",a)
 n.m(0,"survey_id",p.a)
 n.T(0,b)
-m=A.da("https://survey-app-75558224521.asia-south1.run.app/voters/update")
+m=A.da("https://survey-app-171882639078.asia-south1.run.app/voters/update")
 o=A.aj(["Content-Type","application/json"],o,o)
 s=3
 return A.P(A.aOz(m,B.av.G5(n,null),o),$async$At)
@@ -40744,7 +40744,7 @@ var $async$qI=A.N(function(c,d){if(c===1)return A.J(d,r)
 for(;;)switch(s){case 0:m=p.a
 if(m==null)throw A.i(A.dE("No survey selected"))
 s=3
-return A.P(A.lo(A.da("https://survey-app-75558224521.asia-south1.run.app/voters/next?current_id="+a+"&survey_id="+A.j(m)+"&skip_completed=true")),$async$qI)
+return A.P(A.lo(A.da("https://survey-app-171882639078.asia-south1.run.app/voters/next?current_id="+a+"&survey_id="+A.j(m)+"&skip_completed=true")),$async$qI)
 case 3:o=d
 if(o.b===200){n=B.av.iE(A.jJ(A.jG(o.e)).dc(o.w),null)
 m=J.bo(n)
@@ -40761,7 +40761,7 @@ var $async$v9=A.N(function(c,d){if(c===1)return A.J(d,r)
 for(;;)switch(s){case 0:m=p.a
 if(m==null)throw A.i(A.dE("No survey selected"))
 s=3
-return A.P(A.lo(A.da("https://survey-app-75558224521.asia-south1.run.app/voters/previous?current_id="+a+"&survey_id="+A.j(m)+"&skip_completed=false")),$async$v9)
+return A.P(A.lo(A.da("https://survey-app-171882639078.asia-south1.run.app/voters/previous?current_id="+a+"&survey_id="+A.j(m)+"&skip_completed=false")),$async$v9)
 case 3:o=d
 if(o.b===200){n=B.av.iE(A.jJ(A.jG(o.e)).dc(o.w),null)
 m=J.bo(n)
@@ -40784,7 +40784,7 @@ X8(a,b){var s=0,r=A.M(t._P),q,p=2,o=[],n=this,m,l,k,j,i,h,g,f,e,d
 var $async$vb=A.N(function(c,a0){if(c===1){o.push(a0)
 s=p}for(;;)switch(s){case 0:if(n.a==null){q=A.aj(["total",0,"completed",0,"current_index",0],t.N,t.S)
 s=1
-break}m="https://survey-app-75558224521.asia-south1.run.app/voters/stats"
+break}m="https://survey-app-171882639078.asia-south1.run.app/voters/stats"
 i=A.c([],t.s)
 i.push("survey_id="+A.j(n.a))
 i.push("ward="+b)
@@ -40824,7 +40824,7 @@ return A.L($async$vb,r)},
 v6(){var s=0,r=A.M(t.b5),q,p
 var $async$v6=A.N(function(a,b){if(a===1)return A.J(b,r)
 for(;;)switch(s){case 0:s=3
-return A.P(A.lo(A.da("https://survey-app-75558224521.asia-south1.run.app/locations/districts")),$async$v6)
+return A.P(A.lo(A.da("https://survey-app-171882639078.asia-south1.run.app/locations/districts")),$async$v6)
 case 3:p=b
 if(p.b===200){q=A.fu(B.av.iE(A.jJ(A.jG(p.e)).dc(p.w),null),!0,t.P)
 s=1
@@ -40837,7 +40837,7 @@ v8(a){return this.WS(a)},
 WS(a){var s=0,r=A.M(t.b5),q,p
 var $async$v8=A.N(function(b,c){if(b===1)return A.J(c,r)
 for(;;)switch(s){case 0:s=3
-return A.P(A.lo(A.da("https://survey-app-75558224521.asia-south1.run.app/locations/mandals/"+a)),$async$v8)
+return A.P(A.lo(A.da("https://survey-app-171882639078.asia-south1.run.app/locations/mandals/"+a)),$async$v8)
 case 3:p=c
 if(p.b===200){q=A.fu(B.av.iE(A.jJ(A.jG(p.e)).dc(p.w),null),!0,t.P)
 s=1
@@ -40850,7 +40850,7 @@ ve(a){return this.Xb(a)},
 Xb(a){var s=0,r=A.M(t.b5),q,p
 var $async$ve=A.N(function(b,c){if(b===1)return A.J(c,r)
 for(;;)switch(s){case 0:s=3
-return A.P(A.lo(A.da("https://survey-app-75558224521.asia-south1.run.app/locations/villages/"+a)),$async$ve)
+return A.P(A.lo(A.da("https://survey-app-171882639078.asia-south1.run.app/locations/villages/"+a)),$async$ve)
 case 3:p=c
 if(p.b===200){q=A.fu(B.av.iE(A.jJ(A.jG(p.e)).dc(p.w),null),!0,t.P)
 s=1
@@ -40863,7 +40863,7 @@ vf(a){return this.Xc(a)},
 Xc(a){var s=0,r=A.M(t.b5),q,p
 var $async$vf=A.N(function(b,c){if(b===1)return A.J(c,r)
 for(;;)switch(s){case 0:s=3
-return A.P(A.lo(A.da("https://survey-app-75558224521.asia-south1.run.app/locations/wards/"+a)),$async$vf)
+return A.P(A.lo(A.da("https://survey-app-171882639078.asia-south1.run.app/locations/wards/"+a)),$async$vf)
 case 3:p=c
 if(p.b===200){q=A.fu(B.av.iE(A.jJ(A.jG(p.e)).dc(p.w),null),!0,t.P)
 s=1
@@ -40875,7 +40875,7 @@ return A.L($async$vf,r)},
 A7(a,b,c,d,e,f){return this.ant(a,b,c,d,e,f)},
 ant(a,b,c,d,e,f){var s=0,r=A.M(t.P),q,p,o,n,m
 var $async$A7=A.N(function(g,h){if(g===1)return A.J(h,r)
-for(;;)switch(s){case 0:m=A.da("https://survey-app-75558224521.asia-south1.run.app/register/surveyor")
+for(;;)switch(s){case 0:m=A.da("https://survey-app-171882639078.asia-south1.run.app/register/surveyor")
 A.ff("Attempting Registration to: "+m.k(0))
 b=A.X3(b)
 p=t.N
@@ -40894,7 +40894,7 @@ agu(a){var s=0,r=A.M(t.N),q,p=2,o=[],n,m,l,k,j,i
 var $async$y0=A.N(function(b,c){if(b===1){o.push(c)
 s=p}for(;;)switch(s){case 0:p=4
 s=7
-return A.P(A.lo(A.da("https://survey-app-75558224521.asia-south1.run.app/register/status/mobile?mobile_no="+A.X3(a))),$async$y0)
+return A.P(A.lo(A.da("https://survey-app-171882639078.asia-south1.run.app/register/status/mobile?mobile_no="+A.X3(a))),$async$y0)
 case 7:n=c
 if(n.b===200){k=n
 m=B.av.iE(A.jJ(A.jG(k.e)).dc(k.w),null)

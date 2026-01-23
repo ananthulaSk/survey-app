@@ -50,7 +50,7 @@ class ApiService {
   static String get baseUrl {
     // NUCLEAR OPTION: Unconditional Production URL
     // This removes ANY possibility of logic error.
-    return "https://survey-app-75558224521.asia-south1.run.app";
+    return "https://survey-app-171882639078.asia-south1.run.app";
   }
 
   // Check Backend Version
