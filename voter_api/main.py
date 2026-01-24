@@ -9,8 +9,8 @@ from datetime import datetime
 from pydantic import BaseModel
 
 # --- CONFIGURATION ---
-MAIN_VERSION = "v19.21 (Phase 6)" # Rebuild Trigger: Location Context
-EXPECTED_FRONTEND_VERSION = "v19.21"
+MAIN_VERSION = "v19.22 (Fix)" # Rebuild Trigger: CSV Safe Int
+EXPECTED_FRONTEND_VERSION = "v19.22"
 
 # Import robust database setup
 from database import engine, SessionLocal, Base, get_db
@@ -1184,6 +1184,15 @@ async def upload_voters(
     import csv
     import codecs
     
+    # Helper for robust int conversion
+    def safe_int(val, default=0):
+        if val is None or val == "" or val == "None" or val == "null":
+            return default
+        try:
+            return int(float(val)) # float handles "1.0" in string
+        except (ValueError, TypeError):
+            return default
+
     try:
         # iterdecode allows reading the file stream as string directly
         csv_reader = csv.DictReader(codecs.iterdecode(file.file, 'utf-8'))
@@ -1200,17 +1209,16 @@ async def upload_voters(
             
             # If ward_id is selected in UI, use it. 
             # Otherwise fall back to CSV 'ward_no' (legacy behavior or integer only)
-            # We map CSV 'ward_no' to `ward_no` column (integer), but `ward_id` (FK) comes from UI.
             
             voter = VoterMaster(
-                serial_no=int(row.get("serial_no", 0)),
+                serial_no=safe_int(row.get("serial_no")),
                 house_no=row.get("house_no", ""),
                 voter_name=row.get("voter_name"),
                 gender=row.get("gender", ""),
-                age=int(row.get("age", 0)),
+                age=safe_int(row.get("age")),
                 relation_name=row.get("relation_name", ""),
                 surname=row.get("surname", ""),
-                ward_no=int(row.get("ward_no", 0)), # Display number (e.g. 1)
+                ward_no=safe_int(row.get("ward_no")), # Display number (e.g. 1)
                 ward_id=ward_id,                    # Link to specific Master Ward (Phase 6)
                 family_id=row.get("family_id", ""),
                 mobile_no=row.get("mobile_no", None)
