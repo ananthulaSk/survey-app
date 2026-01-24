@@ -9,8 +9,8 @@ from datetime import datetime
 from pydantic import BaseModel
 
 # --- CONFIGURATION ---
-MAIN_VERSION = "v19.17 (Hotfix)" # Rebuild Trigger: Auto-CI
-EXPECTED_FRONTEND_VERSION = "v19.17"
+MAIN_VERSION = "v19.18 (Hotfix 2)" # Rebuild Trigger: Auto-CI
+EXPECTED_FRONTEND_VERSION = "v19.18"
 
 # Import robust database setup
 from database import engine, SessionLocal, Base, get_db

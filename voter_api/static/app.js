@@ -1,4 +1,4 @@
-const API_BASE = "";
+﻿const API_BASE = "";
 let currentSurveyId = null;
 let chartInstance = null;
 // --- AUTH STATE ---
@@ -135,11 +135,11 @@ function showDashboard() {
 
         // Rename Approvals to "My Team"
         const appTab = document.querySelector('[data-tab="approvals"]');
-        appTab.innerHTML = '<span class="icon">👥</span> My Team';
+        appTab.innerHTML = '<span class="icon">ðŸ‘¥</span> My Team';
 
         // Rename Assignments to "Assign Team" to be clear
         const assignTab = document.querySelector('[data-tab="assignments"]');
-        assignTab.innerHTML = '<span class="icon">⚙️</span> Assign Team';
+        assignTab.innerHTML = '<span class="icon">âš™ï¸</span> Assign Team';
 
         // Add Logout Button to Sidebar? 
         // Or just header...
