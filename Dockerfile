@@ -2,7 +2,7 @@
 FROM python:3.10-slim
 
 # Set working directory
-# CACHEBUST=v19.18-FORCE-REBUILD
+# CACHEBUST=v19.19-PHASE6
 WORKDIR /app
 
 # Copy requirements from the subfolder

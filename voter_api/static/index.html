@@ -64,10 +64,18 @@
             <div class="logo">
                 <h2>EC Survey</h2>
                 <span class="badge"
-                    style="background-color: #ef4444; color: #ffffff; padding: 4px 8px; border-radius: 4px; font-weight: bold;">Admin
-                    v19.18 (Hotfix 2)</span>
+                    style="background-color: #2563eb; color: #ffffff; padding: 4px 8px; border-radius: 4px; font-weight: bold;">Admin
+                    v19.19 (Phase 6)</span>
                 <button onclick="seedGeoData()" class="btn btn-sm btn-warning"
                     style="margin-top:10px; font-size:10px; width:100%;">⚡ Initialize Data</button>
+
+                <!-- BULK UPLOAD -->
+                <input type="file" id="voterUploadFile" accept=".csv" style="display: none;"
+                    onchange="handleVoterUpload(this)">
+                <button onclick="document.getElementById('voterUploadFile').click()" class="btn btn-sm"
+                    style="margin-top:5px; font-size:10px; width:100%; background-color: #2563eb; color: white;">
+                    📤 Upload Voters (CSV)
+                </button>
             </div>
             <nav class="nav-links">
                 <a href="#" class="nav-item active" data-tab="dashboard" onclick="switchTab('dashboard')">

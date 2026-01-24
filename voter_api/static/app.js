@@ -1083,3 +1083,57 @@ async function createSurveyor() {
         alert("Error creating surveyor");
     }
 }
+
+// --- VOTER DATA UPLOAD ---
+async function handleVoterUpload(input) {
+    if (!input.files || input.files.length === 0) return;
+
+    const file = input.files[0];
+    if (!CURRENT_USER || CURRENT_USER.role !== 'ADMIN') {
+        alert("Unauthorized. Please login as Admin.");
+        return;
+    }
+
+    if (!confirm(`Upload ${file.name}? This will add voters to the database.`)) {
+        input.value = ''; // Reset
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('secret_key', CURRENT_USER.token); // Use session token as secret
+
+    try {
+        // Show loading state
+        const btn = document.querySelector('button[onclick*="voterUploadFile"]');
+        const originalText = btn.textContent;
+        btn.textContent = "⏳ Uploading...";
+        btn.disabled = true;
+
+        const res = await fetch(`${API_BASE}/admin/upload-voters`, {
+            method: 'POST',
+            body: formData
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+            alert("✅ Success: " + data.message);
+            // Optional: Refresh dashboard stats if you had a function for it
+            if (window.loadDashboardStats) loadDashboardStats();
+        } else {
+            alert("❌ Error: " + (data.detail || "Upload failed"));
+        }
+    } catch (e) {
+        console.error(e);
+        alert("❌ Connection Error");
+    } finally {
+        // Reset UI
+        input.value = '';
+        const btn = document.querySelector('button[onclick*="voterUploadFile"]');
+        if (btn) { // Check if element still exists
+            btn.textContent = "📤 Upload Voters (CSV)";
+            btn.disabled = false;
+        }
+    }
+}
