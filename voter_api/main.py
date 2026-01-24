@@ -9,8 +9,8 @@ from datetime import datetime
 from pydantic import BaseModel
 
 # --- CONFIGURATION ---
-MAIN_VERSION = "v19.19 (Phase 6)" # Rebuild Trigger: Bulk Upload
-EXPECTED_FRONTEND_VERSION = "v19.19"
+MAIN_VERSION = "v19.20 (Fix)" # Rebuild Trigger: AppName Error
+EXPECTED_FRONTEND_VERSION = "v19.20"
 
 # Import robust database setup
 from database import engine, SessionLocal, Base, get_db
@@ -146,65 +146,7 @@ class SurveyAssignment(Base):
 # Backward compatibility alias - Delete this once migration is complete
 Voter = VoterMaster
 
-# --- 6. BULK UPLOAD API (Part 1 - Data Onboarding) ---
-@app.post("/admin/upload-voters")
-async def upload_voters(
-    file: UploadFile = File(...),
-    secret_key: str = Form(...),
-    db: Session = Depends(get_db)
-):
-    # 1. Simple Auth Check (Phase 4 legacy style)
-    if secret_key != "admin-secret-123":
-         raise HTTPException(status_code=401, detail="Invalid Admin Secret")
-
-    # 2. Parse CSV
-    import csv
-    import codecs
-    
-    try:
-        # iterdecode allows reading the file stream as string directly
-        csv_reader = csv.DictReader(codecs.iterdecode(file.file, 'utf-8'))
-        
-        voters_to_add = []
-        count = 0
-        
-        # 3. Process Rows
-        for row in csv_reader:
-            # Basic validation
-            if not row.get("voter_name") or not row.get("ward_no"):
-                continue
-
-            voter = VoterMaster(
-                serial_no=int(row.get("serial_no", 0)),
-                house_no=row.get("house_no", ""),
-                voter_name=row.get("voter_name"),
-                gender=row.get("gender", ""),
-                age=int(row.get("age", 0)),
-                relation_name=row.get("relation_name", ""),
-                surname=row.get("surname", ""),
-                ward_no=int(row.get("ward_no", 0)),
-                family_id=row.get("family_id", ""),
-                mobile_no=row.get("mobile_no", None)
-            )
-            voters_to_add.append(voter)
-            count += 1
-            
-            # Batch Insert every 1000 records
-            if len(voters_to_add) >= 1000:
-                db.add_all(voters_to_add)
-                db.commit()
-                voters_to_add = []
-
-        # Insert remaining
-        if voters_to_add:
-            db.add_all(voters_to_add)
-            db.commit()
-            
-        return {"status": "success", "message": f"Successfully uploaded {count} voters"}
-
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(status_code=400, detail=f"Upload Failed: {str(e)}")
+# Create the table in Google Cloud if it doesn't exist
 
 
 # Create the table in Google Cloud if it doesn't exist
@@ -1209,6 +1151,66 @@ def check_registration_status(request_id: int, db: Session = Depends(get_db)):
 # This ensures that /flutter_bootstrap.js, /main.dart.js, etc. are found.
 # API routes defined above take precedence.
 app.mount("/flutter_app", StaticFiles(directory="static/flutter_app", html=True), name="flutter_app")
+
+# --- 6. BULK UPLOAD API (Part 1 - Data Onboarding) ---
+@app.post("/admin/upload-voters")
+async def upload_voters(
+    file: UploadFile = File(...),
+    secret_key: str = Form(...),
+    db: Session = Depends(get_db)
+):
+    # 1. Simple Auth Check (Phase 4 legacy style)
+    if secret_key != "admin-secret-123":
+         raise HTTPException(status_code=401, detail="Invalid Admin Secret")
+
+    # 2. Parse CSV
+    import csv
+    import codecs
+    
+    try:
+        # iterdecode allows reading the file stream as string directly
+        csv_reader = csv.DictReader(codecs.iterdecode(file.file, 'utf-8'))
+        
+        voters_to_add = []
+        count = 0
+        
+        # 3. Process Rows
+        for row in csv_reader:
+            # Basic validation
+            if not row.get("voter_name") or not row.get("ward_no"):
+                continue
+
+            voter = VoterMaster(
+                serial_no=int(row.get("serial_no", 0)),
+                house_no=row.get("house_no", ""),
+                voter_name=row.get("voter_name"),
+                gender=row.get("gender", ""),
+                age=int(row.get("age", 0)),
+                relation_name=row.get("relation_name", ""),
+                surname=row.get("surname", ""),
+                ward_no=int(row.get("ward_no", 0)),
+                family_id=row.get("family_id", ""),
+                mobile_no=row.get("mobile_no", None)
+            )
+            voters_to_add.append(voter)
+            count += 1
+            
+            # Batch Insert every 1000 records
+            if len(voters_to_add) >= 1000:
+                db.add_all(voters_to_add)
+                db.commit()
+                voters_to_add = []
+
+        # Insert remaining
+        if voters_to_add:
+            db.add_all(voters_to_add)
+            db.commit()
+            
+        return {"status": "success", "message": f"Successfully uploaded {count} voters"}
+
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=400, detail=f"Upload Failed: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn
