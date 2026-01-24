@@ -9,8 +9,8 @@ from datetime import datetime
 from pydantic import BaseModel
 
 # --- CONFIGURATION ---
-MAIN_VERSION = "v19.27 (Secure)" # Rebuild Trigger: Ward Data Isolation
-EXPECTED_FRONTEND_VERSION = "v19.27"
+MAIN_VERSION = "v19.28 (Strict)" # Rebuild Trigger: Aggressive Ward Correct
+EXPECTED_FRONTEND_VERSION = "v19.28"
 
 # Import robust database setup
 from database import engine, SessionLocal, Base, get_db
@@ -498,9 +498,11 @@ def create_survey(
         survey_voters = []
         now = datetime.utcnow()
         for v in masters:
-            # AUTO-CORRECT: If ward_no is 0 (bad parse), try to recover from ward_id
+            # AUTO-CORRECT (AGGRESSIVE): 
+            # Trust the Dropdown Link (ward_id) over the text Parser (csv ward_no).
+            # If we have a Ward ID map, use it to force the correct Ward Number.
             final_ward_no = v.ward_no
-            if (final_ward_no == 0 or final_ward_no is None) and v.ward_id in ward_id_map:
+            if v.ward_id in ward_id_map:
                 final_ward_no = ward_id_map[v.ward_id]
 
             sv = SurveyVoter(
