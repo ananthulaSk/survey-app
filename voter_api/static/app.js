@@ -1099,9 +1099,25 @@ async function handleVoterUpload(input) {
         return;
     }
 
+    // Get Selected Context
+    const distId = document.getElementById('up-district').value;
+    const mandalId = document.getElementById('up-mandal').value;
+    const villageId = document.getElementById('up-village').value;
+    const wardId = document.getElementById('up-ward').value;
+
+    if (!wardId) {
+        alert("Please select District > Mandal > Village > Ward before uploading.");
+        input.value = '';
+        return;
+    }
+
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('secret_key', CURRENT_USER.token); // Use session token as secret
+    formData.append('secret_key', CURRENT_USER.token);
+    formData.append('district_id', distId);
+    formData.append('mandal_id', mandalId);
+    formData.append('village_id', villageId);
+    formData.append('ward_id', wardId);
 
     try {
         // Show loading state
@@ -1137,3 +1153,63 @@ async function handleVoterUpload(input) {
         }
     }
 }
+
+// --- BULK UPLOAD CASCADING VALUES ---
+
+async function loadUpDistricts() {
+    const sel = document.getElementById('up-district');
+    try {
+        const res = await fetch(`${API_BASE}/locations/districts`);
+        const data = await res.json();
+        sel.innerHTML = '<option value="">Select District</option>';
+        data.forEach(d => sel.innerHTML += `<option value="${d.id}">${d.name}</option>`);
+    } catch (e) { }
+}
+
+async function loadUpMandals() {
+    const distId = document.getElementById('up-district').value;
+    const sel = document.getElementById('up-mandal');
+    sel.innerHTML = '<option value="">Select Mandal</option>';
+    document.getElementById('up-village').innerHTML = '<option value="">Select Village</option>';
+    document.getElementById('up-ward').innerHTML = '<option value="">Select Ward</option>';
+
+    if (!distId) return;
+    try {
+        const res = await fetch(`${API_BASE}/locations/mandals/${distId}`);
+        const data = await res.json();
+        data.forEach(d => sel.innerHTML += `<option value="${d.id}">${d.name}</option>`);
+    } catch (e) { }
+}
+
+async function loadUpVillages() {
+    const manId = document.getElementById('up-mandal').value;
+    const sel = document.getElementById('up-village');
+    sel.innerHTML = '<option value="">Select Village</option>';
+    document.getElementById('up-ward').innerHTML = '<option value="">Select Ward</option>';
+
+    if (!manId) return;
+    try {
+        const res = await fetch(`${API_BASE}/locations/villages/${manId}`);
+        const data = await res.json();
+        data.forEach(d => sel.innerHTML += `<option value="${d.id}">${d.name}</option>`);
+    } catch (e) { }
+}
+
+async function loadUpWards() {
+    const vilId = document.getElementById('up-village').value;
+    const sel = document.getElementById('up-ward');
+    sel.innerHTML = '<option value="">Select Ward</option>';
+
+    if (!vilId) return;
+    try {
+        const res = await fetch(`${API_BASE}/locations/wards/${vilId}`);
+        const data = await res.json();
+        data.forEach(d => sel.innerHTML += `<option value="${d.id}">${d.name}</option>`);
+    } catch (e) { }
+}
+
+// Call on startup
+document.addEventListener('DOMContentLoaded', () => {
+    // Existing startup logic...
+    loadUpDistricts();
+});

@@ -9,8 +9,8 @@ from datetime import datetime
 from pydantic import BaseModel
 
 # --- CONFIGURATION ---
-MAIN_VERSION = "v19.20 (Fix)" # Rebuild Trigger: AppName Error
-EXPECTED_FRONTEND_VERSION = "v19.20"
+MAIN_VERSION = "v19.21 (Phase 6)" # Rebuild Trigger: Location Context
+EXPECTED_FRONTEND_VERSION = "v19.21"
 
 # Import robust database setup
 from database import engine, SessionLocal, Base, get_db
@@ -61,6 +61,7 @@ class VoterMaster(Base):
     caste = Column(String, nullable=True)
     sub_caste = Column(String, nullable=True)
     mobile_no = Column(String, nullable=True)
+    ward_id = Column(Integer, ForeignKey("ward_master.id"), nullable=True) # Added Phase 6
     voter_status = Column(String, default="AVAILABLE") 
 
 # --- 2. SURVEY META DATA ---
@@ -213,6 +214,14 @@ def startup_event():
              migrate_phase5()
         except Exception as e:
              print(f"[STARTUP] Phase 5 Migration Error: {e}")
+
+        # --- PHASE 6: VOTER LOCATION (Schema) ---
+        print("[STARTUP] Checking Phase 6 Schema (Voter Location)...")
+        try:
+             from migrate_phase6 import migrate_phase6
+             migrate_phase6()
+        except Exception as e:
+             print(f"[STARTUP] Phase 6 Migration Error: {e}")
 
         # --- PHASE 4.2: SEED DEMO COORDINATOR (Auto-Fix) ---
         # Ensure the test user 9999999999 exists for the User to log in
@@ -1114,6 +1123,10 @@ def coordinator_login(login: LoginRequest, db: Session = Depends(get_db)):
 def get_districts(db: Session = Depends(get_db)):
     return db.query(DistrictMaster).all()
 
+
+
+
+
 @app.get("/locations/mandals/{district_id}")
 def get_mandals(district_id: int, db: Session = Depends(get_db)):
     return db.query(MandalMaster).filter(MandalMaster.district_id == district_id).all()
@@ -1157,6 +1170,10 @@ app.mount("/flutter_app", StaticFiles(directory="static/flutter_app", html=True)
 async def upload_voters(
     file: UploadFile = File(...),
     secret_key: str = Form(...),
+    district_id: int = Form(None), # Added Phase 6
+    mandal_id: int = Form(None),   # Added Phase 6
+    village_id: int = Form(None),  # Added Phase 6
+    ward_id: int = Form(None),     # Added Phase 6 - This is the Critical Context
     db: Session = Depends(get_db)
 ):
     # 1. Simple Auth Check (Phase 4 legacy style)
@@ -1177,9 +1194,14 @@ async def upload_voters(
         # 3. Process Rows
         for row in csv_reader:
             # Basic validation
-            if not row.get("voter_name") or not row.get("ward_no"):
+            voter_name = row.get("voter_name")
+            if not voter_name:
                 continue
-
+            
+            # If ward_id is selected in UI, use it. 
+            # Otherwise fall back to CSV 'ward_no' (legacy behavior or integer only)
+            # We map CSV 'ward_no' to `ward_no` column (integer), but `ward_id` (FK) comes from UI.
+            
             voter = VoterMaster(
                 serial_no=int(row.get("serial_no", 0)),
                 house_no=row.get("house_no", ""),
@@ -1188,7 +1210,8 @@ async def upload_voters(
                 age=int(row.get("age", 0)),
                 relation_name=row.get("relation_name", ""),
                 surname=row.get("surname", ""),
-                ward_no=int(row.get("ward_no", 0)),
+                ward_no=int(row.get("ward_no", 0)), # Display number (e.g. 1)
+                ward_id=ward_id,                    # Link to specific Master Ward (Phase 6)
                 family_id=row.get("family_id", ""),
                 mobile_no=row.get("mobile_no", None)
             )
@@ -1206,7 +1229,11 @@ async def upload_voters(
             db.add_all(voters_to_add)
             db.commit()
             
-        return {"status": "success", "message": f"Successfully uploaded {count} voters"}
+        return {
+            "status": "success", 
+            "message": f"Successfully uploaded {count} voters (Ward ID: {ward_id})",
+            "context": {"ward_id": ward_id, "district_id": district_id}
+        }
 
     except Exception as e:
         db.rollback()
