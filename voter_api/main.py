@@ -9,8 +9,8 @@ from datetime import datetime
 from pydantic import BaseModel
 
 # --- CONFIGURATION ---
-MAIN_VERSION = "v19.24 (Fix)" # Rebuild Trigger: Snapshot Logic
-EXPECTED_FRONTEND_VERSION = "v19.24"
+MAIN_VERSION = "v19.25 (Fix)" # Rebuild Trigger: Auto Correct Ward 0
+EXPECTED_FRONTEND_VERSION = "v19.25"
 
 # Import robust database setup
 from database import engine, SessionLocal, Base, get_db
@@ -474,6 +474,18 @@ def create_survey(
         # ignoring any CSV parsing errors that might have left `ward_no` as 0.
         
         target_ward_ids = [w.id for w in wards]
+        
+        # Build Map: ward_id -> ward_number
+        ward_id_map = {}
+        for w in wards:
+            try:
+                # Extract number from "Ward 5", "5"
+                import re
+                match = re.search(r'\d+', w.name)
+                if match:
+                    ward_id_map[w.id] = int(match.group())
+            except: pass
+
         from sqlalchemy import or_
         
         masters = db.query(VoterMaster).filter(
@@ -486,12 +498,17 @@ def create_survey(
         survey_voters = []
         now = datetime.utcnow()
         for v in masters:
+            # AUTO-CORRECT: If ward_no is 0 (bad parse), try to recover from ward_id
+            final_ward_no = v.ward_no
+            if (final_ward_no == 0 or final_ward_no is None) and v.ward_id in ward_id_map:
+                final_ward_no = ward_id_map[v.ward_id]
+
             sv = SurveyVoter(
                 survey_id=new_survey.id,
                 master_voter_id=v.voter_id,
                 voter_name=v.voter_name,
                 surname=v.surname,
-                ward_no=v.ward_no,
+                ward_no=final_ward_no,
                 house_no=v.house_no,
                 age=v.age,
                 gender=v.gender,
