@@ -9,8 +9,8 @@ from datetime import datetime
 from pydantic import BaseModel
 
 # --- CONFIGURATION ---
-MAIN_VERSION = "v19.23 (Fix)" # Rebuild Trigger: Smart Int Parsing
-EXPECTED_FRONTEND_VERSION = "v19.23"
+MAIN_VERSION = "v19.24 (Fix)" # Rebuild Trigger: Snapshot Logic
+EXPECTED_FRONTEND_VERSION = "v19.24"
 
 # Import robust database setup
 from database import engine, SessionLocal, Base, get_db
@@ -468,20 +468,20 @@ def create_survey(
 
     # 4. Snapshot Logic (Bulk Copy)
     copied_count = 0
-    if target_ward_nums:
-        # We need to be careful: VoterMaster.ward_no is unique ONLY within a Village usually, 
-        # but in our simplistic schema, we might risk cross-village collision if we only filter by ward_no.
-        # ideally we need Village ID in VoterMaster. 
-        # CAUTION: If VoterMaster doesn't have Village ID, relying on Ward No 1 is dangerous if multiple villages have Ward 1.
-        # User confirmed "Aregudem village has 10 wards".
-        # IF VoterMaster relies only on `ward_no`, we assume the User's csv data was global?
-        # Actually, without VillageId in VoterMaster, we cannot distinguish Ward 1 of Village A from Ward 1 of Village B.
-        # FOR THIS PILOT/PHASE: We proceed with pure Ward Number matching as per current schema, 
-        # BUT this is a known risk unless VoterMaster has Unique Ward IDs or Village association.
-        # Let's assume for now we filter broadly.
+    if target_ward_nums or wards:
+        # Phase 6 FIX: Support both legacy `ward_no` and new `ward_id`
+        # Using ward_id (FK) is safer as it links directly to the Master Data (Dropdown selection),
+        # ignoring any CSV parsing errors that might have left `ward_no` as 0.
         
-        # Performance: Chunking might be needed for huge datasets, but focusing on correctness first.
-        masters = db.query(VoterMaster).filter(VoterMaster.ward_no.in_(target_ward_nums)).all()
+        target_ward_ids = [w.id for w in wards]
+        from sqlalchemy import or_
+        
+        masters = db.query(VoterMaster).filter(
+            or_(
+                VoterMaster.ward_id.in_(target_ward_ids),
+                VoterMaster.ward_no.in_(target_ward_nums)
+            )
+        ).all()
         
         survey_voters = []
         now = datetime.utcnow()
