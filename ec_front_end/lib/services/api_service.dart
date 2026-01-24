@@ -11,6 +11,7 @@ class ApiService {
   // Session Context (Simple In-Memory)
   static String? loggedInMobile;
   static int? loggedInSurveyorId;
+  static String? loggedInWard;
 
   // Normalization Helper
   static String normalizeMobile(String mobile) {
@@ -22,14 +23,22 @@ class ApiService {
   }
 
   // Persist Session
-  static Future<void> saveSession(String mobile, int? surveyorId) async {
+  static Future<void> saveSession(
+    String mobile,
+    int? surveyorId,
+    String? ward,
+  ) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('mobile', normalizeMobile(mobile));
     if (surveyorId != null) {
       await prefs.setInt('surveyor_id', surveyorId);
     }
+    if (ward != null) {
+      await prefs.setString('ward', ward);
+    }
     loggedInMobile = mobile;
     loggedInSurveyorId = surveyorId;
+    loggedInWard = ward;
   }
 
   // Restore Session
@@ -37,10 +46,12 @@ class ApiService {
     final prefs = await SharedPreferences.getInstance();
     final mobile = prefs.getString('mobile');
     final surveyorId = prefs.getInt('surveyor_id');
+    final ward = prefs.getString('ward');
 
     if (mobile != null && mobile.isNotEmpty) {
       loggedInMobile = mobile;
       loggedInSurveyorId = surveyorId;
+      loggedInWard = ward;
       return true;
     }
     return false;
@@ -115,11 +126,17 @@ class ApiService {
   Future<List<Voter>> searchVoters(String query) async {
     if (currentSurveyId == null) throw Exception("No survey selected");
 
-    final response = await http.get(
-      Uri.parse(
-        '$baseUrl/voters/search?query=$query&survey_id=$currentSurveyId',
-      ),
-    );
+    String url =
+        '$baseUrl/voters/search?query=$query&survey_id=$currentSurveyId';
+    if (loggedInWard != null) {
+      // Extract number from "Ward 4" -> 4
+      final wardNum = int.tryParse(
+        loggedInWard!.replaceAll(RegExp(r'[^0-9]'), ''),
+      );
+      if (wardNum != null) url += '&ward=$wardNum';
+    }
+
+    final response = await http.get(Uri.parse(url));
 
     if (response.statusCode == 200) {
       List<dynamic> body = jsonDecode(response.body);
@@ -153,11 +170,16 @@ class ApiService {
   }) async {
     if (currentSurveyId == null) throw Exception("No survey selected");
 
-    final response = await http.get(
-      Uri.parse(
-        '$baseUrl/voters/next?current_id=$currentId&survey_id=$currentSurveyId&skip_completed=$skipCompleted',
-      ),
-    );
+    String url =
+        '$baseUrl/voters/next?current_id=$currentId&survey_id=$currentSurveyId&skip_completed=$skipCompleted';
+    if (loggedInWard != null) {
+      final wardNum = int.tryParse(
+        loggedInWard!.replaceAll(RegExp(r'[^0-9]'), ''),
+      );
+      if (wardNum != null) url += '&ward=$wardNum';
+    }
+
+    final response = await http.get(Uri.parse(url));
     if (response.statusCode == 200) {
       final json = jsonDecode(response.body);
       if (json['status'] == 'success' && json['data'] != null) {
@@ -173,11 +195,16 @@ class ApiService {
   }) async {
     if (currentSurveyId == null) throw Exception("No survey selected");
 
-    final response = await http.get(
-      Uri.parse(
-        '$baseUrl/voters/previous?current_id=$currentId&survey_id=$currentSurveyId&skip_completed=$skipCompleted',
-      ),
-    );
+    String url =
+        '$baseUrl/voters/previous?current_id=$currentId&survey_id=$currentSurveyId&skip_completed=$skipCompleted';
+    if (loggedInWard != null) {
+      final wardNum = int.tryParse(
+        loggedInWard!.replaceAll(RegExp(r'[^0-9]'), ''),
+      );
+      if (wardNum != null) url += '&ward=$wardNum';
+    }
+
+    final response = await http.get(Uri.parse(url));
     if (response.statusCode == 200) {
       final json = jsonDecode(response.body);
       if (json['status'] == 'success' && json['data'] != null) {
@@ -217,7 +244,16 @@ class ApiService {
     List<String> params = [];
     params.add('survey_id=$currentSurveyId');
 
-    if (ward != null) params.add('ward=$ward');
+    if (ward != null)
+      params.add('ward=$ward');
+    // Auto-inject ward if surveyor
+    else if (loggedInWard != null) {
+      final wardNum = int.tryParse(
+        loggedInWard!.replaceAll(RegExp(r'[^0-9]'), ''),
+      );
+      if (wardNum != null) params.add('ward=$wardNum');
+    }
+
     if (currentVoterId != null) params.add('current_voter_id=$currentVoterId');
 
     if (params.isNotEmpty) url += '?${params.join('&')}';
@@ -380,6 +416,7 @@ class ApiService {
         if (data['surveyor_id'] != null) {
           loggedInSurveyorId = data['surveyor_id'];
         }
+        loggedInWard = data['ward_no']; // Capture Ward
         return data['approval_status'] ?? 'PENDING';
       }
     } catch (e) {

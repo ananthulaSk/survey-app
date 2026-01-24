@@ -28,9 +28,9 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   String? _selectedWard;
 
   // Version Handshake
-  static const String EXPECTED_BACKEND_VERSION = "v19.26";
+  static const String EXPECTED_BACKEND_VERSION = "v19.27";
   String _backendVersion = "Fetching...";
-  final String _appVersionDisplay = "v19.26 (UI Fix)";
+  final String _appVersionDisplay = "v19.27 (Data Security)";
 
   // API Service
   final _api = ApiService();
@@ -289,6 +289,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                             await ApiService.saveSession(
                               _mobileController.text.trim(),
                               null,
+                              _selectedWard,
                             );
 
                             ScaffoldMessenger.of(context).showSnackBar(

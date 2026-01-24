@@ -9,8 +9,8 @@ from datetime import datetime
 from pydantic import BaseModel
 
 # --- CONFIGURATION ---
-MAIN_VERSION = "v19.26 (UI)" # Rebuild Trigger: Assignment UI Ward
-EXPECTED_FRONTEND_VERSION = "v19.26"
+MAIN_VERSION = "v19.27 (Secure)" # Rebuild Trigger: Ward Data Isolation
+EXPECTED_FRONTEND_VERSION = "v19.27"
 
 # Import robust database setup
 from database import engine, SessionLocal, Base, get_db
@@ -654,13 +654,18 @@ def list_assignments(survey_id: Optional[int] = None, db: Session = Depends(get_
     return results
 
 @app.get("/voters/search", response_model=List[dict])
-def search_voters(query: str, survey_id: int, db: Session = Depends(get_db)):
+def search_voters(query: str, survey_id: int, ward: Optional[int] = None, db: Session = Depends(get_db)):
     # Search in the active Survey Snapshot
-    voters = db.query(SurveyVoter).filter(
+    q = db.query(SurveyVoter).filter(
         SurveyVoter.survey_id == survey_id,
         (SurveyVoter.voter_name.ilike(f"%{query}%")) | 
         (SurveyVoter.surname.ilike(f"%{query}%"))
-    ).limit(50).all()
+    )
+    # Filter by Ward if provided (surveyor restriction)
+    if ward is not None:
+        q = q.filter(SurveyVoter.ward_no == ward)
+        
+    voters = q.limit(50).all()
     
     # Return formatted data (same structure as before but from Snapshot)
     return [
@@ -684,7 +689,7 @@ def search_voters(query: str, survey_id: int, db: Session = Depends(get_db)):
     ]
 
 @app.get("/voters/next")
-def get_next_voter(survey_id: int, current_id: int = 0, skip_completed: bool = True, db: Session = Depends(get_db)):
+def get_next_voter(survey_id: int, current_id: int = 0, skip_completed: bool = True, ward: Optional[int] = None, db: Session = Depends(get_db)):
     # Use Master ID for sequential navigation, but fetch from Snapshot
     # If skip_completed is True, we only fetch voters where expected_party IS NULL
     
@@ -692,6 +697,9 @@ def get_next_voter(survey_id: int, current_id: int = 0, skip_completed: bool = T
         SurveyVoter.survey_id == survey_id,
         SurveyVoter.master_voter_id > current_id
     )
+
+    if ward is not None:
+        query = query.filter(SurveyVoter.ward_no == ward)
 
     if skip_completed:
         # Also skip statuses that are decidedly handled (like Death, Out of Station etc if desired, 
@@ -726,11 +734,14 @@ def get_next_voter(survey_id: int, current_id: int = 0, skip_completed: bool = T
     }
 
 @app.get("/voters/previous")
-def get_previous_voter(survey_id: int, current_id: int, skip_completed: bool = True, db: Session = Depends(get_db)):
+def get_previous_voter(survey_id: int, current_id: int, skip_completed: bool = True, ward: Optional[int] = None, db: Session = Depends(get_db)):
     query = db.query(SurveyVoter).filter(
         SurveyVoter.survey_id == survey_id,
         SurveyVoter.master_voter_id < current_id
     )
+
+    if ward is not None:
+        query = query.filter(SurveyVoter.ward_no == ward)
 
     if skip_completed:
         query = query.filter(SurveyVoter.expected_party == None)

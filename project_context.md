@@ -53,4 +53,27 @@
 **Before writing code for complex features, the AI must:**
 1.  **Plan:** Propose the JSON structure (Pydantic model) first.
 2.  **Verify:** Ensure the Flutter frontend can easily consume that JSON structure.
-3.  **Execute:** Implement Backend first, then Frontend.
+
+## 5. Recent Architectures & Critical Logic (Phase 5 & 6)
+
+### A. Data Security (Ward Isolation)
+- **Constraint:** Surveyors MUST only see voters from their assigned Ward, even if the Survey spans multiple wards.
+- **Backend Implementation:**
+    - All voter-fetching endpoints (`/voters/next`, `/voters/search`, etc.) accept an optional `ward` parameter.
+    - If `ward` is present, the query is strictly filtered by `ward_no`.
+- **Frontend Implementation:**
+    - `ApiService` captures `ward_no` upon login/status check.
+    - This `ward_no` is automatically injected into all voter fetch calls.
+    - **Re-Login Required** on mobile to fetch new policy.
+
+### B. Robust Data Import (Smart Parsing)
+- **Problem:** CSVs often contain "Ward 4", "Ward No 4", or "4". Legacy logic failed on strings.
+- **Solution (v19.23+):**
+    - `safe_int()` helper uses Regex to extract the first integer from any string.
+    - **Snapshot Creation (v19.25+):** Uses dual-verification. checks `ward_id` (Dropdown Context) FIRST. If `ward_no` in data is 0/invalid, it **Auto-Corrects** it based on the Dropdown selection.
+
+### C. Assignments (Phase 5)
+- **Logic:** Surveyors are not "owned" by a survey permanently.
+- **Table:** `SurveyAssignment` links `Survey` <-> `Surveyor`.
+- **UI:** Dropdowns must display "Name (Mobile) - Ward X" to prevent assignment errors.
+
