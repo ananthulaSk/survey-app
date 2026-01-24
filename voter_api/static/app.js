@@ -869,7 +869,7 @@ async function loadAssignmentOptions() {
                     <div class="input-group mt-2">
                         <select id="surveyor-select-dropdown" class="form-control">
                             <option value="">-- Choose Surveyor --</option>
-                            ${approved.map(a => `<option value="${a.id}">${a.name} (${a.mobile})</option>`).join('')}
+                            ${approved.map(a => `<option value="${a.id}">${a.name} (${a.mobile}) - ${a.ward || 'No Ward'}</option>`).join('')}
                         </select>
                         <button class="btn btn-primary" onclick="assignSurveyorFromDropdown()">Assign</button>
                     </div>
