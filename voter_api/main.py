@@ -9,8 +9,8 @@ from datetime import datetime
 from pydantic import BaseModel
 
 # --- CONFIGURATION ---
-MAIN_VERSION = "v19.28 (Strict)" # Rebuild Trigger: Aggressive Ward Correct
-EXPECTED_FRONTEND_VERSION = "v19.28"
+MAIN_VERSION = "v19.29 (Safety)" # Rebuild Trigger: UI Safety Check + Robust Regex
+EXPECTED_FRONTEND_VERSION = "v19.29"
 
 # Import robust database setup
 from database import engine, SessionLocal, Base, get_db
@@ -479,11 +479,15 @@ def create_survey(
         ward_id_map = {}
         for w in wards:
             try:
-                # Extract number from "Ward 5", "5"
+                # Extract number from "Ward 5", "5", "W-5", "WardNo 5"
                 import re
+                # Look for integer at end, or after Ward/W/No
                 match = re.search(r'\d+', w.name)
                 if match:
                     ward_id_map[w.id] = int(match.group())
+                    print(f"[DEBUG] Mapped Ward ID {w.id} ({w.name}) -> {ward_id_map[w.id]}")
+                else:
+                    print(f"[WARNING] Could not extract number from Ward: {w.name} (ID: {w.id})")
             except: pass
 
         from sqlalchemy import or_

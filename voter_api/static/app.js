@@ -889,6 +889,14 @@ async function assignSurveyorFromDropdown() {
     if (!surveyId) return alert("Please SELECT A SURVEY first.");
     if (!surveyorId) return alert("Please SELECT A SURVEYOR.");
 
+    const surveyText = document.getElementById('assignment-survey-select').options[document.getElementById('assignment-survey-select').selectedIndex].text;
+    const surveyorText = document.getElementById('surveyor-select-dropdown').options[document.getElementById('surveyor-select-dropdown').selectedIndex].text;
+
+    // Safety Confirm
+    if (!confirm(`Verify Assignment:\n\nSurvey: ${surveyText}\nSurveyor: ${surveyorText}\n\nAre you sure this is correct?`)) {
+        return;
+    }
+
     const res = await fetch(`${API_BASE}/assignments/create`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
