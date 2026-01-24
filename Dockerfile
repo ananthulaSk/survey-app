@@ -2,7 +2,7 @@
 FROM python:3.10-slim
 
 # Set working directory
-# CACHEBUST=v19.22-SAFE-INT
+# CACHEBUST=v19.23-SMART-INT
 WORKDIR /app
 
 # Copy requirements from the subfolder

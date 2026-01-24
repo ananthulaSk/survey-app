@@ -9,8 +9,8 @@ from datetime import datetime
 from pydantic import BaseModel
 
 # --- CONFIGURATION ---
-MAIN_VERSION = "v19.22 (Fix)" # Rebuild Trigger: CSV Safe Int
-EXPECTED_FRONTEND_VERSION = "v19.22"
+MAIN_VERSION = "v19.23 (Fix)" # Rebuild Trigger: Smart Int Parsing
+EXPECTED_FRONTEND_VERSION = "v19.23"
 
 # Import robust database setup
 from database import engine, SessionLocal, Base, get_db
@@ -1189,8 +1189,14 @@ async def upload_voters(
         if val is None or val == "" or val == "None" or val == "null":
             return default
         try:
-            return int(float(val)) # float handles "1.0" in string
+            # First try direct conversion
+            return int(float(val)) 
         except (ValueError, TypeError):
+            # Fallback: Try to extract numbers (e.g., "Ward 4" -> 4)
+            import re
+            match = re.search(r'\d+', str(val))
+            if match:
+                return int(match.group())
             return default
 
     try:
