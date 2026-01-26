@@ -2,7 +2,7 @@
 FROM python:3.10-slim
 
 # Set working directory
-# CACHEBUST=v19.44-COMPAT
+# CACHEBUST=v19.45-OFFLINE
 WORKDIR /app
 
 # Copy requirements from the subfolder

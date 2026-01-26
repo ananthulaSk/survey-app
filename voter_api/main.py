@@ -10,8 +10,8 @@ from datetime import datetime
 from pydantic import BaseModel
 
 # --- CONFIGURATION ---
-MAIN_VERSION = "v19.44 (Compat Mode)" # Rebuild Trigger: Spoof Version v19.31
-EXPECTED_FRONTEND_VERSION = "v19.31" # Downgrade expectation
+MAIN_VERSION = "v19.45 (Offline Mode)" # Rebuild Trigger: Enable Offline Storage & Sync
+EXPECTED_FRONTEND_VERSION = "v19.31" # Still compatible with "v19.31" spoofing context
 
 # Import robust database setup
 from database import engine, SessionLocal, Base, get_db

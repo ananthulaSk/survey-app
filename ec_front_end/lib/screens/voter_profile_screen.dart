@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/voter.dart';
 import '../services/api_service.dart';
 import '../widgets/app_drawer.dart';
+import '../services/offline_service.dart';
 
 class VoterProfileScreen extends StatefulWidget {
   final Voter? voter;
@@ -168,18 +169,45 @@ class _VoterProfileScreenState extends State<VoterProfileScreen> {
       "caste": _casteController.text,
       "sub_caste": _subCasteController.text,
       "voter_status": _voterStatus,
+      "voter_id": _currentVoter!.id, // Required for offline sync
+      "ward": _currentVoter!.ward, // Helper for offline stats
     };
 
-    final success = await _apiService.updateVoter(_currentVoter!.id, updates);
+    final offlineService = OfflineService();
+    bool isOnline = await offlineService.isOnline();
+    bool success = false;
+    bool savedOffline = false;
+
+    if (isOnline) {
+      try {
+        success = await _apiService.updateVoter(_currentVoter!.id, updates);
+      } catch (e) {
+        print("API Failed: $e. Falling back to offline.");
+        isOnline = false; // Trigger offline fallback
+      }
+    }
+
+    if (!isOnline || !success) {
+      await offlineService.saveVoteOffline(updates);
+      savedOffline = true;
+      success = true; // Treated as success from UI perspective
+    }
+
     if (success && mounted) {
-      await _refreshStats(); // Update counters immediately
+      if (isOnline) {
+        await _refreshStats(); // Update counters if online
+      }
 
       if (!silent) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Survey Data Saved Successfully!"),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 1),
+          SnackBar(
+            content: Text(
+              savedOffline
+                  ? "Saved to Device (Offline Mode)"
+                  : "Survey Data Saved Successfully!",
+            ),
+            backgroundColor: savedOffline ? Colors.orange : Colors.green,
+            duration: const Duration(seconds: 1),
           ),
         );
       }

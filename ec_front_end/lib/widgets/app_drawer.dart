@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../screens/voter_profile_screen.dart';
 import '../screens/registration_screen.dart';
 import '../screens/approval_screen.dart';
+import '../services/offline_service.dart';
 
 class AppDrawer extends StatelessWidget {
   const AppDrawer({super.key});
@@ -64,6 +65,27 @@ class AppDrawer extends StatelessWidget {
               onTap: () {
                 Navigator.pop(context);
                 // Navigate to Home Dashboard if it existed
+              },
+            ),
+
+            // MANUAL SYNC BUTTON
+            ListTile(
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 24,
+                vertical: 4,
+              ),
+              leading: const Icon(Icons.sync, color: Colors.orange),
+              title: const Text(
+                "Sync Offline Data",
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.orange,
+                ),
+              ),
+              onTap: () async {
+                Navigator.pop(context); // Close Drawer
+                _showSyncDialog(context);
               },
             ),
 
@@ -198,6 +220,48 @@ class AppDrawer extends StatelessWidget {
       ),
       onTap: onTap,
     );
+  }
+
+  Future<void> _showSyncDialog(BuildContext context) async {
+    // Show Loading
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => const Center(child: CircularProgressIndicator()),
+    );
+
+    // Perform Sync
+    final offline = OfflineService();
+    int pending = offline.getPendingCount();
+
+    // Slight delay to show loading if 0
+    if (pending == 0) await Future.delayed(const Duration(milliseconds: 500));
+
+    int synced = await offline.syncPendingVotes();
+
+    // Close Loading
+    if (context.mounted) Navigator.pop(context);
+
+    // Show Result
+    if (context.mounted) {
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text(pending == 0 ? "Up to Date" : "Sync Complete"),
+          content: Text(
+            pending == 0
+                ? "No offline votes found on this device."
+                : "Synced $synced out of $pending votes to the server.",
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text("OK"),
+            ),
+          ],
+        ),
+      );
+    }
   }
 
   void _showInfo(BuildContext context, String title, String content) {
