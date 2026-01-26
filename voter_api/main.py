@@ -2,6 +2,7 @@ import urllib.parse
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Depends, Body, Query, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import StreamingResponse # Added for Export
 from sqlalchemy import Column, Integer, String, asc, desc, ForeignKey, DateTime, func
 from sqlalchemy.orm import Session, relationship
 from typing import List, Optional
@@ -9,8 +10,8 @@ from datetime import datetime
 from pydantic import BaseModel
 
 # --- CONFIGURATION ---
-MAIN_VERSION = "v19.33 (WardAPI)" # Rebuild Trigger: Add Ward to Status API
-EXPECTED_FRONTEND_VERSION = "v19.33"
+MAIN_VERSION = "v19.34 (Analytics)" # Rebuild Trigger: Export to Excel
+EXPECTED_FRONTEND_VERSION = "v19.34"
 
 # Import robust database setup
 from database import engine, SessionLocal, Base, get_db
@@ -959,6 +960,57 @@ def get_dashboard_progress(survey_id: int, db: Session = Depends(get_db)):
         "status": "success",
         "data": progress_data
     }
+
+@app.get("/analytics/export/{survey_id}")
+def export_survey_csv(survey_id: int, db: Session = Depends(get_db)):
+    # 1. Fetch Data
+    voters = db.query(SurveyVoter).filter(SurveyVoter.survey_id == survey_id).all()
+    
+    if not voters:
+        raise HTTPException(status_code=404, detail="No data found for this survey")
+
+    # 2. Prepare CSV Stream
+    import io
+    import csv
+    
+    output = io.StringIO()
+    writer = csv.writer(output)
+    
+    # Header
+    writer.writerow([
+        "Voter ID", "Name", "Surname", "Father/Husband", "Age", "Gender", 
+        "Ward", "House No", "Mobile", 
+        "Status", "Expected Party", "Caste", "Religion", "Occupation"
+    ])
+    
+    # Rows
+    for v in voters:
+        writer.writerow([
+            v.master_voter_id,
+            v.voter_name,
+            v.surname,
+            v.relation_name,
+            v.age,
+            v.gender,
+            v.ward_no,
+            v.house_no,
+            v.mobile_no,
+            v.voter_status or "PENDING",
+            v.expected_party or "", 
+            v.caste or "",
+            v.religion or "",
+            v.occupation or ""
+        ])
+        
+    output.seek(0)
+    
+    # 3. Return as File
+    filename = f"survey_{survey_id}_export.csv"
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
 
 @app.get("/dashboard/analytics")
 def get_dashboard_analytics(survey_id: int, db: Session = Depends(get_db)):

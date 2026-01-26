@@ -1221,3 +1221,14 @@ document.addEventListener('DOMContentLoaded', () => {
     // Existing startup logic...
     loadUpDistricts();
 });
+
+// --- EXPORT FUNCTION ---
+function downloadReport() {
+    const surveyId = document.getElementById('surveySelect').value;
+    if (!surveyId) {
+        alert('Please select a survey first.');
+        return;
+    }
+    // Direct browser navigation triggers download
+    window.location.href = ${API_BASE}/analytics/export/;
+}

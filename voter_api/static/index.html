@@ -65,7 +65,7 @@
                 <h2>EC Survey</h2>
                 <span class="badge"
                     style="background-color: #2563eb; color: #ffffff; padding: 4px 8px; border-radius: 4px; font-weight: bold;">Admin
-                    v19.33 (API Fix)</span>
+                    v19.34 (Analytics)</span>
                 <button onclick="seedGeoData()" class="btn btn-sm btn-warning"
                     style="margin-top:10px; font-size:10px; width:100%;">⚡ Initialize Data</button>
 
@@ -128,11 +128,17 @@
                 <div class="breadcrumbs">
                     <h1 id="page-title">Dashboard</h1>
                 </div>
-                <div class="survey-selector">
-                    <label>Active Survey:</label>
-                    <select id="surveySelect" onchange="loadDashboardData()">
-                        <option value="">Loading...</option>
-                    </select>
+                <div class="survey-selector" style="display: flex; gap: 10px; align-items: center;">
+                    <div>
+                        <label>Active Survey:</label>
+                        <select id="surveySelect" onchange="loadDashboardData()">
+                            <option value="">Loading...</option>
+                        </select>
+                    </div>
+                    <button onclick="downloadReport()" class="btn btn-sm"
+                        style="background-color: #10b981; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 5px;">
+                        📥 Export Excel
+                    </button>
                 </div>
             </header>
 

@@ -2,7 +2,7 @@
 FROM python:3.10-slim
 
 # Set working directory
-# CACHEBUST=v19.33-WARDAPI
+# CACHEBUST=v19.34-ANALYTICS
 WORKDIR /app
 
 # Copy requirements from the subfolder
