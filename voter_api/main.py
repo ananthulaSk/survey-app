@@ -10,7 +10,7 @@ from datetime import datetime
 from pydantic import BaseModel
 
 # --- CONFIGURATION ---
-MAIN_VERSION = "v19.45 (Offline Mode)" # Rebuild Trigger: Enable Offline Storage & Sync
+MAIN_VERSION = "v19.46 (Web Build Fix)" # Rebuild Trigger: Remove Incompatible Dart Package
 EXPECTED_FRONTEND_VERSION = "v19.31" # Still compatible with "v19.31" spoofing context
 
 # Import robust database setup

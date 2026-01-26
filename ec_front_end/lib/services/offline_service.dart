@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:ec_front_end/services/api_service.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:internet_connection_checker/internet_connection_checker.dart';
+import 'package:http/http.dart' as http; // For web-safe ping
 
 class OfflineService {
   static const String BOX_NAME = "offline_votes";
@@ -20,14 +20,22 @@ class OfflineService {
     await Hive.openBox(BOX_NAME);
   }
 
-  /// Check if device is online
+  /// Check if device is online (Web Safe)
   Future<bool> isOnline() async {
     var connectivityResult = await (Connectivity().checkConnectivity());
     if (connectivityResult == ConnectivityResult.none) {
       return false;
     }
-    // Deep check (ping google)
-    return await InternetConnectionChecker().hasConnection;
+
+    // Web-Safe Deep Check: Ping our own server (version endpoint is lightweight)
+    try {
+      final response = await http
+          .get(Uri.parse('${ApiService.baseUrl}/version'))
+          .timeout(const Duration(seconds: 3));
+      return response.statusCode == 200;
+    } catch (e) {
+      return false;
+    }
   }
 
   /// Save Vote Locally (when offline)
