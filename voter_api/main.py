@@ -10,8 +10,8 @@ from datetime import datetime
 from pydantic import BaseModel
 
 # --- CONFIGURATION ---
-MAIN_VERSION = "v19.34 (Analytics)" # Rebuild Trigger: Export to Excel
-EXPECTED_FRONTEND_VERSION = "v19.34"
+MAIN_VERSION = "v19.35 (JS Fix)" # Rebuild Trigger: Fix JS Syntax Error
+EXPECTED_FRONTEND_VERSION = "v19.35"
 
 # Import robust database setup
 from database import engine, SessionLocal, Base, get_db

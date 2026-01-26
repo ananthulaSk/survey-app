@@ -1230,5 +1230,5 @@ function downloadReport() {
         return;
     }
     // Direct browser navigation triggers download
-    window.location.href = ${API_BASE}/analytics/export/;
+    window.location.href = `${API_BASE}/analytics/export/${surveyId}`;
 }

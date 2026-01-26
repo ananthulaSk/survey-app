@@ -2,7 +2,7 @@
 FROM python:3.10-slim
 
 # Set working directory
-# CACHEBUST=v19.34-ANALYTICS
+# CACHEBUST=v19.35-JSFIX
 WORKDIR /app
 
 # Copy requirements from the subfolder
