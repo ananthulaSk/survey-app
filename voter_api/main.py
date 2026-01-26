@@ -10,7 +10,7 @@ from datetime import datetime
 from pydantic import BaseModel
 
 # --- CONFIGURATION ---
-MAIN_VERSION = "v19.50 (Context Fix)" # Rebuild Trigger: Fix Survey ID Persistence (Singleton + Routing)
+MAIN_VERSION = "v19.51 (Export Fix)" # Rebuild Trigger: Add missing CSV columns
 EXPECTED_FRONTEND_VERSION = "v19.31" # Still compatible with "v19.31" spoofing context
 
 # Import robust database setup
@@ -1398,10 +1398,12 @@ def export_survey_analytics(survey_id: int, db: Session = Depends(get_db)):
         SurveyVoter.master_voter_id,
         SurveyVoter.voter_name,
         SurveyVoter.surname,
+        SurveyVoter.relation_name, # Father/Husband
         SurveyVoter.age,
         SurveyVoter.gender,
         SurveyVoter.mobile_no,
         SurveyVoter.ward_no,
+        SurveyVoter.house_no, # House No
         SurveyVoter.voter_status,
         SurveyVoter.expected_party,
         SurveyVoter.occupation,
@@ -1414,7 +1416,7 @@ def export_survey_analytics(survey_id: int, db: Session = Depends(get_db)):
     import csv
     import io
     
-    headers = ['Voter ID', 'Name', 'Surname', 'Age', 'Gender', 'Mobile', 'Ward', 'Status', 'Expected Party', 'Occupation', 'Caste', 'SubCaste', 'Religion']
+    headers = ['Voter ID', 'Name', 'Surname', 'Father/Husband', 'Age', 'Gender', 'Ward', 'House No', 'Mobile', 'Status', 'Expected Party', 'Caste', 'Religion', 'Occupation']
     output = io.StringIO()
     writer = csv.writer(output)
     writer.writerow(headers)
@@ -1424,16 +1426,17 @@ def export_survey_analytics(survey_id: int, db: Session = Depends(get_db)):
             row.master_voter_id,
             row.voter_name,
             row.surname,
+            getattr(row, "relation_name", ""), # Ensure this field exists in query
             row.age,
             row.gender,
-            row.mobile_no,
             row.ward_no,
+            getattr(row, "house_no", ""), # Ensure this field exists in query
+            row.mobile_no,
             row.voter_status,
             row.expected_party,
-            row.occupation,
             row.caste,
-            row.sub_caste,
-            row.religion
+            row.religion,
+            row.occupation
         ])
     
     output.seek(0)
