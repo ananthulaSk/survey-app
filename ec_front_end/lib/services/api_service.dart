@@ -5,6 +5,15 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
+  // Singleton Pattern
+  static final ApiService _instance = ApiService._internal();
+
+  factory ApiService() {
+    return _instance;
+  }
+
+  ApiService._internal();
+
   // Current Survey Context
   int? currentSurveyId;
 

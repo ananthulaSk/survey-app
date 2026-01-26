@@ -3,6 +3,8 @@ import '../screens/voter_profile_screen.dart';
 import '../screens/registration_screen.dart';
 import '../screens/approval_screen.dart';
 import '../services/offline_service.dart';
+import '../screens/survey_selection_screen.dart';
+import '../services/api_service.dart';
 
 class AppDrawer extends StatelessWidget {
   const AppDrawer({super.key});
@@ -107,15 +109,14 @@ class AppDrawer extends StatelessWidget {
                 ),
                 onTap: () {
                   Navigator.pop(context);
-                  // Ensure we are on the profile/search flow
-                  if (context.widget is! VoterProfileScreen) {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const VoterProfileScreen(),
-                      ),
-                    );
-                  }
+                  // Ensure we are on the survey selection flow
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          SurveySelectionScreen(apiService: ApiService()),
+                    ),
+                  );
                 },
               ),
             ),
