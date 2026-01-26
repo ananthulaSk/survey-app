@@ -10,7 +10,7 @@ from datetime import datetime
 from pydantic import BaseModel
 
 # --- CONFIGURATION ---
-MAIN_VERSION = "v19.48 (Force Resolve)" # Rebuild Trigger: persistent Cloud Run conflict
+MAIN_VERSION = "v19.49 (Label Sync)" # Rebuild Trigger: Sync HTML label with Backend Version
 EXPECTED_FRONTEND_VERSION = "v19.31" # Still compatible with "v19.31" spoofing context
 
 # Import robust database setup
