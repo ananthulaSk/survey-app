@@ -9,8 +9,8 @@ from datetime import datetime
 from pydantic import BaseModel
 
 # --- CONFIGURATION ---
-MAIN_VERSION = "v19.30 (Ingestion)" # Rebuild Trigger: Ingestion Fix + Persistence Warning
-EXPECTED_FRONTEND_VERSION = "v19.30"
+MAIN_VERSION = "v19.31 (NoLeak)" # Rebuild Trigger: Force Session Refresh
+EXPECTED_FRONTEND_VERSION = "v19.31"
 
 # Import robust database setup
 from database import engine, SessionLocal, Base, get_db

@@ -52,6 +52,17 @@ class ApiService {
       loggedInMobile = mobile;
       loggedInSurveyorId = surveyorId;
       loggedInWard = ward;
+
+      // FORCE REFRESH: Fetch latest security context (Ward) from Backend
+      // This ensures that even if local prefs are old, we get the Strict Policy from Main.py
+      try {
+        final api = ApiService();
+        await api.checkStatusByMobile(mobile);
+        print("Session Restored & Refreshed: Ward = $loggedInWard");
+      } catch (e) {
+        print("Session refresh warning upstream: $e");
+        // We continue even if offline, trusting the cached 'ward' if it exists.
+      }
       return true;
     }
     return false;
