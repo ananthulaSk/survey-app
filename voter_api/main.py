@@ -10,8 +10,8 @@ from datetime import datetime
 from pydantic import BaseModel
 
 # --- CONFIGURATION ---
-MAIN_VERSION = "v19.35 (JS Fix)" # Rebuild Trigger: Fix JS Syntax Error
-EXPECTED_FRONTEND_VERSION = "v19.35"
+MAIN_VERSION = "v19.36 (Schema Fix)" # Rebuild Trigger: Add Missing Ward Column
+EXPECTED_FRONTEND_VERSION = "v19.36"
 
 # Import robust database setup
 from database import engine, SessionLocal, Base, get_db

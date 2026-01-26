@@ -5,21 +5,33 @@ def migrate_phase6():
     print("Running Phase 6 Migration: Voter Location Context...")
     
     with engine.connect() as conn:
-        print("Checking if 'ward_id' column exists in 'voters' table...")
+        print("Phase 6.1: Checking 'ward_id' in 'voters'...")
         try:
-            # Check for column existence (SQLite/Postgres approach varies, simplified check)
-            # We try to select the column. If it fails, we add it.
             conn.execute(text("SELECT ward_id FROM voters LIMIT 1"))
-            print("- 'ward_id' column already exists. Skipping.")
+            print("- 'ward_id' exists.")
         except Exception:
-            print("- Adding 'ward_id' column to 'voters' table...")
+            print("- Adding 'ward_id' to 'voters'...")
             try:
-                # Add ward_id column
                 conn.execute(text("ALTER TABLE voters ADD COLUMN ward_id INTEGER REFERENCES ward_master(id)"))
-                print("- Added 'ward_id' column.")
+                conn.commit()
+                print("- Added 'ward_id'.")
             except Exception as e:
-                print(f"- Error adding column: {e}")
-                
+                print(f"- Error: {e}")
+
+        # FIX: Also add ward_no to surveyor_requests if missing
+        print("Phase 6.2: Checking 'ward_no' in 'surveyor_requests'...")
+        try:
+            conn.execute(text("SELECT ward_no FROM surveyor_requests LIMIT 1"))
+            print("- 'ward_no' exists.")
+        except Exception:
+            print("- Adding 'ward_no' to 'surveyor_requests'...")
+            try:
+                conn.execute(text("ALTER TABLE surveyor_requests ADD COLUMN ward_no VARCHAR"))
+                conn.commit()
+                print("- Added 'ward_no'.")
+            except Exception as e:
+                print(f"- Error: {e}")
+
         print("Phase 6 Database Migration Complete.")
 
 if __name__ == "__main__":
