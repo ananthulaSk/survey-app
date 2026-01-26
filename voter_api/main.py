@@ -10,8 +10,8 @@ from datetime import datetime
 from pydantic import BaseModel
 
 # --- CONFIGURATION ---
-MAIN_VERSION = "v19.41 (Cache Nuke)" # Rebuild Trigger: Nuclear Cache Busting for Frontend
-EXPECTED_FRONTEND_VERSION = "v19.40" # Keeping contract same to avoid cycle, just need to force frontend update
+MAIN_VERSION = "v19.42 (Header Fix)" # Rebuild Trigger: Force No-Cache Headers
+EXPECTED_FRONTEND_VERSION = "v19.40" # Contract remains same
 
 # Import robust database setup
 from database import engine, SessionLocal, Base, get_db
@@ -170,6 +170,18 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# CACHE BUSTER MIDDLEWARE: Force no-cache for index.html to fix "Zombie Frontend"
+@app.middleware("http")
+async def add_no_cache_header(request: Request, call_next):
+    response = await call_next(request)
+    path = request.url.path
+    # Apply to root HTML and Flutter HTML
+    if path.endswith("index.html") or path == "/static/" or path == "/flutter_app/":
+        response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+    return response
 
 # Serve Static Files (Web Dashboard)
 app.mount("/static", StaticFiles(directory="static", html=True), name="static")

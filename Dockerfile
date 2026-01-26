@@ -2,7 +2,7 @@
 FROM python:3.10-slim
 
 # Set working directory
-# CACHEBUST=v19.41-CACHENUKE
+# CACHEBUST=v19.42-HEADERFIX
 WORKDIR /app
 
 # Copy requirements from the subfolder
