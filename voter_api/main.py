@@ -1,5 +1,5 @@
 import urllib.parse
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Depends, Body, Query, Header
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Depends, Body, Query, Header, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import StreamingResponse # Added for Export
@@ -10,7 +10,7 @@ from datetime import datetime
 from pydantic import BaseModel
 
 # --- CONFIGURATION ---
-MAIN_VERSION = "v19.42 (Header Fix)" # Rebuild Trigger: Force No-Cache Headers
+MAIN_VERSION = "v19.43 (Import Fix)" # Rebuild Trigger: Fix Startup Crash (Missing Import)
 EXPECTED_FRONTEND_VERSION = "v19.40" # Contract remains same
 
 # Import robust database setup
