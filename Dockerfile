@@ -2,7 +2,7 @@
 FROM python:3.10-slim
 
 # Set working directory
-# CACHEBUST=v19.46-WEBFIX
+# CACHEBUST=v19.47-RETRY
 WORKDIR /app
 
 # Copy requirements from the subfolder
