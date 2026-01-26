@@ -9,8 +9,8 @@ from datetime import datetime
 from pydantic import BaseModel
 
 # --- CONFIGURATION ---
-MAIN_VERSION = "v19.32 (Fixed)" # Rebuild Trigger: Fix Indentation Crash
-EXPECTED_FRONTEND_VERSION = "v19.32"
+MAIN_VERSION = "v19.33 (WardAPI)" # Rebuild Trigger: Add Ward to Status API
+EXPECTED_FRONTEND_VERSION = "v19.33"
 
 # Import robust database setup
 from database import engine, SessionLocal, Base, get_db
@@ -1184,8 +1184,14 @@ def check_registration_status_by_mobile(mobile_no: str, db: Session = Depends(ge
         print(f"[DEBUG] STATUS CHECK: {mobile_no} -> NOT FOUND")
         raise HTTPException(status_code=404, detail="Request not found")
     
-    print(f"[DEBUG] STATUS CHECK: {mobile_no} -> {req.status}")
-    return {"status": "success", "approval_status": req.status, "surveyor_id": req.id}
+    print(f"[DEBUG] STATUS CHECK: {mobile_no} -> {req.status} (Ward: {req.ward_no})")
+    # CRITICAL FIX: Return ward_no so Frontend can enforce isolation
+    return {
+        "status": "success", 
+        "approval_status": req.status, 
+        "surveyor_id": req.id,
+        "ward_no": req.ward_no  
+    }
 
 @app.get("/register/status/{request_id}")
 def check_registration_status(request_id: int, db: Session = Depends(get_db)):
