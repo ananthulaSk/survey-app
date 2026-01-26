@@ -3,7 +3,7 @@ from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Depends, Bod
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import StreamingResponse # Added for Export
-from sqlalchemy import Column, Integer, String, asc, desc, ForeignKey, DateTime, func
+from sqlalchemy import Column, Integer, String, asc, desc, ForeignKey, DateTime, func, and_, or_
 from sqlalchemy.orm import Session, relationship
 from typing import List, Optional
 from datetime import datetime
@@ -380,6 +380,13 @@ class SurveyCreate(BaseModel):
     scope_type: str 
     scope_value: str
     survey_type: str = "TEST" # Default to TEST
+
+class AnalyticsFilter(BaseModel):
+    scope_type: str # "DISTRICT", "MANDAL", "VILLAGE", "CUSTOM"
+    district_ids: List[int] = []
+    mandal_ids: List[int] = []
+    village_ids: List[int] = []
+    ward_ids: List[int] = []
 
 @app.get("/")
 def read_root():
@@ -1380,10 +1387,133 @@ async def upload_voters(
         db.rollback()
         raise HTTPException(status_code=400, detail=f"Upload Failed: {str(e)}")
 
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+# --- PHASE 7: ADVANCED REPORTING API ---
+print("--- LOADING PHASE 7 ANALYTICS APIs ---")
 
+@app.get("/analytics/health")
+def analytics_health():
+    return {"status": "active"}
+
+def apply_analytics_filter(query, filter: AnalyticsFilter):
+    # Base Join: SurveyVoter -> VoterMaster -> Ward -> Village -> Mandal -> District
+    
+    # Debug
+    print(f"DEBUG JOIN: {VoterMaster}")
+    
+    query = query.join(VoterMaster) \
+                 .join(WardMaster) \
+                 .join(VillageMaster) \
+                 .join(MandalMaster) \
+                 .join(DistrictMaster)
+
+    conditions = []
+    
+    if filter.scope_type == "DISTRICT":
+        if filter.district_ids:
+            conditions.append(DistrictMaster.id.in_(filter.district_ids))
+            
+    elif filter.scope_type == "MANDAL":
+        if filter.mandal_ids:
+             conditions.append(MandalMaster.id.in_(filter.mandal_ids))
+             
+    elif filter.scope_type == "VILLAGE":
+        if filter.village_ids:
+            conditions.append(VillageMaster.id.in_(filter.village_ids))
+            
+    elif filter.scope_type == "CUSTOM":
+        if filter.ward_ids: conditions.append(WardMaster.id.in_(filter.ward_ids))
+        if filter.village_ids: conditions.append(VillageMaster.id.in_(filter.village_ids))
+        if filter.mandal_ids: conditions.append(MandalMaster.id.in_(filter.mandal_ids))
+        if conditions:
+            return query.filter(or_(*conditions))
+    
+    if conditions:
+        query = query.filter(and_(*conditions))
+        
+    return query
+
+@app.post("/analytics/aggregate")
+def get_aggregated_stats(filter: AnalyticsFilter, db: Session = Depends(get_db)):
+    base_query = db.query(SurveyVoter)
+    filtered_query = apply_analytics_filter(base_query, filter)
+    
+    # Aggregations
+    party_stats = filtered_query.with_entities(
+        SurveyVoter.expected_party, 
+        func.count(SurveyVoter.expected_party)
+    ).filter(
+        SurveyVoter.expected_party != None,
+        SurveyVoter.voter_status == "AVAILABLE"
+    ).group_by(SurveyVoter.expected_party).all()
+    
+    party_data = [{"party": p, "count": c} for p, c in party_stats]
+    
+    caste_stats = filtered_query.with_entities(
+        SurveyVoter.caste, 
+        func.count(SurveyVoter.caste)
+    ).filter(SurveyVoter.caste != None).group_by(SurveyVoter.caste).all()
+    
+    caste_data = [{"caste": c, "count": count} for c, count in caste_stats]
+    
+    total_polled_voters = filtered_query.count()
+    completed_count = filtered_query.filter(SurveyVoter.expected_party != None).count()
+    
+    return {
+        "status": "success",
+        "data": {
+            "party_distribution": party_data,
+            "caste_distribution": caste_data,
+            "metrics": {
+                "total_scope_voters": total_polled_voters,
+                "completed_surveys": completed_count,
+                "polling_percentage": round((completed_count / total_polled_voters * 100), 1) if total_polled_voters > 0 else 0
+            }
+        }
+    }
+
+@app.post("/analytics/export/master")
+def export_master_data(filter: AnalyticsFilter, db: Session = Depends(get_db)):
+    base_query = db.query(SurveyVoter)
+    filtered_query = apply_analytics_filter(base_query, filter)
+    
+    # Use with_entities to select specific columns from the joined path
+    rows = filtered_query.with_entities(
+        DistrictMaster.name.label("District"),
+        MandalMaster.name.label("Mandal"),
+        VillageMaster.name.label("Village"),
+        WardMaster.name.label("Ward"),
+        SurveyVoter.voter_name,
+        SurveyVoter.surname,
+        SurveyVoter.relation_name,
+        SurveyVoter.age,
+        SurveyVoter.gender,
+        SurveyVoter.mobile_no,
+        SurveyVoter.house_no,
+        SurveyVoter.voter_status,
+        SurveyVoter.expected_party,
+        SurveyVoter.caste,
+        SurveyVoter.religion,
+        SurveyVoter.occupation,
+        SurveyVoter.snapshot_created_at
+    ).all()
+    
+    import io
+    import csv
+    output = io.StringIO()
+    writer = csv.writer(output)
+    headers = ["District", "Mandal", "Village", "Ward", "Name", "Surname", "Father/Husband", 
+               "Age", "Gender", "Mobile", "House No", "Status", "Party", "Caste", "Religion", "Occupation", "Timestamp"]
+    writer.writerow(headers)
+    for row in rows: writer.writerow(row)
+        
+    output.seek(0)
+    filename = f"master_export_{filter.scope_type}_{datetime.utcnow().strftime('%Y%m%d%H%M')}.csv"
+    
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
 # --- ANALYTICS EXPORT (EXCEL/CSV) ---
 @app.get('/analytics/export/{survey_id}')
 def export_survey_analytics(survey_id: int, db: Session = Depends(get_db)):
@@ -1448,4 +1578,11 @@ def export_survey_analytics(survey_id: int, db: Session = Depends(get_db)):
         media_type='text/csv',
         headers={'Content-Disposition': f'attachment; filename={filename}'}
     )
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="127.0.0.1", port=8000)
+
+
+
 

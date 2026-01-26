@@ -77,3 +77,12 @@
 - **Table:** `SurveyAssignment` links `Survey` <-> `Surveyor`.
 - **UI:** Dropdowns must display "Name (Mobile) - Ward X" to prevent assignment errors.
 
+## 6. Test Accounts
+- **Admin Secret:** `admin-secret-123`
+- **Test Surveyor:**
+  - **Mobile:** `6666666666`
+  - **Name:** `TEST_USER_API_2`
+  - **Device ID:** `test_script_002`
+- **Test Coordinator:**
+  - **Mobile:** `9876543210` (If created via UI)
+
