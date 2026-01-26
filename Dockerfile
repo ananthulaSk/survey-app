@@ -2,7 +2,7 @@
 FROM python:3.10-slim
 
 # Set working directory
-# CACHEBUST=v19.40-VERSIONFIX
+# CACHEBUST=v19.41-CACHENUKE
 WORKDIR /app
 
 # Copy requirements from the subfolder

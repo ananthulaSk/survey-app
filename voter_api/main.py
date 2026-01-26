@@ -10,8 +10,8 @@ from datetime import datetime
 from pydantic import BaseModel
 
 # --- CONFIGURATION ---
-MAIN_VERSION = "v19.40 (Version Sync)" # Rebuild Trigger: Fix get_version Hardcoding
-EXPECTED_FRONTEND_VERSION = "v19.40"
+MAIN_VERSION = "v19.41 (Cache Nuke)" # Rebuild Trigger: Nuclear Cache Busting for Frontend
+EXPECTED_FRONTEND_VERSION = "v19.40" # Keeping contract same to avoid cycle, just need to force frontend update
 
 # Import robust database setup
 from database import engine, SessionLocal, Base, get_db
