@@ -9,8 +9,8 @@ from datetime import datetime
 from pydantic import BaseModel
 
 # --- CONFIGURATION ---
-MAIN_VERSION = "v19.31 (NoLeak)" # Rebuild Trigger: Force Session Refresh
-EXPECTED_FRONTEND_VERSION = "v19.31"
+MAIN_VERSION = "v19.32 (Fixed)" # Rebuild Trigger: Fix Indentation Crash
+EXPECTED_FRONTEND_VERSION = "v19.32"
 
 # Import robust database setup
 from database import engine, SessionLocal, Base, get_db
@@ -1240,49 +1240,49 @@ async def upload_voters(
         voters_to_add = []
         count = 0
         
-            # 3. Process Rows
+        # 3. Process Rows
+        
+        # PHASE 6 FIX: Derive Force-Ward-Number from Ward ID (Context)
+        # Do not trust CSV 'ward_no' if we have a robust Ward ID.
+        forced_ward_no = None
+        if ward_id:
+            # Clear existing data for this Ward to prevent duplicates/ghosts
+            db.query(VoterMaster).filter(VoterMaster.ward_id == ward_id).delete()
             
-            # PHASE 6 FIX: Derive Force-Ward-Number from Ward ID (Context)
-            # Do not trust CSV 'ward_no' if we have a robust Ward ID.
-            forced_ward_no = None
-            if ward_id:
-                # Clear existing data for this Ward to prevent duplicates/ghosts
-                db.query(VoterMaster).filter(VoterMaster.ward_id == ward_id).delete()
-                
-                # Fetch Master Info
-                ward_obj = db.query(WardMaster).filter(WardMaster.id == ward_id).first()
-                if ward_obj:
-                    # Extract number from name "Ward 4" -> 4
-                    import re
-                    match = re.search(r'\d+', ward_obj.name)
-                    if match:
-                        forced_ward_no = int(match.group())
-                        print(f"[UPLOAD] Forcing Ward No: {forced_ward_no} (from {ward_obj.name})")
+            # Fetch Master Info
+            ward_obj = db.query(WardMaster).filter(WardMaster.id == ward_id).first()
+            if ward_obj:
+                # Extract number from name "Ward 4" -> 4
+                import re
+                match = re.search(r'\d+', ward_obj.name)
+                if match:
+                    forced_ward_no = int(match.group())
+                    print(f"[UPLOAD] Forcing Ward No: {forced_ward_no} (from {ward_obj.name})")
 
-            for row in csv_reader:
-                # Basic validation
-                voter_name = row.get("voter_name")
-                if not voter_name:
-                    continue
-                
-                # If ward_id is selected in UI, use it. 
-                # Otherwise fall back to CSV 'ward_no' (legacy behavior or integer only)
-                
-                final_ward_no = forced_ward_no if forced_ward_no is not None else safe_int(row.get("ward_no"))
+        for row in csv_reader:
+            # Basic validation
+            voter_name = row.get("voter_name")
+            if not voter_name:
+                continue
+            
+            # If ward_id is selected in UI, use it. 
+            # Otherwise fall back to CSV 'ward_no' (legacy behavior or integer only)
+            
+            final_ward_no = forced_ward_no if forced_ward_no is not None else safe_int(row.get("ward_no"))
 
-                voter = VoterMaster(
-                    serial_no=safe_int(row.get("serial_no")),
-                    house_no=row.get("house_no", ""),
-                    voter_name=row.get("voter_name"),
-                    gender=row.get("gender", ""),
-                    age=safe_int(row.get("age")),
-                    relation_name=row.get("relation_name", ""),
-                    surname=row.get("surname", ""),
-                    ward_no=final_ward_no, # Use FORCED number if available
-                    ward_id=ward_id,                    # Link to specific Master Ward (Phase 6)
-                    family_id=row.get("family_id", ""),
-                    mobile_no=row.get("mobile_no", None)
-                )
+            voter = VoterMaster(
+                serial_no=safe_int(row.get("serial_no")),
+                house_no=row.get("house_no", ""),
+                voter_name=row.get("voter_name"),
+                gender=row.get("gender", ""),
+                age=safe_int(row.get("age")),
+                relation_name=row.get("relation_name", ""),
+                surname=row.get("surname", ""),
+                ward_no=final_ward_no, # Use FORCED number if available
+                ward_id=ward_id,                    # Link to specific Master Ward (Phase 6)
+                family_id=row.get("family_id", ""),
+                mobile_no=row.get("mobile_no", None)
+            )
             voters_to_add.append(voter)
             count += 1
             
