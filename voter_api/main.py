@@ -10,7 +10,7 @@ from datetime import datetime
 from pydantic import BaseModel
 
 # --- CONFIGURATION ---
-MAIN_VERSION = "v19.47 (Conflict Retry)" # Rebuild Trigger: Retry Deployment after Cloud Run Conflict
+MAIN_VERSION = "v19.48 (Force Resolve)" # Rebuild Trigger: persistent Cloud Run conflict
 EXPECTED_FRONTEND_VERSION = "v19.31" # Still compatible with "v19.31" spoofing context
 
 # Import robust database setup
