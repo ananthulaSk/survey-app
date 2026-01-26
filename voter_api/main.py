@@ -10,8 +10,8 @@ from datetime import datetime
 from pydantic import BaseModel
 
 # --- CONFIGURATION ---
-MAIN_VERSION = "v19.38 (Charts Fix)" # Rebuild Trigger: Fix JS Syntax for Charts
-EXPECTED_FRONTEND_VERSION = "v19.38"
+MAIN_VERSION = "v19.39 (Export Fix)" # Rebuild Trigger: Restore Missing Export API
+EXPECTED_FRONTEND_VERSION = "v19.39"
 
 # Import robust database setup
 from database import engine, SessionLocal, Base, get_db
@@ -1368,3 +1368,66 @@ async def upload_voters(
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="127.0.0.1", port=8000)
+
+# --- ANALYTICS EXPORT (EXCEL/CSV) ---
+@app.get('/analytics/export/{survey_id}')
+def export_survey_analytics(survey_id: int, db: Session = Depends(get_db)):
+    # 1. Fetch Survey Context
+    survey = db.query(Survey).filter(Survey.id == survey_id).first()
+    if not survey:
+        raise HTTPException(status_code=404, detail='Survey not found')
+    
+    # 2. Fetch All Voters in this Survey
+    # Join with Master to get original details + Survey Snapshot data
+    results = db.query(
+        SurveyVoter.master_voter_id,
+        SurveyVoter.voter_name,
+        SurveyVoter.surname,
+        SurveyVoter.age,
+        SurveyVoter.gender,
+        SurveyVoter.mobile_no,
+        SurveyVoter.ward_no,
+        SurveyVoter.voter_status,
+        SurveyVoter.expected_party,
+        SurveyVoter.occupation,
+        SurveyVoter.caste,
+        SurveyVoter.sub_caste,
+        SurveyVoter.religion
+    ).filter(SurveyVoter.survey_id == survey_id).all()
+    
+    # 3. Generate CSV
+    import csv
+    import io
+    
+    headers = ['Voter ID', 'Name', 'Surname', 'Age', 'Gender', 'Mobile', 'Ward', 'Status', 'Expected Party', 'Occupation', 'Caste', 'SubCaste', 'Religion']
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(headers)
+    
+    for row in results:
+        writer.writerow([
+            row.master_voter_id,
+            row.voter_name,
+            row.surname,
+            row.age,
+            row.gender,
+            row.mobile_no,
+            row.ward_no,
+            row.voter_status,
+            row.expected_party,
+            row.occupation,
+            row.caste,
+            row.sub_caste,
+            row.religion
+        ])
+    
+    output.seek(0)
+    
+    # 4. Stream Response
+    filename = f'survey_{survey_id}_export.csv'
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type='text/csv',
+        headers={'Content-Disposition': f'attachment; filename={filename}'}
+    )
+

@@ -28,9 +28,9 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   String? _selectedWard;
 
   // Version Handshake
-  static const String EXPECTED_BACKEND_VERSION = "v19.38";
+  static const String EXPECTED_BACKEND_VERSION = "v19.39";
   String _backendVersion = "Fetching...";
-  final String _appVersionDisplay = "v19.38 (Charts Fix)";
+  final String _appVersionDisplay = "v19.39 (Export Fix)";
 
   // API Service
   final _api = ApiService();
