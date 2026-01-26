@@ -303,6 +303,100 @@ function renderChart(data) {
         }
     });
 }
+
+// --- DASHBOARD LOGIC ---
+
+async function loadDashboardData() {
+    const surveyId = document.getElementById('surveySelect').value;
+    if (!surveyId) return;
+
+    // 1. Load Summary Cards
+    try {
+        const res = await fetch(`${API_BASE}/dashboard/summary?survey_id=${surveyId}`);
+        const data = await res.json();
+        if (data.status === 'success') {
+            document.getElementById('totalVoters').innerText = data.data.total_voters;
+            document.getElementById('effectiveVoters').innerText = data.data.effective_voters;
+            document.getElementById('completedSurveys').innerText = data.data.completed_surveys;
+            document.getElementById('completionPercentage').innerText = data.data.completion_percentage + '%';
+        }
+    } catch (e) { console.error("Summary error", e); }
+
+    // 2. Load Charts (Analytics)
+    loadAnalyticsChart(surveyId);
+
+    // 3. Load Ward Progress Table
+    loadWardProgress(surveyId);
+}
+
+async function loadAnalyticsChart(surveyId) {
+    try {
+        const res = await fetch(`${API_BASE}/dashboard/analytics?survey_id=${surveyId}`);
+        const json = await res.json();
+
+        if (json.status !== 'success') return;
+
+        const parties = json.data.map(d => d.party);
+        const counts = json.data.map(d => d.count);
+        // const percents = json.data.map(d => d.percentage);
+
+        const ctx = document.getElementById('analyticsChart').getContext('2d');
+
+        // Destroy old chart if exists
+        if (chartInstance) {
+            chartInstance.destroy();
+        }
+
+        chartInstance = new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: parties,
+                datasets: [{
+                    data: counts,
+                    backgroundColor: [
+                        '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF',
+                        '#FF9F40', '#C9CBCF', '#7BC225'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { position: 'right' },
+                    title: { display: true, text: `Total Polled: ${json.total_polled}` }
+                }
+            }
+        });
+
+    } catch (e) { console.error("Chart error", e); }
+}
+
+async function loadWardProgress(surveyId) {
+    try {
+        const res = await fetch(`${API_BASE}/dashboard/progress?survey_id=${surveyId}`);
+        const json = await res.json();
+
+        const tbody = document.getElementById('progressTableBody');
+        tbody.innerHTML = '';
+
+        if (json.status === 'success') {
+            json.data.forEach(w => {
+                let badgeColor = 'secondary';
+                if (w.status === 'COMPLETED') badgeColor = 'success';
+                else if (w.status === 'IN_PROGRESS') badgeColor = 'warning';
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td>Ward ${w.ward}</td>
+                        <td>${w.completed} / ${w.total}</td>
+                        <td>${w.total}</td>
+                        <td><span class="badge" style="background-color: var(--bs-${badgeColor}); color:white; padding:4px 8px; border-radius:4px;">${w.status}</span></td>
+                    </tr>
+                `;
+            });
+        }
+    } catch (e) { console.error("Progress error", e); }
+}
 // --- ADD COORDINATOR FEATURES ---
 
 function openAddCoordinatorModal() {

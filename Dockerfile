@@ -2,7 +2,7 @@
 FROM python:3.10-slim
 
 # Set working directory
-# CACHEBUST=v19.36-SCHEMAFIX
+# CACHEBUST=v19.38-CHARTSFIX
 WORKDIR /app
 
 # Copy requirements from the subfolder
