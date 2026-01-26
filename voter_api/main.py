@@ -10,8 +10,8 @@ from datetime import datetime
 from pydantic import BaseModel
 
 # --- CONFIGURATION ---
-MAIN_VERSION = "v19.39 (Export Fix)" # Rebuild Trigger: Restore Missing Export API
-EXPECTED_FRONTEND_VERSION = "v19.39"
+MAIN_VERSION = "v19.40 (Version Sync)" # Rebuild Trigger: Fix get_version Hardcoding
+EXPECTED_FRONTEND_VERSION = "v19.40"
 
 # Import robust database setup
 from database import engine, SessionLocal, Base, get_db
@@ -261,7 +261,7 @@ def startup_event():
 @app.get("/version")
 def get_version():
     return {
-        "version": "v19.14",
+        "version": MAIN_VERSION,
         "env": "PROD",
         "last_updated": datetime.utcnow().isoformat()
     }
