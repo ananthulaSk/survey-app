@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import '../models/voter.dart';
 import '../services/api_service.dart';
 import '../widgets/app_drawer.dart';
@@ -17,6 +18,15 @@ class VoterProfileScreen extends StatefulWidget {
 class _VoterProfileScreenState extends State<VoterProfileScreen> {
   late final ApiService _apiService;
 
+  Voter? _currentVoter;
+  bool _isLoading = false;
+  String _voterStatus = "AVAILABLE";
+
+  // Sync State
+  int _pendingVotes = 0;
+  bool _isOnline = true;
+  Timer? _syncTimer;
+
   @override
   void initState() {
     super.initState();
@@ -27,11 +37,27 @@ class _VoterProfileScreenState extends State<VoterProfileScreen> {
     } else {
       _loadFirstVoter();
     }
+
+    // Start Sync Monitor
+    _syncTimer = Timer.periodic(
+      const Duration(seconds: 5),
+      (_) => _checkSyncStatus(),
+    );
+    _checkSyncStatus(); // Initial check
   }
 
-  Voter? _currentVoter;
-  bool _isLoading = false;
-  String _voterStatus = "AVAILABLE";
+  Future<void> _checkSyncStatus() async {
+    final offline = OfflineService();
+    final pending = offline.getPendingCount();
+    final online = await offline.isOnline();
+
+    if (mounted && (pending != _pendingVotes || online != _isOnline)) {
+      setState(() {
+        _pendingVotes = pending;
+        _isOnline = online;
+      });
+    }
+  }
 
   // Controllers
   final _mobileController = TextEditingController();
@@ -216,6 +242,7 @@ class _VoterProfileScreenState extends State<VoterProfileScreen> {
 
   @override
   void dispose() {
+    _syncTimer?.cancel();
     _mobileController.dispose();
     _occupationController.dispose();
     _casteController.dispose();
@@ -275,6 +302,41 @@ class _VoterProfileScreenState extends State<VoterProfileScreen> {
             onPressed: () => Scaffold.of(context).openDrawer(),
           ),
         ),
+        actions: [
+          // Sync Indicator
+          Container(
+            margin: const EdgeInsets.only(right: 16),
+            child: Row(
+              children: [
+                if (_pendingVotes > 0) ...[
+                  Text(
+                    "$_pendingVotes",
+                    style: const TextStyle(
+                      color: Colors.orange,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  if (_isOnline)
+                    const SizedBox(
+                      height: 16,
+                      width: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.orange,
+                      ),
+                    )
+                  else
+                    const Icon(Icons.cloud_upload, color: Colors.orange),
+                ] else if (_isOnline) ...[
+                  const Icon(Icons.cloud_done, color: Colors.green),
+                ] else ...[
+                  const Icon(Icons.wifi_off, color: Colors.grey),
+                ],
+              ],
+            ),
+          ),
+        ],
       ),
       drawer: const AppDrawer(),
       body: SingleChildScrollView(

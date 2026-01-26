@@ -95,4 +95,26 @@ class OfflineService {
     print("SYNC: Completed. Synced $syncedCount votes.");
     return syncedCount;
   }
+
+  // --- AUTO SYNC ---
+  void startAutoSync() {
+    print("OfflineService: Starting Auto-Sync...");
+
+    // 1. Listen for Connectivity Changes (Immediate)
+    Connectivity().onConnectivityChanged.listen((ConnectivityResult result) {
+      if (result != ConnectivityResult.none) {
+        print(
+          "OfflineService: Connection detected ($result). Triggering Sync...",
+        );
+        syncPendingVotes();
+      }
+    });
+
+    // 2. Periodic Backup (Every 5 Minutes)
+    // Ensures we retry even if connection "flickers" or we missed an event
+    Stream.periodic(const Duration(minutes: 5)).listen((_) {
+      print("OfflineService: Periodic Sync Check...");
+      syncPendingVotes();
+    });
+  }
 }

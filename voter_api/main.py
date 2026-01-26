@@ -10,7 +10,7 @@ from datetime import datetime
 from pydantic import BaseModel
 
 # --- CONFIGURATION ---
-MAIN_VERSION = "v19.51 (Export Fix)" # Rebuild Trigger: Add missing CSV columns
+MAIN_VERSION = "v19.60 (Phase 6 Complete)" # Rebuild Trigger: Background Sync + Auto Upload
 EXPECTED_FRONTEND_VERSION = "v19.31" # Still compatible with "v19.31" spoofing context
 
 # Import robust database setup
