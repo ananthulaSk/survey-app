@@ -1037,7 +1037,7 @@ def export_survey_csv(survey_id: int, db: Session = Depends(get_db)):
     )
 
 @app.get("/surveys/active")
-def get_active_surveys(mobile_no: str = Query(None), db: Session = Depends(get_db)):
+async def get_active_surveys(mobile_no: str = Query(None), db: Session = Depends(get_db)):
     # Simple logic: Return ALL surveys for now, or filter by STATUS='ACTIVE'
     # Ideally checking assignment, but for Admin Dashboard we want to see available surveys.
     surveys = db.query(Survey).filter(Survey.status == "ACTIVE").all()
