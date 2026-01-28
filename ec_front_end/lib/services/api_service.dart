@@ -117,8 +117,9 @@ class ApiService {
         "name": name,
         "scope_type": scopeType,
         "scope_value": scopeValue,
-        // REQUIRED FIELDS ADDED FOR COMPATIBILITY
-        "district_id": 1,
+        // FIXED: Send 0 (Auto-Select). The Backend will find the first valid District (e.g. Yadadri ID 33)
+        // and auto-seed if necessary. No more guessing IDs.
+        "district_id": 0,
         "mandal_ids": "ALL",
         "village_ids": "ALL",
         "survey_type": "TEST",

@@ -2,7 +2,7 @@
 FROM python:3.10-slim
 
 # Set working directory
-# CACHEBUST=v19.72-YADADRI-FIX (Correct District ID)
+# CACHEBUST=v19.73-SELF-HEALING (Auto District Select)
 WORKDIR /app
 
 # Copy requirements from the subfolder

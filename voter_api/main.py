@@ -398,10 +398,10 @@ import json
 @app.post("/surveys/create")
 def create_survey(
     name: str = Body(...), 
-    scope_type: str = Body(...), # "DISTRICT", "MANDAL", "VILLAGE" (Primary Intent)
-    district_id: int = Body(...),
-    mandal_ids: str = Body(...), # "ALL" or JSON list "[1, 2]"
-    village_ids: str = Body(...), # "ALL" or JSON list "[10, 11]"
+    scope_type: str = Body(...), 
+    district_id: Optional[int] = Body(None), # Made Optional
+    mandal_ids: Optional[str] = Body("ALL"), 
+    village_ids: Optional[str] = Body("ALL"), 
     survey_type: str = Body("TEST"),
     x_admin_token: Optional[str] = Header(None),
     db: Session = Depends(get_db)
@@ -411,10 +411,28 @@ def create_survey(
         raise HTTPException(status_code=403, detail="Forbidden: Admin Access Required")
     # ----------------------
 
-    # 1. Resolve Geographic Scope (Villages)
+    # --- AUTO-HEALING LOGIC ---
+    # 1. If District ID is missing or 0, find a valid one
+    target_dist_id = district_id
+    if not target_dist_id or target_dist_id <= 0:
+        print("[CREATE-SURVEY] No District ID provided. Attempting to auto-select...")
+        first_dist = db.query(DistrictMaster).first()
+        if not first_dist:
+             print("[CREATE-SURVEY] Database Empty! Running Geo Seeder...")
+             from seed_geo import seed_geo_data
+             seed_geo_data()
+             first_dist = db.query(DistrictMaster).first()
+        
+        if first_dist:
+            target_dist_id = first_dist.id
+            print(f"[CREATE-SURVEY] Auto-Selected District: {first_dist.name} (ID: {target_dist_id})")
+        else:
+            raise HTTPException(status_code=500, detail="Use Auto-Seeder failed. No districts available.")
+
+    # 1. Resolve Geographic Scope
     target_village_ids = []
     
-    # Parse inputs (Frontend sends stringified JSON or "ALL")
+    # Parse inputs 
     try:
         req_mandals = mandal_ids if mandal_ids == "ALL" else json.loads(mandal_ids)
         req_villages = village_ids if village_ids == "ALL" else json.loads(village_ids)
@@ -425,7 +443,7 @@ def create_survey(
     final_mandal_ids = []
     if req_mandals == "ALL":
         # Get all mandals in district
-        mandals = db.query(MandalMaster).filter(MandalMaster.district_id == district_id).all()
+        mandals = db.query(MandalMaster).filter(MandalMaster.district_id == target_dist_id).all()
         final_mandal_ids = [m.id for m in mandals]
     else:
         final_mandal_ids = [int(m) for m in req_mandals]
@@ -461,7 +479,7 @@ def create_survey(
     # 3. Create Survey Record
     # Generate Code: TYPE-DIST-DATE
     date_str = datetime.utcnow().strftime("%Y%m%d")
-    code = f"{scope_type}-{district_id}-{survey_type}-{date_str}"
+    code = f"{scope_type}-{target_dist_id}-{survey_type}-{date_str}"
     
     # Uniqueness check
     existing = db.query(Survey).filter(Survey.survey_code == code).first()
@@ -470,7 +488,7 @@ def create_survey(
 
     # Store Scope Config
     config_json = json.dumps({
-        "district_id": district_id,
+        "district_id": target_dist_id, # Use Resolved ID
         "mandal_ids": req_mandals,
         "village_ids": req_villages,
         "derived_wards_count": len(target_ward_nums),
@@ -480,7 +498,7 @@ def create_survey(
     new_survey = Survey(
         name=name,
         scope_type=scope_type,
-        scope_value=str(district_id), # High level reference
+        scope_value=str(target_dist_id), # High level reference
         scope_config=config_json,
         status="ACTIVE", 
         survey_code=code,
