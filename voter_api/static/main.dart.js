@@ -44621,9 +44621,9 @@ alW(a,b,c){var s=0,r=A.L(t.P),q,p,o,n,m
 var $async$A_=A.M(function(d,e){if(d===1)return A.I(e,r)
 for(;;)switch(s){case 0:p=A.cW("https://survey-app-171882639078.asia-south1.run.app/surveys/create")
 o=t.N
-n=A.at(["Content-Type","application/json"],o,o)
+n=A.at(["Content-Type","application/json","x-admin-token","admin-secret-123"],o,o)
 s=3
-return A.F(A.aB9(p,B.a5.qP(A.at(["name",a,"scope_type",b,"scope_value",c],o,o),null),n),$async$A_)
+return A.F(A.aB9(p,B.a5.qP(A.at(["name",a,"scope_type",b,"scope_value",c,"district_id",1,"mandal_ids","ALL","village_ids","ALL","survey_type","TEST"],o,t.K),null),n),$async$A_)
 case 3:m=e
 if(m.b===200){q=B.a5.fK(0,A.hL(A.hI(m.e)).cT(0,m.w),null)
 s=1
