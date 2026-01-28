@@ -1579,17 +1579,14 @@ def export_survey_analytics(survey_id: int, db: Session = Depends(get_db)):
         headers={'Content-Disposition': f'attachment; filename={filename}'}
     )
 
-# --- ROOT REDIRECT (Improve UX) ---
+# --- API STATUS (Default Root) ---
 @app.get("/")
 def read_root():
-    return RedirectResponse(url="/static/index.html")
-
-@app.get("/api/status")
-def read_status():
     return {
         "status": "Online",
         "version": MAIN_VERSION,
-        "docs_url": "/docs"
+        "docs_url": "/docs",
+        "frontend_url": "/static/index.html"
     }
 
 if __name__ == "__main__":
