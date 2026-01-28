@@ -1265,7 +1265,8 @@ def check_registration_status_by_mobile(mobile_no: str, db: Session = Depends(ge
         "status": "success", 
         "approval_status": req.status, 
         "surveyor_id": req.id,
-        "ward_no": req.ward_no  
+        "ward_no": req.ward_no,
+        "role": req.role  # Added for Redirect Logic
     }
 
 @app.get("/register/status/{request_id}")

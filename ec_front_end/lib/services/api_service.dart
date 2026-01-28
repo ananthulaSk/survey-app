@@ -21,6 +21,7 @@ class ApiService {
   static String? loggedInMobile;
   static int? loggedInSurveyorId;
   static String? loggedInWard;
+  static String? loggedInRole; // Added for Role-Based Redirect
 
   // Normalization Helper
   static String normalizeMobile(String mobile) {
@@ -437,6 +438,7 @@ class ApiService {
           loggedInSurveyorId = data['surveyor_id'];
         }
         loggedInWard = data['ward_no']; // Capture Ward
+        loggedInRole = data['role']; // Capture Role (COORDINATOR vs SURVEYOR)
         return data['approval_status'] ?? 'PENDING';
       }
     } catch (e) {

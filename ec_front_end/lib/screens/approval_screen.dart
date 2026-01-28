@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'survey_selection_screen.dart';
+import 'dashboard_screen.dart'; // Add Dashboard Import
 import '../services/api_service.dart';
 
 class ApprovalScreen extends StatefulWidget {
@@ -48,13 +49,21 @@ class _ApprovalScreenState extends State<ApprovalScreen> {
           ),
         );
 
-        // Navigate to Survey Selection
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (_) => SurveySelectionScreen(apiService: ApiService()),
-          ),
-        );
+        // Navigate based on Role
+        if (ApiService.loggedInRole == "COORDINATOR") {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const DashboardScreen()),
+          );
+        } else {
+          // Default: Surveyor Logic
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) => SurveySelectionScreen(apiService: ApiService()),
+            ),
+          );
+        }
       } else if (status == "REJECTED") {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
