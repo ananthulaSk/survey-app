@@ -86,3 +86,18 @@
 - **Test Coordinator:**
   - **Mobile:** `9876543210` (If created via UI)
 
+
+## 7. System Initialization & Troubleshooting
+**Critical behavior for Fresh Deployments (Empty Database).**
+
+### A. Admin Dashboard "Empty State"
+- **Behavior:** Upon first login, if NO surveys exist, the Dashboard will show a **"Create First Survey"** block.
+- **Reason:** The original "Static" dashboard was removed. The system now enforces "Active Survey" context to display analytics.
+- **Action:** Admin MUST click "Create First Survey" to initialize the system.
+
+### B. Self-Healing Survey Creation (v19.73+)
+- **Problem:** On fresh Cloud SQL instances, District IDs vary (e.g., 1 vs 33). Hardcoding IDs causes "Scope Resolution Failed".
+- **Solution:** The `/surveys/create` endpoint is **Self-Healing**:
+    - If `district_id` is omitted or 0, the backend **Auto-Selects** the first available District.
+    - If the Database is empty, it **Auto-Seeds** Geo Data (Districts/Mandals) before creation.
+    - **Frontend:** Sends `district_id: 0` to trigger this logic safely.
