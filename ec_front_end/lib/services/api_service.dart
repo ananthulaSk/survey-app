@@ -351,6 +351,13 @@ class ApiService {
     return response.statusCode == 200;
   }
 
+  Future<bool> deleteSurveyor(int surveyorId) async {
+    final response = await http.delete(
+      Uri.parse('$baseUrl/dashboard/surveyor/$surveyorId'),
+    );
+    return response.statusCode == 200;
+  }
+
   // --- Location APIs (Phase 1) ---
   Future<List<Map<String, dynamic>>> getDistricts() async {
     final response = await http.get(Uri.parse('$baseUrl/locations/districts'));

@@ -1027,6 +1027,7 @@ def export_survey_csv(survey_id: int, db: Session = Depends(get_db)):
         
     output.seek(0)
     
+    
     # 3. Return as File
     filename = f"survey_{survey_id}_export.csv"
     return StreamingResponse(
@@ -1034,6 +1035,27 @@ def export_survey_csv(survey_id: int, db: Session = Depends(get_db)):
         media_type="text/csv",
         headers={"Content-Disposition": f"attachment; filename={filename}"}
     )
+
+@app.get("/surveys/active")
+def get_active_surveys(mobile_no: str = Query(None), db: Session = Depends(get_db)):
+    # Simple logic: Return ALL surveys for now, or filter by STATUS='ACTIVE'
+    # Ideally checking assignment, but for Admin Dashboard we want to see available surveys.
+    surveys = db.query(Survey).filter(Survey.status == "ACTIVE").all()
+    
+    # Fallback: If no active surveys, return all CREATED ones (for testing)
+    if not surveys:
+        surveys = db.query(Survey).filter(Survey.status == "CREATED").all()
+
+    return [
+        {
+            "id": s.id, 
+            "name": s.name, 
+            "status": s.status,
+            "scope_type": s.scope_type,
+            "scope_value": s.scope_value
+        }
+        for s in surveys
+    ]
 
 @app.get("/dashboard/analytics")
 def get_dashboard_analytics(survey_id: int, db: Session = Depends(get_db)):
