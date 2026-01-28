@@ -2,7 +2,7 @@ import urllib.parse
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Depends, Body, Query, Header, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import StreamingResponse # Added for Export
+from fastapi.responses import StreamingResponse, RedirectResponse # Added for Export & Root Redirect
 from sqlalchemy import Column, Integer, String, asc, desc, ForeignKey, DateTime, func, and_, or_
 from sqlalchemy.orm import Session, relationship
 from typing import List, Optional
@@ -1578,6 +1578,19 @@ def export_survey_analytics(survey_id: int, db: Session = Depends(get_db)):
         media_type='text/csv',
         headers={'Content-Disposition': f'attachment; filename={filename}'}
     )
+
+# --- ROOT REDIRECT (Improve UX) ---
+@app.get("/")
+def read_root():
+    return RedirectResponse(url="/static/index.html")
+
+@app.get("/api/status")
+def read_status():
+    return {
+        "status": "Online",
+        "version": MAIN_VERSION,
+        "docs_url": "/docs"
+    }
 
 if __name__ == "__main__":
     import uvicorn
