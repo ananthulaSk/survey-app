@@ -2,22 +2,9 @@
 <html>
 
 <head>
-  <!--
-    If you are serving your web app in a path other than the root, change the
-    href value below to reflect the base path you are serving from.
-
-    The path provided below has to start and end with a slash "/" in order for
-    it to work correctly.
-
-    For more details:
-    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
-
-    This is a placeholder for base href that will be replaced by the value of
-    the `--base-href` argument provided to `flutter build`.
-  -->
   <!-- DYNAMIC BASE HREF: Supports both /static/ and /app/ paths -->
   <script>
-    var path = window.location.pathname;
+   = window.location.pathname;
     // If path starts with /app/, use /app/ as base. Otherwise default to /static/
     var base = path.startsWith('/app/') ? '/app/' : '/static/';
     document.write('<base href="' + base + '">');
@@ -47,7 +34,7 @@
 <body>
   <!-- SERVICE WORKER KILLER: Force unregister old workers to cache bust -->
   <script>
-    if ('serviceWorker' in navigator) {
+  viceWorker' in navigator) {
       navigator.serviceWorker.getRegistrations().then(function (registrations) {
         for (let registration of registrations) {
           console.log("Unregistering Service Worker:", registration);
