@@ -177,7 +177,7 @@ async def add_no_cache_header(request: Request, call_next):
     response = await call_next(request)
     path = request.url.path
     # Apply to root HTML and Flutter HTML
-    if path.endswith("index.html") or path == "/static/" or path == "/flutter_app/":
+    if path.endswith("index.html") or path == "/static/" or path == "/app/" or path == "/flutter_app/":
         response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
         response.headers["Pragma"] = "no-cache"
         response.headers["Expires"] = "0"
@@ -185,6 +185,7 @@ async def add_no_cache_header(request: Request, call_next):
 
 # Serve Static Files (Web Dashboard)
 app.mount("/static", StaticFiles(directory="static", html=True), name="static")
+app.mount("/app", StaticFiles(directory="static", html=True), name="app") # Dual-Link Support
 
 # STARTUP: Auto-Seed Database if Empty
 @app.on_event("startup")
@@ -1586,7 +1587,8 @@ def read_root():
         "status": "Online",
         "version": MAIN_VERSION,
         "docs_url": "/docs",
-        "frontend_url": "/static/index.html"
+        "admin_dashboard": "/static/index.html",
+        "mobile_app": "/app/index.html"
     }
 
 if __name__ == "__main__":
