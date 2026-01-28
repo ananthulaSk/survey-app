@@ -109,15 +109,23 @@ class ApiService {
   ) async {
     final response = await http.post(
       Uri.parse('$baseUrl/surveys/create'),
-      headers: {'Content-Type': 'application/json'},
+      headers: {
+        'Content-Type': 'application/json',
+        'x-admin-token': 'admin-secret-123',
+      },
       body: jsonEncode({
         "name": name,
         "scope_type": scopeType,
         "scope_value": scopeValue,
+        // REQUIRED FIELDS ADDED FOR COMPATIBILITY
+        "district_id": 1,
+        "mandal_ids": "ALL",
+        "village_ids": "ALL",
+        "survey_type": "TEST",
       }),
     );
     if (response.statusCode == 200) {
-      return jsonDecode(response.body);
+      return jsonDecode(response.body); // Returns Map<String, dynamic>
     }
     throw Exception('Failed to create survey: ${response.body}');
   }

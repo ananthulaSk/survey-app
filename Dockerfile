@@ -2,7 +2,7 @@
 FROM python:3.10-slim
 
 # Set working directory
-# CACHEBUST=v19.67-FINAL (Visible Version Tag)
+# CACHEBUST=v19.69-FIX (API Sync)
 WORKDIR /app
 
 # Copy requirements from the subfolder
