@@ -107,6 +107,58 @@ class _DashboardScreenState extends State<DashboardScreen>
     }
   }
 
+  // --- CREATE SURVEY FLOW ---
+
+  Future<void> _showCreateSurveyDialog() async {
+    final nameController = TextEditingController();
+    await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Create New Survey"),
+        content: TextField(
+          controller: nameController,
+          decoration: const InputDecoration(
+            labelText: "Survey Name (e.g. Election 2026)",
+            hintText: "Enter unique name",
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel"),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (nameController.text.isNotEmpty) {
+                Navigator.pop(context);
+                await _performCreateSurvey(nameController.text);
+              }
+            },
+            child: const Text("Create"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _performCreateSurvey(String name) async {
+    setState(() => _isLoading = true);
+    try {
+      // Create Default Survey (Global Scope for now)
+      final res = await _api.createSurvey(name, "DISTRICT", "ALL");
+      // Refresh to load it
+      await _loadDashboardData();
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Survey '$name' Created!")));
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+        _errorMessage = "Failed to create: $e";
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -128,12 +180,53 @@ class _DashboardScreenState extends State<DashboardScreen>
             icon: const Icon(Icons.refresh),
             onPressed: _loadDashboardData,
           ),
+          IconButton(
+            icon: const Icon(Icons.add_chart), // Icon for creating a survey
+            onPressed: _showCreateSurveyDialog,
+          ),
         ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _errorMessage != null
-          ? Center(child: Text("Error: $_errorMessage"))
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(
+                    Icons.error_outline,
+                    size: 48,
+                    color: Colors.orange,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    _errorMessage!,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: Colors.red),
+                  ),
+                  const SizedBox(height: 24),
+                  // Show "Create Survey" button if the error is "No Active Survey"
+                  if (_errorMessage!.contains("No Active Survey"))
+                    ElevatedButton.icon(
+                      onPressed: _showCreateSurveyDialog,
+                      icon: const Icon(Icons.add),
+                      label: const Text("Create First Survey"),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 12,
+                        ),
+                        textStyle: const TextStyle(fontSize: 16),
+                      ),
+                    )
+                  else
+                    ElevatedButton(
+                      onPressed: _loadDashboardData,
+                      child: const Text("Retry"),
+                    ),
+                ],
+              ),
+            )
           : TabBarView(
               controller: _tabController,
               children: [_buildAnalyticsTab(), _buildTeamTab()],
