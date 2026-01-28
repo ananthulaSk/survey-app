@@ -10,8 +10,8 @@ from datetime import datetime
 from pydantic import BaseModel
 
 # --- CONFIGURATION ---
-MAIN_VERSION = "v19.60 (Phase 6 Complete)" # Rebuild Trigger: Background Sync + Auto Upload
-EXPECTED_FRONTEND_VERSION = "v19.31" # Still compatible with "v19.31" spoofing context
+MAIN_VERSION = "v19.60-RC (Release)" # Rebuild Trigger: Release Candidate
+EXPECTED_FRONTEND_VERSION = "v19.60-RC"
 
 # Import robust database setup
 from database import engine, SessionLocal, Base, get_db
