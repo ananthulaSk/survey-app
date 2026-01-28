@@ -416,18 +416,25 @@ def create_survey(
     target_dist_id = district_id
     if not target_dist_id or target_dist_id <= 0:
         print("[CREATE-SURVEY] No District ID provided. Attempting to auto-select...")
-        first_dist = db.query(DistrictMaster).first()
-        if not first_dist:
-             print("[CREATE-SURVEY] Database Empty! Running Geo Seeder...")
+        # CRITICAL FIX: The seeder only populates mandals/villages for "Yadadri Bhuvanagiri".
+        # We MUST select that specific district, otherwise we pick "Adilabad" (first) which is empty.
+        target_dist = db.query(DistrictMaster).filter(DistrictMaster.name == "Yadadri Bhuvanagiri").first()
+        
+        if not target_dist:
+             print("[CREATE-SURVEY] Yadadri not found! Running Geo Seeder...")
              from seed_geo import seed_geo_data
              seed_geo_data()
-             first_dist = db.query(DistrictMaster).first()
+             target_dist = db.query(DistrictMaster).filter(DistrictMaster.name == "Yadadri Bhuvanagiri").first()
         
-        if first_dist:
-            target_dist_id = first_dist.id
-            print(f"[CREATE-SURVEY] Auto-Selected District: {first_dist.name} (ID: {target_dist_id})")
+        if target_dist:
+            target_dist_id = target_dist.id
+            print(f"[CREATE-SURVEY] Auto-Selected District: {target_dist.name} (ID: {target_dist_id})")
         else:
-            raise HTTPException(status_code=500, detail="Use Auto-Seeder failed. No districts available.")
+            # Fallback (Should never happen if seeder works)
+            print("[CREATE-SURVEY] Fallback to first available district.")
+            first = db.query(DistrictMaster).first()
+            if first: target_dist_id = first.id
+            else: raise HTTPException(status_code=500, detail="Auto-Seeder failed completely.")
 
     # 1. Resolve Geographic Scope
     target_village_ids = []
