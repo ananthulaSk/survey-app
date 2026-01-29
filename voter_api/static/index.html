@@ -15,13 +15,7 @@
     This is a placeholder for base href that will be replaced by the value of
     the `--base-href` argument provided to `flutter build`.
   -->
-  <!-- DYNAMIC BASE HREF: Supports both /static/ and /app/ paths -->
-  <script>
-    var path = window.location.pathname;
-    // If path starts with /app/, use /app/ as base. Otherwise default to /static/
-    var base = path.startsWith('/app/') ? '/app/' : '/static/';
-    document.write('<base href="' + base + '">');
-  </script>
+  <base href="/">
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">

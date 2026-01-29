@@ -105,8 +105,11 @@ class ApiService {
   Future<Map<String, dynamic>> createSurvey(
     String name,
     String scopeType,
-    String scopeValue,
-  ) async {
+    String scopeValue, {
+    int districtId = 0,
+    dynamic mandalIds = "ALL", 
+    dynamic villageIds = "ALL", 
+  }) async {
     final response = await http.post(
       Uri.parse('$baseUrl/surveys/create'),
       headers: {
@@ -117,17 +120,17 @@ class ApiService {
         "name": name,
         "scope_type": scopeType,
         "scope_value": scopeValue,
-        // FIXED: Send 0 (Auto-Select). The Backend will find the first valid District (e.g. Yadadri ID 33)
-        // and auto-seed if necessary. No more guessing IDs.
-        "district_id": 0,
-        "mandal_ids": "ALL",
-        "village_ids": "ALL",
+        "district_id": districtId,
+        "mandal_ids": mandalIds is List ? jsonEncode(mandalIds) : mandalIds,
+        "village_ids": villageIds is List ? jsonEncode(villageIds) : villageIds,
         "survey_type": "TEST",
       }),
     );
     if (response.statusCode == 200) {
-      return jsonDecode(response.body); // Returns Map<String, dynamic>
+      return jsonDecode(response.body); 
     }
+    throw Exception('Failed to create survey: ${response.body}');
+  }
     throw Exception('Failed to create survey: ${response.body}');
   }
 

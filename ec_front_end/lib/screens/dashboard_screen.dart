@@ -112,41 +112,215 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   Future<void> _showCreateSurveyDialog() async {
     final nameController = TextEditingController();
+
+    // State for Dialog
+    int? selectedDistrictId;
+    int? selectedMandalId;
+    int? selectedVillageId;
+
+    List<dynamic> districts = [];
+    List<dynamic> mandals = [];
+    List<dynamic> villages = [];
+
+    // Initial Load
+    try {
+      districts = await _api.getDistricts();
+    } catch (e) {
+      print("Error loading districts: $e");
+    }
+
+    if (!mounted) return;
+
     await showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("Create New Survey"),
-        content: TextField(
-          controller: nameController,
-          decoration: const InputDecoration(
-            labelText: "Survey Name (e.g. Election 2026)",
-            hintText: "Enter unique name",
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel"),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              if (nameController.text.isNotEmpty) {
-                Navigator.pop(context);
-                await _performCreateSurvey(nameController.text);
-              }
-            },
-            child: const Text("Create"),
-          ),
-        ],
+      barrierDismissible: false,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          return AlertDialog(
+            title: const Text("Create New Survey"),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: nameController,
+                    decoration: const InputDecoration(
+                      labelText: "Survey Name",
+                      hintText: "Enter unique name",
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    "Select Scope",
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+
+                  // District Dropdown
+                  DropdownButtonFormField<int>(
+                    value: selectedDistrictId,
+                    decoration: const InputDecoration(
+                      labelText: "District",
+                      border: OutlineInputBorder(),
+                    ),
+                    hint: const Text("Select District"),
+                    items: districts
+                        .map(
+                          (d) => DropdownMenuItem<int>(
+                            value: d['id'],
+                            child: Text(d['name']),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (val) async {
+                      if (val != null) {
+                        setDialogState(() {
+                          selectedDistrictId = val;
+                          selectedMandalId = null;
+                          selectedVillageId = null;
+                          mandals = [];
+                          villages = [];
+                        });
+                        try {
+                          final newMandals = await _api.getMandals(val);
+                          setDialogState(() => mandals = newMandals);
+                        } catch (e) {
+                          print(e);
+                        }
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Mandal Dropdown
+                  DropdownButtonFormField<int>(
+                    value: selectedMandalId,
+                    decoration: const InputDecoration(
+                      labelText: "Mandal",
+                      border: OutlineInputBorder(),
+                    ),
+                    hint: const Text("Select Mandal (Optional)"),
+                    items: mandals
+                        .map(
+                          (m) => DropdownMenuItem<int>(
+                            value: m['id'],
+                            child: Text(m['name']),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (val) async {
+                      if (val != null) {
+                        setDialogState(() {
+                          selectedMandalId = val;
+                          selectedVillageId = null;
+                          villages = [];
+                        });
+                        try {
+                          final newVillages = await _api.getVillages(val);
+                          setDialogState(() => villages = newVillages);
+                        } catch (e) {
+                          print(e);
+                        }
+                      } else {
+                        setDialogState(() => selectedMandalId = null);
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Village Dropdown
+                  DropdownButtonFormField<int>(
+                    value: selectedVillageId,
+                    decoration: const InputDecoration(
+                      labelText: "Village",
+                      border: OutlineInputBorder(),
+                    ),
+                    hint: const Text("Select Village (Optional)"),
+                    items: villages
+                        .map(
+                          (v) => DropdownMenuItem<int>(
+                            value: v['id'],
+                            child: Text(v['name']),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (val) {
+                      setDialogState(() => selectedVillageId = val);
+                    },
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text("Cancel"),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  if (nameController.text.isNotEmpty &&
+                      selectedDistrictId != null) {
+                    Navigator.pop(context);
+                    await _performCreateSurvey(
+                      nameController.text,
+                      selectedDistrictId!,
+                      selectedMandalId,
+                      selectedVillageId,
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text("Please enter Name and select District"),
+                      ),
+                    );
+                  }
+                },
+                child: const Text("Create"),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
 
-  Future<void> _performCreateSurvey(String name) async {
+  Future<void> _performCreateSurvey(
+    String name,
+    int districtId,
+    int? mandalId,
+    int? villageId,
+  ) async {
     setState(() => _isLoading = true);
     try {
-      // Create Default Survey (Global Scope for now)
-      final res = await _api.createSurvey(name, "DISTRICT", "ALL");
+      // Determine Scope
+      String scopeType = "DISTRICT";
+      String scopeIds = "ALL";
+
+      // If Village Selected -> Scope is VILLAGE
+      // If Mandal Selected -> Scope is MANDAL
+      // Else -> DISTRICT
+
+      // Backend expects specific format.
+      // For now, we pass the IDs explicitly.
+      List<int> mIds = mandalId != null ? [mandalId] : [];
+      List<int> vIds = villageId != null ? [villageId] : [];
+
+      final res = await _api.createSurvey(
+        name,
+        scopeType,
+        scopeIds,
+        districtId: districtId,
+        mandalIds: mIds.isNotEmpty ? mIds : "ALL",
+        villageIds: vIds.isNotEmpty ? vIds : "ALL",
+      );
+
+      // CRITICAL FIX: Force set the current survey ID so the dashboard picks it up immediately
+      if (res['survey_id'] != null) {
+        _api.currentSurveyId = res['survey_id'];
+        print("Explicitly set Current Survey ID: ${_api.currentSurveyId}");
+      }
+
       // Refresh to load it
       await _loadDashboardData();
       ScaffoldMessenger.of(
@@ -164,7 +338,7 @@ class _DashboardScreenState extends State<DashboardScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Admin Dashboard (v19.90)"),
+        title: const Text("Admin Dashboard (v19.92)"),
         backgroundColor:
             Colors.teal[800], // Changed to Teal to signify feature addition
         foregroundColor: Colors.white,
