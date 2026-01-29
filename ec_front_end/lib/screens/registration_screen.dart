@@ -66,7 +66,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   Future<void> _loadDistricts() async {
     try {
       final list = await _api.getDistricts();
-      setState(() => _districts = list);
+      setState(() => _districts = List<Map<String, dynamic>>.from(list));
     } catch (e) {
       print("Error loading districts: $e");
     }
@@ -88,7 +88,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
 
     try {
       final list = await _api.getMandals(id);
-      setState(() => _mandals = list);
+      setState(() => _mandals = List<Map<String, dynamic>>.from(list));
     } catch (e) {
       print("Error: $e");
     }
@@ -108,7 +108,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
 
     try {
       final list = await _api.getVillages(id);
-      setState(() => _villages = list);
+      setState(() => _villages = List<Map<String, dynamic>>.from(list));
     } catch (e) {
       print("Error: $e");
     }
@@ -127,7 +127,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
 
     try {
       final list = await _api.getWards(id);
-      setState(() => _wards = list);
+      setState(() => _wards = List<Map<String, dynamic>>.from(list));
     } catch (e) {
       print("Error: $e");
     }

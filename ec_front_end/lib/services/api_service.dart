@@ -107,8 +107,8 @@ class ApiService {
     String scopeType,
     String scopeValue, {
     int districtId = 0,
-    dynamic mandalIds = "ALL", 
-    dynamic villageIds = "ALL", 
+    dynamic mandalIds = "ALL",
+    dynamic villageIds = "ALL",
   }) async {
     final response = await http.post(
       Uri.parse('$baseUrl/surveys/create'),
@@ -127,10 +127,8 @@ class ApiService {
       }),
     );
     if (response.statusCode == 200) {
-      return jsonDecode(response.body); 
+      return jsonDecode(response.body);
     }
-    throw Exception('Failed to create survey: ${response.body}');
-  }
     throw Exception('Failed to create survey: ${response.body}');
   }
 
@@ -365,7 +363,7 @@ class ApiService {
 
   Future<bool> deleteSurveyor(int surveyorId) async {
     final response = await http.delete(
-    Uri.parse('$baseUrl/dashboard/surveyor/$surveyorId'),
+      Uri.parse('$baseUrl/dashboard/surveyor/$surveyorId'),
     );
     return response.statusCode == 200;
   }
@@ -380,7 +378,9 @@ class ApiService {
   }
 
   Future<List<dynamic>> getMandals(int districtId) async {
-    final response = await http.get(Uri.parse('$baseUrl/master/mandals/$districtId'));
+    final response = await http.get(
+      Uri.parse('$baseUrl/master/mandals/$districtId'),
+    );
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
     }
@@ -388,14 +388,19 @@ class ApiService {
   }
 
   Future<List<dynamic>> getVillages(int mandalId) async {
-    final response = await http.get(Uri.parse('$baseUrl/master/villages/$mandalId'));
+    final response = await http.get(
+      Uri.parse('$baseUrl/master/villages/$mandalId'),
+    );
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
     }
     return [];
   }
 
-    final response = await http.get(Uri.parse('$baseUrl/locations/wards/$villageId'));
+  Future<List<dynamic>> getWards(int villageId) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/locations/wards/$villageId'),
+    );
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
     }
