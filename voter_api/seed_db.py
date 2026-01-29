@@ -1,21 +1,20 @@
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, delete
 import csv
 import os
-from database import engine, SessionLocal, Base
-from main import Voter
 
 CSV_PATH = "voter_data.csv"
 
-def seed_data():
-    Base.metadata.create_all(bind=engine)
-    db = SessionLocal()
+async def async_seed_data(db: AsyncSession):
+    from main import Voter
     
-    # Clear existing data to ensure we have a clean slate (removes dummy data)
-    num_deleted = db.query(Voter).delete()
-    db.commit()
-    print(f"Cleared {num_deleted} existing records.")
+    # 1. Clear existing data
+    res_del = await db.execute(delete(Voter))
+    await db.commit()
+    print(f"[SEED] Cleared existing records.")
 
     if not os.path.exists(CSV_PATH):
-        print(f"Error: CSV file not found at {CSV_PATH}")
+        print(f"[SEED] Error: CSV file not found at {CSV_PATH}")
         return
 
     voters = []
@@ -23,8 +22,6 @@ def seed_data():
         with open(CSV_PATH, 'r', encoding='utf-8') as f:
             reader = csv.DictReader(f)
             for row in reader:
-                # Map CSV columns to Database Model
-                # CSV: serial_no,house_no,voter_name,gender,age,relation_name,surname,ward_no,family_id
                 voter = Voter(
                     serial_no=int(row['serial_no']) if row['serial_no'] else 0,
                     house_no=row['house_no'],
@@ -38,15 +35,14 @@ def seed_data():
                 )
                 voters.append(voter)
         
-        db.add_all(voters)
-        db.commit()
-        print(f"Successfully seeded {len(voters)} voters from CSV.")
+        if voters:
+            db.add_all(voters)
+            await db.commit()
+            print(f"[SEED] Successfully seeded {len(voters)} voters from CSV.")
         
     except Exception as e:
-        print(f"Error seeding database: {e}")
-        db.rollback()
-    finally:
-        db.close()
+        print(f"[SEED] Error seeding database: {e}")
+        await db.rollback()
 
 if __name__ == "__main__":
     seed_data()

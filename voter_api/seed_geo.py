@@ -1,8 +1,7 @@
-from sqlalchemy.orm import Session
-from database import SessionLocal, engine
-import sys
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 
-def seed_geo_data():
+async def async_seed_geo_data(db: AsyncSession):
     # Import locally to avoid circular dependency with main.py
     from main import DistrictMaster, MandalMaster, VillageMaster, WardMaster
     
@@ -16,53 +15,56 @@ def seed_geo_data():
         "Wanaparthy", "Warangal", "Yadadri Bhuvanagiri"
     ]
 
-    db = SessionLocal()
     try:
         print("[GEO-SEED] Starting District Seeding...")
         
         # 1. Seed Districts
         for d_name in TELANGANA_DISTRICTS:
-            existing = db.query(DistrictMaster).filter(DistrictMaster.name == d_name).first()
+            res = await db.execute(select(DistrictMaster).filter(DistrictMaster.name == d_name))
+            existing = res.scalar()
             if not existing:
                 print(f" -> Adding District: {d_name}")
                 new_dist = DistrictMaster(name=d_name)
                 db.add(new_dist)
-            else:
-                pass # Already exists
-        db.commit()
+        await db.commit()
 
-        # 2. Seed Sample Mandals (For Testing)
-        # Yadadri (Focus Area)
-        yadadri = db.query(DistrictMaster).filter(DistrictMaster.name == "Yadadri Bhuvanagiri").first()
+        # 2. Seed Sample Mandals
+        res_yadadri = await db.execute(select(DistrictMaster).filter(DistrictMaster.name == "Yadadri Bhuvanagiri"))
+        yadadri = res_yadadri.scalar()
         if yadadri:
             sample_mandals = ["Choutuppal", "Bhuvanagiri", "Alair", "Mothkur", "Turkapally"]
             for m_name in sample_mandals:
-                mandal = db.query(MandalMaster).filter(MandalMaster.name == m_name, MandalMaster.district_id == yadadri.id).first()
+                res_m = await db.execute(select(MandalMaster).filter(MandalMaster.name == m_name, MandalMaster.district_id == yadadri.id))
+                mandal = res_m.scalar()
                 if not mandal:
                     print(f" -> Adding Mandal: {m_name}")
                     mandal = MandalMaster(name=m_name, district_id=yadadri.id)
                     db.add(mandal)
-                    db.flush() # Need ID for village
+                    await db.flush()
                 
                 # 3. Seed Villages
-                # Special Case: Choutuppal needs "Aregudem"
                 villages_to_seed = [f"{m_name} Village"]
                 if m_name == "Choutuppal":
                     villages_to_seed.append("Aregudem")
                 
                 for v_name in villages_to_seed:
-                    village = db.query(VillageMaster).filter(VillageMaster.name == v_name, VillageMaster.mandal_id == mandal.id).first()
+                    res_v = await db.execute(select(VillageMaster).filter(VillageMaster.name == v_name, VillageMaster.mandal_id == mandal.id))
+                    village = res_v.scalar()
                     if not village:
                         print(f"   -> Adding Village: {v_name}")
                         village = VillageMaster(name=v_name, mandal_id=mandal.id)
                         db.add(village)
-                        db.flush()
+                        await db.flush()
                         
                         # 4. Seed Wards (1 to 10)
                         for i in range(1, 11):
                             db.add(WardMaster(name=f"Ward {i}", village_id=village.id))
             
-            db.commit()
+            await db.commit()
+    except Exception as e:
+        print(f"[GEO-SEED] Error: {e}")
+        await db.rollback()
+        raise e
 
         # Ranga Reddy (Sample)
         rr = db.query(DistrictMaster).filter(DistrictMaster.name == "Ranga Reddy").first()

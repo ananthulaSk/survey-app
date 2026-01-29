@@ -1,6 +1,5 @@
-from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
+from sqlalchemy.orm import declarative_base
 
 import os
 
@@ -12,34 +11,43 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 
 if DATABASE_URL:
     # Production (PostgreSQL / Cloud SQL)
-    # Ensure sqlalchemy compatible postgresql:// scheme
+    # Ensure sqlalchemy compatible postgresql+asyncpg:// scheme
     if DATABASE_URL.startswith("postgres://"):
-        DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+        DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+asyncpg://", 1)
+    elif DATABASE_URL.startswith("postgresql://"):
+        DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://", 1)
     
-    engine = create_engine(DATABASE_URL)
+    engine = create_async_engine(DATABASE_URL)
 else:
     # Local Development / Cloud Run Ephemeral Fallback
-    # Check OS to decide path
     if os.name == 'nt': # Windows
-        DISPLAY_DB_PATH = "voters.db" # Local file in project root
-        SQLALCHEMY_DATABASE_URL = "sqlite:///./voters.db"
+        SQLALCHEMY_DATABASE_URL = "sqlite+aiosqlite:///./voters.db"
     else: # Linux / Cloud Run
         # CLOUD RUN FIX: Use /tmp because system dirs might be read-only
-        # WARNING: This is Ephemeral! Data is lost on restart.
-        DISPLAY_DB_PATH = "/tmp/voters.db"
-        SQLALCHEMY_DATABASE_URL = "sqlite:////tmp/voters.db"
+        SQLALCHEMY_DATABASE_URL = "sqlite+aiosqlite:////tmp/voters.db"
     
-    engine = create_engine(
-        SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
+    engine = create_async_engine(
+        SQLALCHEMY_DATABASE_URL,
+        connect_args={"check_same_thread": False} if "sqlite" in SQLALCHEMY_DATABASE_URL else {}
     )
 
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+AsyncSessionLocal = async_sessionmaker(
+    bind=engine,
+    class_=AsyncSession,
+    expire_on_commit=False,
+    autocommit=False,
+    autoflush=False
+)
+
 Base = declarative_base()
 
-# Dependency to get a DB session
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+# Async Dependency to get a DB session
+async def get_db():
+    async with AsyncSessionLocal() as db:
+        try:
+            yield db
+        finally:
+            await db.close()
+
+# Keep names compatible where possible, but use Async equivalents
+SessionLocal = AsyncSessionLocal
