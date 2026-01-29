@@ -3,10 +3,10 @@ import os
 import sys
 
 def bump_version():
-    version_file = "version.txt"
+    version_file = "voter_api/version.txt"
     if not os.path.exists(version_file):
         with open(version_file, "w") as f:
-            f.write("20.02")
+            f.write("20.05")
             
     with open(version_file, "r") as f:
         version_str = f.read().strip()
