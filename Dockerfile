@@ -2,7 +2,7 @@
 FROM python:3.10-slim
 
 # Set working directory
-# CACHEBUST=v19.94-PATH-FIX
+# CACHEBUST=v19.95-BASE-HREF
 WORKDIR /app
 
 # Copy requirements from the subfolder
