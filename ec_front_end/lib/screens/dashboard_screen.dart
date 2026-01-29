@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../services/api_service.dart';
 import 'approval_screen.dart'; // For logout logic if needed
+import 'bulk_upload_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -163,8 +164,9 @@ class _DashboardScreenState extends State<DashboardScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Admin Dashboard (v19.74)"),
-        backgroundColor: Colors.amber[800],
+        title: const Text("Admin Dashboard (v19.90)"),
+        backgroundColor:
+            Colors.teal[800], // Changed to Teal to signify feature addition
         foregroundColor: Colors.white,
         bottom: TabBar(
           controller: _tabController,
@@ -179,6 +181,16 @@ class _DashboardScreenState extends State<DashboardScreen>
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: _loadDashboardData,
+          ),
+          IconButton(
+            icon: const Icon(Icons.upload_file),
+            tooltip: "Bulk Upload Voters",
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const BulkUploadScreen()),
+              );
+            },
           ),
           IconButton(
             icon: const Icon(Icons.add_chart), // Icon for creating a survey

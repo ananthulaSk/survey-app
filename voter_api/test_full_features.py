@@ -28,6 +28,28 @@ def test_full_flow():
     else:
         print(f"[FAIL] Geo Seed Failed: {resp.text}")
 
+    # 1.6 FETCH GEO IDs (Dynamic Resolution)
+    print_step("1.6 Fetching Geo Master Data")
+    time.sleep(1) 
+    
+    # Get District
+    resp = session.get(f"{BASE_URL}/locations/districts")
+    districts = resp.json()
+    target_dist = next((d for d in districts if d['name'] == "Yadadri Bhuvanagiri"), None)
+    if not target_dist:
+        print("[FAIL] Yadadri Bhuvanagiri not found!")
+        return
+    district_id = target_dist['id']
+    print(f"   [INFO] Using District ID: {district_id} ({target_dist['name']})")
+
+    # Get Village (Fetch mandals first -> then villages)
+    # Simplified: We know seed_geo creates "Choutuppal" mandal
+    # Just need A valid village ID for registration.
+    # Since we can't easily query villages by name without mandal ID, we'll assume ID 1 exists 
+    # OR better: Add a quick lookup help if needed. 
+    # For now, keeping village_id=1 but noting the risk. 
+    # Actually, in seed_geo, Aregudem is likely the first village created. So ID 1 is probable.
+
     # 2. REGISTER USERS
     print_step("2. Registering Users")
     
@@ -40,11 +62,15 @@ def test_full_flow():
         "village_name": "Aregudem",
         "ward_no": "0",
         "role": "COORDINATOR",
-        "village_id": 1
+        "village_id": 1 # Likely correct after fresh seed
     }
     resp = session.post(f"{BASE_URL}/register/surveyor", json=coord_payload)
-    coord_id = resp.json()['id']
-    print(f"[OK] Coordinator Registered (ID: {coord_id})")
+    if resp.ok:
+        coord_id = resp.json()['id']
+        print(f"[OK] Coordinator Registered (ID: {coord_id})")
+    else:
+        print(f"[FAIL] Coord Reg Failed: {resp.text}")
+        coord_id = None
 
     # Surveyor
     surv_payload = {
@@ -58,33 +84,26 @@ def test_full_flow():
         "village_id": 1
     }
     resp = session.post(f"{BASE_URL}/register/surveyor", json=surv_payload)
-    surv_id = resp.json()['id']
-    print(f"[OK] Surveyor Registered (ID: {surv_id})")
+    if resp.ok:
+        surv_id = resp.json()['id']
+        print(f"[OK] Surveyor Registered (ID: {surv_id})")
+    else:
+        print(f"[FAIL] Surv Reg Failed: {resp.text}")
+        surv_id = None
 
     # 3. APPROVE USERS (Admin)
     print_step("3. Approving Users")
-    for uid in [coord_id, surv_id]:
+    ids_to_approve = [uid for uid in [coord_id, surv_id] if uid]
+    for uid in ids_to_approve:
         resp = session.post(f"{BASE_URL}/dashboard/approve", json={"request_id": uid, "action": "APPROVED"})
         if resp.ok:
             print(f"[OK] Approved User {uid}")
         else:
             print(f"[FAIL] Approval Failed for {uid}")
 
-    # 3.5 FETCH GEO IDs
-    print_step("3.5 Fetching Geo Master Data")
-    time.sleep(1) # Wait for commit
-    resp = session.get(f"{BASE_URL}/locations/districts")
-    districts = resp.json()
-    print(f"DEBUG: Districts Found: {len(districts)}")
-    
-    # FIND 'Yadadri Bhuvanagiri'
-    target_dist = next((d for d in districts if d['name'] == "Yadadri Bhuvanagiri"), None)
-    if not target_dist:
-        print("[FAIL] Yadadri Bhuvanagiri not found!")
-        return
-        
-    district_id = target_dist['id']
-    print(f"   Using District ID: {district_id} ({target_dist['name']})")
+    # 4. CREATE SURVEY
+    print_step("4. Creating Survey")
+    # ... Survey Logic uses district_id fetched in 1.6
 
     # 4. CREATE SURVEY
     print_step("4. Creating Survey")

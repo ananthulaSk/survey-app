@@ -2,7 +2,7 @@
 FROM python:3.10-slim
 
 # Set working directory
-# CACHEBUST=v19.74-GOLD-FIX (Target Yadadri Specific)
+# CACHEBUST=v19.90-UPLOAD-ENABLED
 WORKDIR /app
 
 # Copy requirements from the subfolder

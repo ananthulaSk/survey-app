@@ -1146,6 +1146,7 @@ def get_surveyor_requests(db: Session = Depends(get_db)):
             "id": r.id, 
             "name": r.name, 
             "mobile": r.mobile_no, 
+            "role": r.role, # FIXED: Added missing role field
             "date": r.created_at,
             "status": r.status,
             "district": r.district_name,
