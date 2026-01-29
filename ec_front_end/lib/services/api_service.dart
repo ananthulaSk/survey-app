@@ -365,46 +365,39 @@ class ApiService {
 
   Future<bool> deleteSurveyor(int surveyorId) async {
     final response = await http.delete(
-      Uri.parse('$baseUrl/dashboard/surveyor/$surveyorId'),
+    Uri.parse('$baseUrl/dashboard/surveyor/$surveyorId'),
     );
     return response.statusCode == 200;
   }
 
-  // --- Location APIs (Phase 1) ---
-  Future<List<Map<String, dynamic>>> getDistricts() async {
-    final response = await http.get(Uri.parse('$baseUrl/locations/districts'));
+  // --- Master Data (For Scope Selection) ---
+  Future<List<dynamic>> getDistricts() async {
+    final response = await http.get(Uri.parse('$baseUrl/master/districts'));
     if (response.statusCode == 200) {
-      return List<Map<String, dynamic>>.from(jsonDecode(response.body));
+      return jsonDecode(response.body);
     }
     return [];
   }
 
-  Future<List<Map<String, dynamic>>> getMandals(int districtId) async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/locations/mandals/$districtId'),
-    );
+  Future<List<dynamic>> getMandals(int districtId) async {
+    final response = await http.get(Uri.parse('$baseUrl/master/mandals/$districtId'));
     if (response.statusCode == 200) {
-      return List<Map<String, dynamic>>.from(jsonDecode(response.body));
+      return jsonDecode(response.body);
     }
     return [];
   }
 
-  Future<List<Map<String, dynamic>>> getVillages(int mandalId) async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/locations/villages/$mandalId'),
-    );
+  Future<List<dynamic>> getVillages(int mandalId) async {
+    final response = await http.get(Uri.parse('$baseUrl/master/villages/$mandalId'));
     if (response.statusCode == 200) {
-      return List<Map<String, dynamic>>.from(jsonDecode(response.body));
+      return jsonDecode(response.body);
     }
     return [];
   }
 
-  Future<List<Map<String, dynamic>>> getWards(int villageId) async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/locations/wards/$villageId'),
-    );
+    final response = await http.get(Uri.parse('$baseUrl/locations/wards/$villageId'));
     if (response.statusCode == 200) {
-      return List<Map<String, dynamic>>.from(jsonDecode(response.body));
+      return jsonDecode(response.body);
     }
     return [];
   }
