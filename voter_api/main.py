@@ -931,6 +931,29 @@ def update_voter_legacy(voter_id: int, party: str, db: Session = Depends(get_db)
     db.commit()
     return {"status": "success"}
 
+# --- MASTER DATA ENDPOINTS (For Survey Creation UI) ---
+
+@app.get("/master/districts")
+def get_all_districts(db: Session = Depends(get_db)):
+    districts = db.query(DistrictMaster).all()
+    if not districts:
+        # Fallback if empty: Try seeding? Or just return empty list.
+        # Ideally, startup event handles seeding.
+        return []
+    return [{"id": d.id, "name": d.name} for d in districts]
+
+@app.get("/master/mandals/{district_id}")
+def get_mandals_by_district(district_id: int, db: Session = Depends(get_db)):
+    mandals = db.query(MandalMaster).filter(MandalMaster.district_id == district_id).all()
+    return [{"id": m.id, "name": m.name} for m in mandals]
+
+@app.get("/master/villages/{mandal_id}")
+def get_villages_by_mandal(mandal_id: int, db: Session = Depends(get_db)):
+    villages = db.query(VillageMaster).filter(VillageMaster.mandal_id == mandal_id).all()
+    return [{"id": v.id, "name": v.name} for v in villages]
+
+# --- BULK UPLOAD VALIDATION ENDPOINTS ---
+
 # --- DASHBOARD ENDPOINTS ---
 
 @app.get("/dashboard/summary")
