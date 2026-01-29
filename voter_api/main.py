@@ -10,8 +10,8 @@ from datetime import datetime
 from pydantic import BaseModel
 
 # --- CONFIGURATION ---
-MAIN_VERSION = "v20.02 (Assignment Feature)" # Rebuild Trigger: Assignment Feature
-EXPECTED_FRONTEND_VERSION = "v20.02"
+MAIN_VERSION = "v20.04 (Auto-Bumped)" # Rebuild Trigger: Assignment Feature
+EXPECTED_FRONTEND_VERSION = "v20.04"
 
 # Import robust database setup
 from database import engine, SessionLocal, Base, get_db
@@ -183,9 +183,7 @@ async def add_no_cache_header(request: Request, call_next):
         response.headers["Expires"] = "0"
     return response
 
-# Serve Static Files (Web Dashboard)
-app.mount("/static", StaticFiles(directory="static", html=True), name="static")
-app.mount("/app", StaticFiles(directory="static", html=True), name="app") # Dual-Link Support
+# Static files will be mounted at the end as root fallback to solve 404 issues with base href="/"
 
 # STARTUP: Auto-Seed Database if Empty
 @app.on_event("startup")
@@ -1787,16 +1785,17 @@ def unassign_surveyor(req: AssignmentRequest, db: Session = Depends(get_db)):
     
     return {"status": "success", "message": "Unassigned successfully"}
 
-# --- API STATUS (Default Root) ---
+# --- 15. STATIC & DASHBOARD ROUTING (Root Fallback) ---
 @app.get("/")
-def read_root():
-    return {
-        "status": "Online",
-        "version": MAIN_VERSION,
-        "docs_url": "/docs",
-        "admin_dashboard": "/static/index.html",
-        "mobile_app": "/app/index.html"
-    }
+async def serve_dashboard():
+    return FileResponse("static/index.html")
+
+# Duplicate mounts to ensure backward compatibility and asset resolution
+app.mount("/static", StaticFiles(directory="static", html=True), name="static_path")
+app.mount("/app", StaticFiles(directory="static", html=True), name="app_path")
+
+# Root fallback mount - MUST BE LAST
+app.mount("/", StaticFiles(directory="static", html=True), name="root_static")
 
 if __name__ == "__main__":
     import uvicorn
