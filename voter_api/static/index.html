@@ -44,13 +44,13 @@
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.getRegistrations().then(function (registrations) {
         for (let registration of registrations) {
-          console.log("Unregistering Service Worker:", registration);
-          registration.unregister();
+          console.log("Unregistering ServicWorker:", registration);
+registration.unregister();
         }
       });
     }
   </script>
-  <script src="flutter_bootstrap.js?v=19.40_FORCE_R1" async></script>
+  <script src="flutter_bootstrap.js?v=v19.93-PATCH-404" defer></script>
 </body>
 
 </html>
