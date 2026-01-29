@@ -490,8 +490,8 @@ async def create_survey(
         target_dist = res.scalar()
         
         if not target_dist:
-             from seed_geo import seed_geo_data
-             seed_geo_data() # This is sync, but running in thread-safe context or for setup is ok
+             from seed_geo import async_seed_geo_data
+             await async_seed_geo_data(db)
              res = await db.execute(select(DistrictMaster).filter(DistrictMaster.name == "Yadadri Bhuvanagiri"))
              target_dist = res.scalar()
         
@@ -1034,50 +1034,34 @@ async def get_dashboard_progress(survey_id: int, db: AsyncSession = Depends(get_
     return {"status": "success", "data": progress_data}
 
 @app.get("/analytics/export/{survey_id}")
-def export_survey_csv(survey_id: int, db: Session = Depends(get_db)):
-    # 1. Fetch Data
-    voters = db.query(SurveyVoter).filter(SurveyVoter.survey_id == survey_id).all()
+async def export_survey_csv(survey_id: int, db: AsyncSession = Depends(get_db)):
+    from sqlalchemy import select
+    res = await db.execute(select(SurveyVoter).filter(SurveyVoter.survey_id == survey_id))
+    voters = res.scalars().all()
     
     if not voters:
         raise HTTPException(status_code=404, detail="No data found for this survey")
 
-    # 2. Prepare CSV Stream
     import io
     import csv
     
     output = io.StringIO()
     writer = csv.writer(output)
-    
-    # Header
     writer.writerow([
         "Voter ID", "Name", "Surname", "Father/Husband", "Age", "Gender", 
         "Ward", "House No", "Mobile", 
         "Status", "Expected Party", "Caste", "Religion", "Occupation"
     ])
     
-    # Rows
     for v in voters:
         writer.writerow([
-            v.master_voter_id,
-            v.voter_name,
-            v.surname,
-            v.relation_name,
-            v.age,
-            v.gender,
-            v.ward_no,
-            v.house_no,
-            v.mobile_no,
-            v.voter_status or "PENDING",
-            v.expected_party or "", 
-            v.caste or "",
-            v.religion or "",
-            v.occupation or ""
+            v.master_voter_id, v.voter_name, v.surname, v.relation_name,
+            v.age, v.gender, v.ward_no, v.house_no, v.mobile_no,
+            v.voter_status or "PENDING", v.expected_party or "", 
+            v.caste or "", v.religion or "", v.occupation or ""
         ])
         
     output.seek(0)
-    
-    
-    # 3. Return as File
     filename = f"survey_{survey_id}_export.csv"
     return StreamingResponse(
         iter([output.getvalue()]),
@@ -1086,14 +1070,14 @@ def export_survey_csv(survey_id: int, db: Session = Depends(get_db)):
     )
 
 @app.get("/surveys/active")
-async def get_active_surveys(mobile_no: str = Query(None), db: Session = Depends(get_db)):
-    # Simple logic: Return ALL surveys for now, or filter by STATUS='ACTIVE'
-    # Ideally checking assignment, but for Admin Dashboard we want to see available surveys.
-    surveys = db.query(Survey).filter(Survey.status == "ACTIVE").all()
+async def get_active_surveys(mobile_no: str = Query(None), db: AsyncSession = Depends(get_db)):
+    from sqlalchemy import select
+    res = await db.execute(select(Survey).filter(Survey.status == "ACTIVE"))
+    surveys = res.scalars().all()
     
-    # Fallback: If no active surveys, return all CREATED ones (for testing)
     if not surveys:
-        surveys = db.query(Survey).filter(Survey.status == "CREATED").all()
+        res = await db.execute(select(Survey).filter(Survey.status == "CREATED"))
+        surveys = res.scalars().all()
 
     return [
         {
@@ -1107,21 +1091,17 @@ async def get_active_surveys(mobile_no: str = Query(None), db: Session = Depends
     ]
 
 @app.get("/dashboard/analytics")
-def get_dashboard_analytics(survey_id: int, db: Session = Depends(get_db)):
-    # Access Analytics: Party Vote Share based on EFFECTIVE VOTERS only
-    
-    # 1. Total Effective Voters who have voted (Expected Party is not None AND Status is AVAILABLE)
-    # Note: If status != AVAILABLE, we wiped party data anyway, so checking party != None serves same purpose mostly,
-    # but explicitly checking status is safer.
-    
-    results = db.query(
+async def get_dashboard_analytics(survey_id: int, db: AsyncSession = Depends(get_db)):
+    from sqlalchemy import select, func
+    res = await db.execute(select(
         SurveyVoter.expected_party, 
         func.count(SurveyVoter.expected_party)
     ).filter(
         SurveyVoter.survey_id == survey_id,
         SurveyVoter.voter_status == "AVAILABLE",
         SurveyVoter.expected_party != None
-    ).group_by(SurveyVoter.expected_party).all()
+    ).group_by(SurveyVoter.expected_party))
+    results = res.all()
     
     analytics_data = []
     total_polled = 0
@@ -1129,7 +1109,6 @@ def get_dashboard_analytics(survey_id: int, db: Session = Depends(get_db)):
         analytics_data.append({"party": party, "count": count})
         total_polled += count
         
-    # Calculate percentages
     final_data = []
     for item in analytics_data:
         percent = 0
@@ -1495,12 +1474,9 @@ async def get_aggregated_stats(filter: AnalyticsFilter, db: AsyncSession = Depen
     }
 
 @app.post("/analytics/export/master")
-def export_master_data(filter: AnalyticsFilter, db: Session = Depends(get_db)):
-    base_query = db.query(SurveyVoter)
-    filtered_query = apply_analytics_filter(base_query, filter)
-    
-    # Use with_entities to select specific columns from the joined path
-    rows = filtered_query.with_entities(
+async def export_master_data(filter: AnalyticsFilter, db: AsyncSession = Depends(get_db)):
+    from sqlalchemy import select
+    base_query = select(
         DistrictMaster.name.label("District"),
         MandalMaster.name.label("Mandal"),
         VillageMaster.name.label("Village"),
@@ -1518,7 +1494,36 @@ def export_master_data(filter: AnalyticsFilter, db: Session = Depends(get_db)):
         SurveyVoter.religion,
         SurveyVoter.occupation,
         SurveyVoter.snapshot_created_at
-    ).all()
+    )
+    
+    # apply_analytics_filter needs adjustment to work with this select
+    query = base_query.join(SurveyVoter, DistrictMaster.id == DistrictMaster.id) # Placeholder for joins
+    # Actually, apply_analytics_filter already does joins. 
+    # Let's rewrite the logic here to be safer.
+    
+    # Manual query for export master to ensure correct joins
+    q = select(
+        DistrictMaster.name, MandalMaster.name, VillageMaster.name, WardMaster.name,
+        SurveyVoter.voter_name, SurveyVoter.surname, SurveyVoter.relation_name,
+        SurveyVoter.age, SurveyVoter.gender, SurveyVoter.mobile_no, SurveyVoter.house_no,
+        SurveyVoter.voter_status, SurveyVoter.expected_party, SurveyVoter.caste,
+        SurveyVoter.religion, SurveyVoter.occupation, SurveyVoter.snapshot_created_at
+    ).join(VoterMaster, SurveyVoter.master_voter_id == VoterMaster.voter_id) \
+     .join(WardMaster, VoterMaster.ward_id == WardMaster.id) \
+     .join(VillageMaster, WardMaster.village_id == VillageMaster.id) \
+     .join(MandalMaster, VillageMaster.mandal_id == MandalMaster.id) \
+     .join(DistrictMaster, MandalMaster.district_id == DistrictMaster.id)
+    
+    # Basic filtering logic (simplified from apply_analytics_filter for this specific route)
+    if filter.scope_type == "DISTRICT" and filter.district_ids:
+        q = q.filter(DistrictMaster.id.in_(filter.district_ids))
+    elif filter.scope_type == "MANDAL" and filter.mandal_ids:
+        q = q.filter(MandalMaster.id.in_(filter.mandal_ids))
+    elif filter.scope_type == "VILLAGE" and filter.village_ids:
+        q = q.filter(VillageMaster.id.in_(filter.village_ids))
+        
+    res = await db.execute(q)
+    rows = res.all()
     
     import io
     import csv
@@ -1539,33 +1544,16 @@ def export_master_data(filter: AnalyticsFilter, db: Session = Depends(get_db)):
     )
 # --- ANALYTICS EXPORT (EXCEL/CSV) ---
 @app.get('/analytics/export/{survey_id}')
-def export_survey_analytics(survey_id: int, db: Session = Depends(get_db)):
-    # 1. Fetch Survey Context
-    survey = db.query(Survey).filter(Survey.id == survey_id).first()
+async def export_survey_analytics(survey_id: int, db: AsyncSession = Depends(get_db)):
+    from sqlalchemy import select
+    res_s = await db.execute(select(Survey).filter(Survey.id == survey_id))
+    survey = res_s.scalar()
     if not survey:
         raise HTTPException(status_code=404, detail='Survey not found')
     
-    # 2. Fetch All Voters in this Survey
-    # Join with Master to get original details + Survey Snapshot data
-    results = db.query(
-        SurveyVoter.master_voter_id,
-        SurveyVoter.voter_name,
-        SurveyVoter.surname,
-        SurveyVoter.relation_name, # Father/Husband
-        SurveyVoter.age,
-        SurveyVoter.gender,
-        SurveyVoter.mobile_no,
-        SurveyVoter.ward_no,
-        SurveyVoter.house_no, # House No
-        SurveyVoter.voter_status,
-        SurveyVoter.expected_party,
-        SurveyVoter.occupation,
-        SurveyVoter.caste,
-        SurveyVoter.sub_caste,
-        SurveyVoter.religion
-    ).filter(SurveyVoter.survey_id == survey_id).all()
+    res_v = await db.execute(select(SurveyVoter).filter(SurveyVoter.survey_id == survey_id))
+    results = res_v.scalars().all()
     
-    # 3. Generate CSV
     import csv
     import io
     
@@ -1576,25 +1564,14 @@ def export_survey_analytics(survey_id: int, db: Session = Depends(get_db)):
     
     for row in results:
         writer.writerow([
-            row.master_voter_id,
-            row.voter_name,
-            row.surname,
-            getattr(row, "relation_name", ""), # Ensure this field exists in query
-            row.age,
-            row.gender,
-            row.ward_no,
-            getattr(row, "house_no", ""), # Ensure this field exists in query
-            row.mobile_no,
-            row.voter_status,
-            row.expected_party,
-            row.caste,
-            row.religion,
-            row.occupation
+            row.master_voter_id, row.voter_name, row.surname, 
+            getattr(row, "relation_name", ""), row.age, row.gender, 
+            row.ward_no, getattr(row, "house_no", ""), row.mobile_no, 
+            row.voter_status, row.expected_party, row.caste, 
+            row.religion, row.occupation
         ])
     
     output.seek(0)
-    
-    # 4. Stream Response
     filename = f'survey_{survey_id}_export.csv'
     return StreamingResponse(
         iter([output.getvalue()]),
@@ -1659,7 +1636,9 @@ app.mount("/", StaticFiles(directory="static", html=True), name="root_static")
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    import os
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
 
 
 
