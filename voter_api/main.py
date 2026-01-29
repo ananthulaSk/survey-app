@@ -273,10 +273,9 @@ def startup_event():
 # --- VERSION HANDSHAKE ---
 @app.get("/version")
 def get_version():
-    # COMPATIBILITY: Returning v19.31 to satisfy cached Mobile App (Frontend v19.31)
-    # The actual backend is v19.44, but we need to unblock the user.
+    # Return the actual current version to satisfy dashboard expectations
     return {
-        "version": "v19.31", 
+        "version": EXPECTED_FRONTEND_VERSION, 
         "real_version": MAIN_VERSION,
         "env": "PROD",
         "last_updated": datetime.utcnow().isoformat()
