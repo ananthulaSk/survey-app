@@ -199,61 +199,36 @@ async def add_no_cache_header(request: Request, call_next):
 
 # Static files will be mounted at the end as root fallback to solve 404 issues with base href="/"
 
-# STARTUP: Auto-Seed Database if Empty
 @app.on_event("startup")
-def startup_event():
-    # Ensure tables exist
-    Base.metadata.create_all(bind=engine)
-    
-    # Check if we need to seed
+async def startup_event():
+    # Start seeding in background to prevent Cloud Run timeout
+    thread = threading.Thread(target=run_background_seeding)
+    thread.start()
+
+# Helper function for background seeder
+def run_background_seeding():
     db = SessionLocal()
     try:
-        count = db.query(VoterMaster).count()
-        if count == 0:
-            print("[STARTUP] Database appears empty. Running seeder...")
+        from models import VoterMaster, SurveyorRequest # Local imports to avoid circular issues
+        # 1. Base Models
+        Base.metadata.create_all(bind=engine)
+        
+        # 2. Voter Seeding
+        if db.query(VoterMaster).count() == 0:
+            print("[BACKGROUND] Seeding voters...")
             from seed_db import seed_data
             seed_data()
-            print("[STARTUP] Seeding complete.")
-        else:
-            print(f"[STARTUP] Database has {count} voters. Skipping seed.")
         
-        # --- PHASE 1: GEO SEEDING (Always Check/Run) ---
-        print("[STARTUP] Checking Master Location Data...")
+        # 3. Geo Seeding
         if db.query(DistrictMaster).count() == 0:
-             print("[STARTUP] District Table is Empty. Seeding Full Geo Data...")
-             from seed_geo import seed_geo_data
-             seed_geo_data()
-             print("[STARTUP] Geo Seeding Complete.")
+            print("[BACKGROUND] Seeding geo data...")
+            from seed_geo import seed_geo_data
+            seed_geo_data()
 
-        # --- PHASE 4.2: AUTO-MIGRATE (Schema Updates) ---
-        print("[STARTUP] Checking Phase 4.2 Schema...")
-        try:
-             from migrate_phase4_2 import migrate
-             migrate()
-        except Exception as e:
-             print(f"[STARTUP] Migration Check: {e}")
-
-        # --- PHASE 5: ASSIGNMENTS (Schema) ---
-        print("[STARTUP] Checking Phase 5 Schema (Assignments)...")
-        try:
-             from migrate_phase5 import migrate_phase5
-             migrate_phase5()
-        except Exception as e:
-             print(f"[STARTUP] Phase 5 Migration Error: {e}")
-
-        # --- PHASE 6: VOTER LOCATION (Schema) ---
-        print("[STARTUP] Checking Phase 6 Schema (Voter Location)...")
-        try:
-             from migrate_phase6 import migrate_phase6
-             migrate_phase6()
-        except Exception as e:
-             print(f"[STARTUP] Phase 6 Migration Error: {e}")
-
-        # --- PHASE 4.2: SEED DEMO COORDINATOR (Auto-Fix) ---
-        # Ensure the test user 9999999999 exists for the User to log in
+        # 4. Demo Coordinator Check
         demo_coord = db.query(SurveyorRequest).filter(SurveyorRequest.mobile_no == '9999999999').first()
         if not demo_coord:
-            print("[STARTUP] Creating Demo Coordinator (9999999999)...")
+            print("[BACKGROUND] Creating Demo Coordinator...")
             new_coord = SurveyorRequest(
                 name="Demo Coordinator",
                 mobile_no="9999999999",
@@ -263,18 +238,30 @@ def startup_event():
                 ward_no="0",
                 role="COORDINATOR",
                 assigned_village_id=1,
-                status="APPROVED", # Pre-approved
+                status="APPROVED",
                 device_id="auto-seed"
             )
             db.add(new_coord)
             db.commit()
-            print("[STARTUP] Demo Coordinator Created!")
-        else:
-            print("[STARTUP] Demo Coordinator already exists.")
 
-        print("[STARTUP] v19.14 Startup Checks Complete.")
+        # 5. Migrations
+        print("[BACKGROUND] Running migrations...")
+        try:
+            from migrate_phase4_2 import migrate
+            migrate()
+        except: pass
+        try:
+            from migrate_phase5 import migrate_phase5
+            migrate_phase5()
+        except: pass
+        try:
+            from migrate_phase6 import migrate_phase6
+            migrate_phase6()
+        except: pass
+        
+        print("[BACKGROUND] Startup processing finished.")
     except Exception as e:
-        print(f"[STARTUP] Error checking/seeding DB: {e}")
+        print(f"[BACKGROUND] Error in seeding: {e}")
     finally:
         db.close()
 
@@ -1800,15 +1787,13 @@ def unassign_surveyor(req: AssignmentRequest, db: Session = Depends(get_db)):
     return {"status": "success", "message": "Unassigned successfully"}
 
 # --- 15. STATIC & DASHBOARD ROUTING (Root Fallback) ---
-@app.get("/")
-async def serve_dashboard():
-    return FileResponse("static/index.html")
+# Simple root fallback using mount only (StaticFiles with html=True handles / automatically)
 
 # Duplicate mounts to ensure backward compatibility and asset resolution
 app.mount("/static", StaticFiles(directory="static", html=True), name="static_path")
 app.mount("/app", StaticFiles(directory="static", html=True), name="app_path")
 
-# Root fallback mount - MUST BE LAST
+# Root fallback mount - MUST BE LAST. This serves as both / and all asset requests
 app.mount("/", StaticFiles(directory="static", html=True), name="root_static")
 
 if __name__ == "__main__":

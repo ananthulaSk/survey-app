@@ -1,0 +1,9 @@
+.git
+.gitignore
+ec_front_end
+antigravity
+voters.db
+__pycache__
+*.pyc
+.context
+*.bak
