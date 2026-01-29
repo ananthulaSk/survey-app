@@ -281,6 +281,87 @@ def get_version():
         "last_updated": datetime.utcnow().isoformat()
     }
 
+@app.post("/voters/upload_bulk")
+async def upload_voters_bulk(
+    file: UploadFile = File(...),
+    district_id: int = Form(...),
+    mandal_id: int = Form(...),
+    village_id: int = Form(...),
+    x_admin_token: Optional[str] = Header(None),
+    db: Session = Depends(get_db)
+):
+    """Bulk upload voters from CSV file"""
+    if x_admin_token != "admin-secret-123":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    try:
+        # Read CSV file
+        contents = await file.read()
+        csv_data = contents.decode('utf-8').splitlines()
+        
+        import csv
+        import io
+        reader = csv.DictReader(io.StringIO('\n'.join(csv_data)))
+        
+        added = 0
+        updated = 0
+        total_processed = 0
+        
+        # Get ward_id from village_id if possible
+        ward = db.query(WardMaster).filter(WardMaster.village_id == village_id).first()
+        ward_id = ward.id if ward else None
+        
+        for row in reader:
+            total_processed += 1
+            try:
+                # Expected CSV columns: serial_no, house_no, voter_name, gender, age, voter_id_no
+                # Check if voter already exists
+                existing_voter = db.query(VoterMaster).filter(
+                    VoterMaster.voter_id_no == row.get('voter_id_no', '')
+                ).first()
+                
+                if existing_voter:
+                    # Update existing voter
+                    existing_voter.voter_name = row.get('voter_name', existing_voter.voter_name)
+                    existing_voter.house_no = row.get('house_no', existing_voter.house_no)
+                    existing_voter.serial_no = int(row.get('serial_no', 0)) if row.get('serial_no') else existing_voter.serial_no
+                    existing_voter.gender = row.get('gender', existing_voter.gender)
+                    existing_voter.age = int(row.get('age', 0)) if row.get('age') else existing_voter.age
+                    existing_voter.mobile_no = row.get('mobile_no', existing_voter.mobile_no)
+                    if ward_id:
+                        existing_voter.ward_id = ward_id
+                    updated += 1
+                else:
+                    # Add new voter
+                    new_voter = VoterMaster(
+                        serial_no=int(row.get('serial_no', 0)) if row.get('serial_no') else None,
+                        house_no=row.get('house_no', ''),
+                        voter_name=row.get('voter_name', ''),
+                        gender=row.get('gender', ''),
+                        age=int(row.get('age', 0)) if row.get('age') else None,
+                        voter_id_no=row.get('voter_id_no', ''),
+                        mobile_no=row.get('mobile_no', ''),
+                        ward_id=ward_id
+                    )
+                    db.add(new_voter)
+                    added += 1
+            except Exception as e:
+                print(f"Error processing row {total_processed}: {e}")
+                continue
+        
+        db.commit()
+        
+        return {
+            "status": "success",
+            "total_processed": total_processed,
+            "added": added,
+            "updated": updated
+        }
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
+
+
 @app.post("/admin/reset_db")
 def reset_database(x_admin_token: Optional[str] = Header(None)):
     if x_admin_token != "admin-secret-123":

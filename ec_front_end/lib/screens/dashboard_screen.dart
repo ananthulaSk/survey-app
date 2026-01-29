@@ -29,7 +29,10 @@ class _DashboardScreenState extends State<DashboardScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(
+      length: 4,
+      vsync: this,
+    ); // Updated for 4 tabs
     _loadDashboardData();
   }
 
@@ -349,6 +352,8 @@ class _DashboardScreenState extends State<DashboardScreen>
           tabs: const [
             Tab(icon: Icon(Icons.pie_chart), text: "Analytics"),
             Tab(icon: Icon(Icons.people), text: "Team"),
+            Tab(icon: Icon(Icons.assignment), text: "Surveys"),
+            Tab(icon: Icon(Icons.task), text: "Assignments"),
           ],
         ),
         actions: [
@@ -415,7 +420,12 @@ class _DashboardScreenState extends State<DashboardScreen>
             )
           : TabBarView(
               controller: _tabController,
-              children: [_buildAnalyticsTab(), _buildTeamTab()],
+              children: [
+                _buildAnalyticsTab(),
+                _buildTeamTab(),
+                _buildSurveysTab(),
+                _buildAssignmentsTab(),
+              ],
             ),
     );
   }
@@ -566,6 +576,86 @@ class _DashboardScreenState extends State<DashboardScreen>
           ),
         );
       },
+    );
+  }
+
+  Widget _buildSurveysTab() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.assignment, size: 64, color: Colors.teal[300]),
+            const SizedBox(height: 16),
+            Text(
+              "Surveys Management",
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Colors.teal[800],
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              "View, create, and manage survey campaigns",
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: _showCreateSurveyDialog,
+              icon: const Icon(Icons.add),
+              label: const Text("Create New Survey"),
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 32,
+                  vertical: 16,
+                ),
+                textStyle: const TextStyle(fontSize: 16),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAssignmentsTab() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.task, size: 64, color: Colors.teal[300]),
+            const SizedBox(height: 16),
+            Text(
+              "Survey Assignments",
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Colors.teal[800],
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              "Assign surveys to coordinators and surveyors",
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              "Coming Soon",
+              style: TextStyle(
+                fontSize: 18,
+                fontStyle: FontStyle.italic,
+                color: Colors.grey[500],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
