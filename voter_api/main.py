@@ -181,21 +181,32 @@ async def add_no_cache_header(request: Request, call_next):
 
 @app.on_event("startup")
 async def startup_event():
-    # 1. Create tables asynchronously
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    print("--- APP STARTUP SEQUENCE INITIATED ---")
+    try:
+        # 1. Create tables asynchronously
+        print("--- ATTEMPTING DB CONNECTION ---")
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+        print("--- DB TABLES CREATED/VERIFIED ---")
     
-    # 2. Run seeding in background (using a thread to avoid blocking the main async loop,
-    # but the seeder itself needs careful handling now that SessionLocal is an AsyncSessionLocal)
-    thread = threading.Thread(target=run_background_seeding)
-    thread.start()
+        # 2. Run seeding in background
+        print("--- STARTING BACKGROUND SEEDER ---")
+        thread = threading.Thread(target=run_background_seeding)
+        thread.start()
+        print("--- APP STARTUP SUCCESSFUL ---")
+        
+    except Exception as e:
+        # CRITICAL: Do not crash the app if DB fails. Log it and allow startup so logs are visible.
+        print(f"!!! CRITICAL STARTUP ERROR: {e} !!!")
+        print("!!! CONTINUING STARTUP TO ALLOW LOGGING !!!")
 
 def run_background_seeding():
-    # Helper for synchronous wrapper around async DB for seeding if needed,
-    # or just use a dedicated async function and run it in the loop.
-    # To keep it simple and non-blocking, we'll run a mini async loop in this thread.
-    import asyncio
-    asyncio.run(async_seeding())
+    print("--- BACKGROUND THREAD STARTED ---")
+    try:
+        import asyncio
+        asyncio.run(async_seeding())
+    except Exception as e:
+        print(f"!!! BACKGROUND THREAD CRASH: {e} !!!")
 
 async def async_seeding():
     from database import AsyncSessionLocal
