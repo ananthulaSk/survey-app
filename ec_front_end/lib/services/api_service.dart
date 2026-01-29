@@ -368,6 +368,15 @@ class ApiService {
     return response.statusCode == 200;
   }
 
+  Future<bool> assignSurveyor(int surveyId, int surveyorId) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/surveys/assign'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({"survey_id": surveyId, "surveyor_id": surveyorId}),
+    );
+    return response.statusCode == 200;
+  }
+
   // --- Master Data (For Scope Selection) ---
   Future<List<dynamic>> getDistricts() async {
     final response = await http.get(Uri.parse('$baseUrl/master/districts'));
