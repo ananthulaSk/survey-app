@@ -9,9 +9,19 @@ from typing import List, Optional
 from datetime import datetime
 from pydantic import BaseModel
 
-# --- CONFIGURATION ---
-MAIN_VERSION = "v20.04 (Auto-Bumped)" # Rebuild Trigger: Assignment Feature
-EXPECTED_FRONTEND_VERSION = "v20.04"
+# --- CONFIGURATION (Dynamic Versioning) ---
+def get_version_from_file():
+    try:
+        if os.path.exists("version.txt"):
+            with open("version.txt", "r") as f:
+                ver = f.read().strip()
+                return f"v{ver}"
+        return "v20.00"
+    except:
+        return "v20.00"
+
+MAIN_VERSION = f"{get_version_from_file()} (Dynamic)"
+EXPECTED_FRONTEND_VERSION = get_version_from_file()
 
 # Import robust database setup
 from database import engine, SessionLocal, Base, get_db
