@@ -2,7 +2,7 @@
 FROM python:3.10-slim
 
 # Set working directory
-# CACHEBUST=v20.02-FORCE
+# CACHEBUST=v20.02-NUCLEAR
 WORKDIR /app
 
 # Copy requirements from the subfolder
