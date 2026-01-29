@@ -10,8 +10,8 @@ from datetime import datetime
 from pydantic import BaseModel
 
 # --- CONFIGURATION ---
-MAIN_VERSION = "v19.60-RC (Release)" # Rebuild Trigger: Release Candidate
-EXPECTED_FRONTEND_VERSION = "v19.60-RC"
+MAIN_VERSION = "v20.02 (Assignment Feature)" # Rebuild Trigger: Assignment Feature
+EXPECTED_FRONTEND_VERSION = "v20.02"
 
 # Import robust database setup
 from database import engine, SessionLocal, Base, get_db
@@ -1661,6 +1661,51 @@ def export_survey_analytics(survey_id: int, db: Session = Depends(get_db)):
         media_type='text/csv',
         headers={'Content-Disposition': f'attachment; filename={filename}'}
     )
+
+# --- 14. SURVEY ASSIGNMENT APIS (Phase 5) ---
+class AssignmentRequest(BaseModel):
+    survey_id: int
+    surveyor_id: int
+
+@app.post("/surveys/assign")
+def assign_surveyor(req: AssignmentRequest, db: Session = Depends(get_db)):
+    """Assign a surveyor to a survey"""
+    # 1. Check if already assigned
+    existing = db.query(SurveyAssignment).filter(
+        SurveyAssignment.survey_id == req.survey_id,
+        SurveyAssignment.surveyor_id == req.surveyor_id
+    ).first()
+
+    if existing:
+        if existing.status == "REVOKED":
+            existing.status = "ACTIVE"
+            db.commit()
+            return {"status": "success", "message": "Re-activated assignment"}
+        return {"status": "success", "message": "Already assigned"}
+    
+    # 2. Create new assignment
+    new_assign = SurveyAssignment(
+        survey_id=req.survey_id,
+        surveyor_id=req.surveyor_id,
+        status="ACTIVE"
+    )
+    db.add(new_assign)
+    db.commit()
+    return {"status": "success", "message": "Assigned successfully"}
+
+@app.post("/surveys/unassign")
+def unassign_surveyor(req: AssignmentRequest, db: Session = Depends(get_db)):
+    """Remove a surveyor assignment from a survey"""
+    existing = db.query(SurveyAssignment).filter(
+        SurveyAssignment.survey_id == req.survey_id,
+        SurveyAssignment.surveyor_id == req.surveyor_id
+    ).first()
+
+    if existing:
+        existing.status = "REVOKED"
+        db.commit()
+    
+    return {"status": "success", "message": "Unassigned successfully"}
 
 # --- API STATUS (Default Root) ---
 @app.get("/")

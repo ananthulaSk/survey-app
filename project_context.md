@@ -1,103 +1,175 @@
-# Project Context & Architecture Guidelines
 
-## 1. Technical Stack Overview
-**The "Truth" Source for all architectural decisions.**
+⚠️ ANTIGRAVITY HARD CONSTRAINT FILE
+ELECTION SURVEY APPLICATION — SINGLE SOURCE OF TRUTH
 
-- **Application:** Modern web-based survey platform.
-- **Backend:** FastAPI (Python 3.10) with Uvicorn & SQLAlchemy.
-- **Frontend:** Flutter Web (SDK ^3.10.4) with Dart.
-- **Database:** PostgreSQL (implied via SQLAlchemy) / Cloud SQL.
-- **Infrastructure:** Docker (Multi-stage), Google Cloud Run, Cloud Build CI/CD.
-- **Region:** asia-south1 (Mumbai).
+This document is a HARD CONSTRAINT CONTRACT.
+DO NOT summarize, compress, reinterpret, or weaken any rule.
+EVERY rule is mandatory.
+If anything is unclear → STOP and ASK.
+If a conflict exists → DO NOT auto-resolve.
 
----
+====================================================================
+SECTION 1: CORE PRINCIPLES (AUTHORITY)
+====================================================================
+- This is an Election Survey App, NOT an official election system
+- Data correctness > speed > UI polish
+- Ward-level isolation is a SECURITY BOUNDARY
+- Backend is the final authority; frontend is never trusted
+- Survey data must be auditable and reproducible
 
-## 2. Backend Rules (Python/FastAPI)
-**Strictly follow these patterns for any backend code.**
+====================================================================
+SECTION 2: BACKEND RULES (FastAPI / Python)
+====================================================================
+- ALL endpoints MUST be `async def`
+- ONLY `AsyncSession` is allowed (no sync DB access)
+- Pydantic v2 ONLY (no v1 syntax, no orm_mode)
+- SQLAlchemy Models ≠ Pydantic Schemas
+- ALL errors MUST return JSON using HTTPException
+- Backend MUST NEVER return HTML responses
+- Related queries MUST use joinedload() to avoid N+1
+- Any DB schema change REQUIRES Alembic migration
 
-### Architecture
-- **Async First:** ALL route handlers and DB queries must be `async def`.
-- **Validation:** Use **Pydantic v2** models for all Request/Response bodies.
-- **Separation:** Strictly separate `SQLAlchemy Models` (DB tables) from `Pydantic Schemas` (API data).
-- **Dependency Injection:** Use `Depends()` for DB sessions and current user auth.
-- **Error Handling:** Always wrap errors in `HTTPException`. Never return raw 500s.
+====================================================================
+SECTION 3: API CONTRACT LAW (CRITICAL)
+====================================================================
+- Every endpoint MUST define:
+  - Request schema (Pydantic)
+  - Response schema (Pydantic)
+- Frontend may ONLY consume declared JSON fields
+- Backend must NEVER silently change JSON shape
+- Endpoint renames require frontend update in SAME change
+- Non-JSON backend response is ALWAYS a BUG
 
-### Database (SQLAlchemy)
-- **Session:** Use `AsyncSession` exclusively.
-- **Queries:** Avoid N+1 issues by using `select().options(joinedload(...))` for related data.
-- **Migrations:** All schema changes must be accompanied by a migration script (Alembic).
+====================================================================
+SECTION 4: ELECTION DATA ISOLATION (MOST CRITICAL)
+====================================================================
+- Surveyors MUST see ONLY voters from their assigned ward
+- Ward filtering MUST be enforced in backend queries
+- Frontend ward filters are advisory ONLY
+- Missing ward context MUST reject the request
+- Cross-ward data leakage is ZERO tolerance
 
----
+====================================================================
+SECTION 5: SURVEY DATA INTEGRITY
+====================================================================
+- Every voter response MUST store:
+  - survey_id
+  - voter_id
+  - ward_no
+  - surveyor_id
+  - timestamp
+- Responses are append-only (no silent overwrite)
+- Any correction MUST be traceable (audit-safe)
+- No auto-correction of political data
 
-## 3. Frontend Rules (Flutter Web)
-**Strictly follow these patterns for any Dart/Flutter code.**
+====================================================================
+SECTION 6: FRONTEND RULES (Flutter Web)
+====================================================================
+- Web-first layout (desktop safe)
+- NEVER assume mobile screen
+- LayoutBuilder OR MediaQuery is mandatory
+- Desktop MUST use ConstrainedBox
+- NO default Material blue theme
+- API calls ONLY via service layer
+- NEVER call APIs inside build()
+- Services MUST initialize before UI renders
+- UI MUST handle loading / empty / denied states
+- JSON parsing MUST be type-safe and defensive
 
-### Design & UI
-- **Aesthetics:** NO default "Material Blue". Use a custom `ThemeData` defined in `main.dart`.
-- **Icons:** Use `cupertino_icons` primarily.
-- **Responsiveness (CRITICAL):**
-  - **Never** assume a mobile screen.
-  - ALWAYS use `LayoutBuilder` or `MediaQuery` to adapt layouts.
-  - **Desktop:** Use `ConstrainedBox` to prevent full-width stretching on large screens.
-  - **Mobile:** Ensure touch targets are large enough (44px+).
+====================================================================
+SECTION 7: WORKFLOW ORDER (MANDATORY)
+====================================================================
+1. Define Pydantic data model
+2. Validate ward & role isolation
+3. Verify Flutter can parse response
+4. Implement backend logic
+5. Implement frontend consumption
+6. Test using ward-bound test accounts
 
-### Implementation
-- **Charts:** Use `fl_chart` for all visualizations. Enable tooltips for mouse users.
-- **State Management:** Keep business logic SEPARATE from UI widgets (use a Service/Repository pattern).
-- **Networking:** Use the `http` package. All API calls must go through a dedicated service layer (e.g., `survey_service.dart`), never called directly inside `build()`.
-- **Performance:** Use `const` constructors everywhere possible to optimize Web rendering.
+Skipping steps is NOT allowed.
 
----
+====================================================================
+SECTION 8: DEPLOYMENT & OPERATIONS
+====================================================================
+- Frontend code change REQUIRES `flutter build web`
+- Docker deploy REQUIRES CACHEBUST update
+- Cloud Run deploy REQUIRES traffic = 100%
+- Cached frontend MUST be invalidated or bypassed
+- Deploy success ≠ live traffic
 
-## 4. Workflow Protocol (The "Antigravity" Process)
-**Before writing code for complex features, the AI must:**
-1.  **Plan:** Propose the JSON structure (Pydantic model) first.
-2.  **Verify:** Ensure the Flutter frontend can easily consume that JSON structure.
+====================================================================
+SECTION 9: AUTO-LOGIC FORBIDDEN
+====================================================================
+- Do NOT guess missing logic
+- Do NOT infer voter intent
+- Do NOT auto-correct survey answers
+- Do NOT fabricate analytics
+- Do NOT downgrade async → sync
+- Do NOT simplify rules for convenience
 
-## 5. Recent Architectures & Critical Logic (Phase 5 & 6)
+====================================================================
+SECTION 10: DOMAIN CONTEXT (REFERENCE)
+====================================================================
+SYSTEM PURPOSE:
+- Secure, ward-isolated election survey platform
+- Used for internal voter sentiment analysis only
+- NOT for declaring winners or official predictions
 
-### A. Data Security (Ward Isolation)
-- **Constraint:** Surveyors MUST only see voters from their assigned Ward, even if the Survey spans multiple wards.
-- **Backend Implementation:**
-    - All voter-fetching endpoints (`/voters/next`, `/voters/search`, etc.) accept an optional `ward` parameter.
-    - If `ward` is present, the query is strictly filtered by `ward_no`.
-- **Frontend Implementation:**
-    - `ApiService` captures `ward_no` upon login/status check.
-    - This `ward_no` is automatically injected into all voter fetch calls.
-    - **Re-Login Required** on mobile to fetch new policy.
+USER ROLES:
+- Admin: Full system control
+- Coordinator: Survey & assignment management
+- Surveyor: Data collection (ward-bound)
 
-### B. Robust Data Import (Smart Parsing)
-- **Problem:** CSVs often contain "Ward 4", "Ward No 4", or "4". Legacy logic failed on strings.
-- **Solution (v19.23+):**
-    - `safe_int()` helper uses Regex to extract the first integer from any string.
-    - **Snapshot Creation (v19.25+):** Uses dual-verification. checks `ward_id` (Dropdown Context) FIRST. If `ward_no` in data is 0/invalid, it **Auto-Corrects** it based on the Dropdown selection.
+SURVEY FLOW:
+1. Admin creates survey
+2. Surveyors assigned via SurveyAssignment
+3. Surveyor fetches next voter (ward-filtered)
+4. Surveyor submits response
+5. Data stored with audit context
 
-### C. Assignments (Phase 5)
-- **Logic:** Surveyors are not "owned" by a survey permanently.
-- **Table:** `SurveyAssignment` links `Survey` <-> `Surveyor`.
-- **UI:** Dropdowns must display "Name (Mobile) - Ward X" to prevent assignment errors.
+DATA IMPORT (VOTER LISTS):
+- CSV ward values may be inconsistent
+- `safe_int()` extracts first integer via regex
+- Dropdown-selected ward overrides invalid CSV ward
 
-## 6. Test Accounts
-- **Admin Secret:** `admin-secret-123`
-- **Test Surveyor:**
-  - **Mobile:** `6666666666`
-  - **Name:** `TEST_USER_API_2`
-  - **Device ID:** `test_script_002`
-- **Test Coordinator:**
-  - **Mobile:** `9876543210` (If created via UI)
+ANALYTICS INTENT:
+- Aggregated counts only
+- Ward / booth-level summaries
+- Trends over time
+- No individual voter exposure
 
+SYSTEM INITIALIZATION:
+- Empty database supported
+- Geo data auto-seeded if missing
+- Survey creation self-heals missing district IDs
 
-## 7. System Initialization & Troubleshooting
-**Critical behavior for Fresh Deployments (Empty Database).**
+LEGAL & ETHICAL LIMITS:
+- No coercion logic
+- No voter manipulation
+- No individual profiling beyond survey scope
 
-### A. Admin Dashboard "Empty State"
-- **Behavior:** Upon first login, if NO surveys exist, the Dashboard will show a **"Create First Survey"** block.
-- **Reason:** The original "Static" dashboard was removed. The system now enforces "Active Survey" context to display analytics.
-- **Action:** Admin MUST click "Create First Survey" to initialize the system.
+====================================================================
+SECTION 11: EXAMPLES (NON-AUTHORITATIVE)
+====================================================================
+EXAMPLE: VOTER FETCH RESPONSE
+{
+  "voter_id": 10234,
+  "name": "Ramesh",
+  "ward_no": 4,
+  "age_group": "36-45",
+  "gender": "M"
+}
 
-### B. Self-Healing Survey Creation (v19.73+)
-- **Problem:** On fresh Cloud SQL instances, District IDs vary (e.g., 1 vs 33). Hardcoding IDs causes "Scope Resolution Failed".
-- **Solution:** The `/surveys/create` endpoint is **Self-Healing**:
-    - If `district_id` is omitted or 0, the backend **Auto-Selects** the first available District.
-    - If the Database is empty, it **Auto-Seeds** Geo Data (Districts/Mandals) before creation.
-    - **Frontend:** Sends `district_id: 0` to trigger this logic safely.
+EXAMPLE: SURVEY RESPONSE PAYLOAD
+{
+  "survey_id": 7,
+  "voter_id": 10234,
+  "preferred_party": "Party A",
+  "confidence_level": 3,
+  "submitted_at": "2026-01-29T10:21:00Z"
+}
+
+FORBIDDEN OUTPUTS:
+❌ Declaring winners
+❌ Individual voter predictions
+❌ Official election claims
