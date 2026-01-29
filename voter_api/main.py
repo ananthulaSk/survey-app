@@ -2,7 +2,7 @@ import urllib.parse
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Depends, Body, Query, Header, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import StreamingResponse, RedirectResponse # Added for Export & Root Redirect
+from fastapi.responses import JSONResponse, FileResponse, Response, StreamingResponse # Added for Export & Root Redirect
 from sqlalchemy import Column, Integer, String, asc, desc, ForeignKey, DateTime, func, and_, or_
 from sqlalchemy.orm import Session, relationship
 from typing import List, Optional
@@ -349,6 +349,16 @@ def debug_dump_data(db: Session = Depends(get_db)):
 from fastapi.responses import FileResponse
 
 # Explicitly serve index.html with NO-CACHE headers to break stale service workers
+
+@app.get("/")
+async def serve_spa(request: Request):
+    # FORCE NO CACHE for index.html
+    headers = {
+        "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+        "Pragma": "no-cache",
+        "Expires": "0"
+    }
+    return FileResponse("static/index.html", headers=headers)
 
 @app.get("/app/")
 @app.get("/app/index.html")
