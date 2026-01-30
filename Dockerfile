@@ -2,7 +2,7 @@
 FROM python:3.10-slim
 
 # Set working directory
-# CACHEBUST=v20.30-FIX-SEED-GEO-CRASH
+# CACHEBUST=v20.40-CMD-OPTIMIZATION
 ENV PYTHONUNBUFFERED=1
 WORKDIR /app
 
@@ -15,8 +15,5 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the backend code from subfolder to /app
 COPY voter_api/ .
 
-# Expose port
-EXPOSE 8080
-
 # Run the application using uvicorn directly for better Cloud Run compatibility
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080", "--workers", "1"]
