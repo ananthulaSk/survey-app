@@ -471,6 +471,9 @@ class AnalyticsFilter(BaseModel):
     village_ids: List[int] = []
     ward_ids: List[int] = []
 
+class LoginRequest(BaseModel):
+    mobile_no: str
+
 @app.get("/api/status")
 async def read_root():
     return {"status": "online", "message": "Voter API is running", "docs_url": "/docs", "version": MAIN_VERSION}
