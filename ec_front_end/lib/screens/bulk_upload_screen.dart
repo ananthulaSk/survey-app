@@ -101,6 +101,9 @@ class _BulkUploadScreenState extends State<BulkUploadScreen> {
         var uri = Uri.parse('${ApiService.baseUrl}/voters/upload_bulk');
         var request = http.MultipartRequest('POST', uri);
 
+        // Add Admin Token Header
+        request.headers['x-admin-token'] = 'admin-secret-123';
+
         request.files.add(
           http.MultipartFile.fromBytes('file', bytes!, filename: filename),
         );
