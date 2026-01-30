@@ -64,24 +64,11 @@ async def async_seed_geo_data(db: AsyncSession):
     except Exception as e:
         print(f"[GEO-SEED] Error: {e}")
         await db.rollback()
-        raise e
-
-        # Ranga Reddy (Sample)
-        rr = db.query(DistrictMaster).filter(DistrictMaster.name == "Ranga Reddy").first()
-        if rr:
-             exists = db.query(MandalMaster).filter(MandalMaster.name == "Serilingampally", MandalMaster.district_id == rr.id).first()
-             if not exists:
-                 db.add(MandalMaster(name="Serilingampally", district_id=rr.id))
-                 db.commit()
-
-        print("[GEO-SEED] Seeding Complete!")
-
-    except Exception as e:
-        print(f"[GEO-SEED] Error: {e}")
-        db.rollback()
-        raise e # Re-raise to ensure caller knows it failed
+        # Non-critical, just log
     finally:
-        db.close()
+        # In async, we usually don't close here if dependency handles it, 
+        # but for a script it's fine.
+        pass
 
 if __name__ == "__main__":
     seed_geo_data()
