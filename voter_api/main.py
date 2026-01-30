@@ -664,37 +664,6 @@ async def get_active_surveys(
     res = await db.execute(query.order_by(desc(Survey.created_at)))
     return res.scalars().all()
     
-@app.delete("/surveys/{survey_id}")
-def delete_survey(survey_id: int, x_admin_token: Optional[str] = Header(None), db: Session = Depends(get_db)):
-    # --- SECURITY GUARD ---
-    if x_admin_token != "admin-secret-123":
-        raise HTTPException(status_code=403, detail="Forbidden: Admin Access Required")
-    # ----------------------
-    
-    survey = db.query(Survey).filter(Survey.id == survey_id).first()
-    if not survey:
-        raise HTTPException(status_code=404, detail="Survey not found")
-        
-    # Validation Rules
-    if survey.status in ["COMPLETED", "ARCHIVED"]:
-        raise HTTPException(status_code=400, detail="Cannot delete COMPLETED or ARCHIVED surveys. Please Archive only.")
-        
-    try:
-        # Cascade Delete (Manually to be safe with SQLite fk support)
-        # 1. Delete Assignments
-        db.query(SurveyAssignment).filter(SurveyAssignment.survey_id == survey_id).delete()
-        
-        # 2. Delete Voters (Snapshot)
-        db.query(SurveyVoter).filter(SurveyVoter.survey_id == survey_id).delete()
-        
-        # 3. Delete Survey
-        db.delete(survey)
-        db.commit()
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(status_code=500, detail=f"Delete failed: {str(e)}")
-        
-    return {"status": "success", "message": f"Survey '{survey.name}' deleted."}
     
 @app.post("/assignments/create")
 def create_assignment(survey_id: int = Body(...), surveyor_id: int = Body(...), db: Session = Depends(get_db)):
@@ -1178,7 +1147,7 @@ async def delete_surveyor(surveyor_id: int, db: AsyncSession = Depends(get_db)):
          return JSONResponse(status_code=404, content={"status": "fail", "message": "Surveyor not found"})
     
     await db.execute(delete(SurveyAssignment).filter(SurveyAssignment.surveyor_id == surveyor_id))
-    await db.delete(surveyor)
+    db.delete(surveyor)
     await db.commit()
     return {"status": "success", "message": "Surveyor deleted successfully"}
 
@@ -1644,12 +1613,16 @@ async def delete_survey(survey_id: int, db: AsyncSession = Depends(get_db)):
     if not survey:
         raise HTTPException(status_code=404, detail="Survey not found")
     
+    # Validation Rules
+    if survey.status in ["COMPLETED", "ARCHIVED"]:
+        raise HTTPException(status_code=400, detail="Cannot delete COMPLETED or ARCHIVED surveys. Please Archive only.")
+    
     # 2. Delete related data first (cascade)
     await db.execute(delete(SurveyVoter).filter(SurveyVoter.survey_id == survey_id))
     await db.execute(delete(SurveyAssignment).filter(SurveyAssignment.survey_id == survey_id))
     
     # 3. Delete survey
-    await db.delete(survey)
+    db.delete(survey)
     await db.commit()
     
     return {"status": "success", "message": "Survey and all related records deleted"}
