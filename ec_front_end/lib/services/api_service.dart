@@ -377,6 +377,47 @@ class ApiService {
     return response.statusCode == 200;
   }
 
+  Future<bool> unassignSurveyor(int surveyId, int surveyorId) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/surveys/unassign'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({"survey_id": surveyId, "surveyor_id": surveyorId}),
+    );
+    return response.statusCode == 200;
+  }
+
+  Future<List<dynamic>> getApprovedSurveyors() async {
+    final response = await http.get(Uri.parse('$baseUrl/dashboard/approvals'));
+    if (response.statusCode == 200) {
+      final List<dynamic> all = jsonDecode(response.body);
+      return all.where((r) => r['status'] == 'APPROVED').toList();
+    }
+    return [];
+  }
+
+  Future<List<dynamic>> getAssignmentsForSurvey(int surveyId) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/assignments/list?survey_id=$surveyId'),
+    );
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    }
+    return [];
+  }
+
+  Future<void> exportSurveyData(int surveyId) async {
+    final url = '$baseUrl/analytics/export/$surveyId';
+    if (kIsWeb) {
+      // Use dynamic approach to avoid mobile compilation errors
+      // In a real app we'd use url_launcher or conditional imports
+      debugPrint("WEB EXPORT REQUESTED: $url");
+      // For now, we will rely on the UI providing a clickable link or
+      // just tell the user this is where the CSV is.
+    } else {
+      debugPrint("MOBILE EXPORT REQUESTED: $url");
+    }
+  }
+
   // --- Master Data (For Scope Selection) ---
   Future<List<dynamic>> getDistricts() async {
     final response = await http.get(Uri.parse('$baseUrl/master/districts'));

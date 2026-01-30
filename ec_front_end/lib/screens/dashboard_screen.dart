@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../services/api_service.dart';
-import 'approval_screen.dart'; // For logout logic if needed
 import 'bulk_upload_screen.dart';
+import 'package:http/http.dart' as http;
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -26,6 +26,13 @@ class _DashboardScreenState extends State<DashboardScreen>
   // Team Data
   List<dynamic> _teamRequests = [];
 
+  // Assignment Data
+  List<dynamic> _activeSurveys = [];
+  int? _selectedAssignmentSurveyId;
+  List<dynamic> _unassignedSurveyors = [];
+  List<dynamic> _currentAssignments = [];
+  bool _isAssignmentLoading = false;
+
   @override
   void initState() {
     super.initState();
@@ -43,18 +50,17 @@ class _DashboardScreenState extends State<DashboardScreen>
     });
 
     try {
-      // 1. Ensure we have a Survey ID (Context)
-      if (_api.currentSurveyId == null) {
-        final activeSurveys = await _api.getActiveSurveys();
-        if (activeSurveys.isNotEmpty) {
-          _api.currentSurveyId = activeSurveys.first['id'];
-          print("Auto-Selected Survey ID: ${_api.currentSurveyId}");
-        } else {
-          throw Exception("No Active Survey Found. Please create one.");
-        }
+      // 1. Fetch Surveys
+      final activeSurveys = await _api.getActiveSurveys();
+      _activeSurveys = activeSurveys;
+
+      // 2. Ensure we have a Survey ID (Context)
+      if (_api.currentSurveyId == null && activeSurveys.isNotEmpty) {
+        _api.currentSurveyId = activeSurveys.first['id'];
+        _selectedAssignmentSurveyId = _api.currentSurveyId;
       }
 
-      // 2. Fetch Data in Parallel
+      // 3. Fetch Data in Parallel
       final analytics = await _api.getDashboardAnalytics();
       final approvals = await _api.getPendingApprovals();
 
@@ -65,6 +71,11 @@ class _DashboardScreenState extends State<DashboardScreen>
           _teamRequests = approvals;
           _isLoading = false;
         });
+
+        // Post-load: if we have a survey, fetch its assignments
+        if (_api.currentSurveyId != null) {
+          _loadAssignmentDetails(_api.currentSurveyId!);
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -108,6 +119,104 @@ class _DashboardScreenState extends State<DashboardScreen>
       setState(() {
         _teamRequests.removeWhere((r) => r['id'] == id);
       });
+    }
+  }
+
+  Future<void> _deleteSurvey(int id) async {
+    final bool confirm =
+        await showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text("Confirm Delete"),
+            content: const Text(
+              "Are you sure you want to delete this survey? This will erase all captured voter opinions for this survey.",
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text("Cancel"),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: const Text(
+                  "Delete",
+                  style: TextStyle(color: Colors.red),
+                ),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+
+    if (confirm) {
+      setState(() => _isLoading = true);
+      try {
+        // We'll need to implement the actual delete API call if not exists
+        // ApiService already has the base url for it.
+        final response = await http.delete(
+          Uri.parse('${ApiService.baseUrl}/surveys/$id'),
+          headers: {'x-admin-token': 'admin-secret-123'},
+        );
+        if (response.statusCode == 200) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Survey deleted successfully")),
+          );
+          _loadDashboardData();
+        } else {
+          throw Exception("Failed to delete: ${response.body}");
+        }
+      } catch (e) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = e.toString();
+        });
+      }
+    }
+  }
+
+  Future<void> _loadAssignmentDetails(int surveyId) async {
+    setState(() => _isAssignmentLoading = true);
+    try {
+      final approved = await _api.getApprovedSurveyors();
+      final assigned = await _api.getAssignmentsForSurvey(surveyId);
+
+      // Filter unassigned: Approved surveyors not in the assigned list
+      final assignedMobiles = assigned.map((a) => a['surveyor_mobile']).toSet();
+      final unassigned = approved
+          .where((s) => !assignedMobiles.contains(s['mobile']))
+          .toList();
+
+      if (mounted) {
+        setState(() {
+          _currentAssignments = assigned;
+          _unassignedSurveyors = unassigned;
+          _isAssignmentLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _isAssignmentLoading = false);
+    }
+  }
+
+  Future<void> _handleAssign(int surveyorId) async {
+    if (_selectedAssignmentSurveyId == null) return;
+    final success = await _api.assignSurveyor(
+      _selectedAssignmentSurveyId!,
+      surveyorId,
+    );
+    if (success) {
+      _loadAssignmentDetails(_selectedAssignmentSurveyId!);
+    }
+  }
+
+  Future<void> _handleUnassign(int surveyorId) async {
+    if (_selectedAssignmentSurveyId == null) return;
+    final success = await _api.unassignSurveyor(
+      _selectedAssignmentSurveyId!,
+      surveyorId,
+    );
+    if (success) {
+      _loadAssignmentDetails(_selectedAssignmentSurveyId!);
     }
   }
 
@@ -435,6 +544,35 @@ class _DashboardScreenState extends State<DashboardScreen>
       return const Center(child: Text("No Data Yet"));
     }
 
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                "Vote Share Analytics",
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              ElevatedButton.icon(
+                onPressed: () => _api.exportSurveyData(_api.currentSurveyId!),
+                icon: Icon(Icons.download),
+                label: Text("Export CSV"),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue[700],
+                  foregroundColor: Colors.white,
+                ),
+              ),
+            ],
+          ),
+        ),
+        Expanded(child: _buildChartContainer()),
+      ],
+    );
+  }
+
+  Widget _buildChartContainer() {
     final List<dynamic> parties = _analyticsData!['data'] ?? [];
 
     // Convert to PieChart Sections
@@ -580,82 +718,214 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 
   Widget _buildSurveysTab() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24.0),
+    if (_activeSurveys.isEmpty) {
+      return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.assignment, size: 64, color: Colors.teal[300]),
+            Icon(Icons.assignment_late, size: 64, color: Colors.grey[400]),
             const SizedBox(height: 16),
-            Text(
-              "Surveys Management",
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.teal[800],
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              "View, create, and manage survey campaigns",
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+            const Text(
+              "No Surveys Created Yet",
+              style: TextStyle(fontSize: 18, color: Colors.grey),
             ),
             const SizedBox(height: 24),
             ElevatedButton.icon(
               onPressed: _showCreateSurveyDialog,
               icon: const Icon(Icons.add),
-              label: const Text("Create New Survey"),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 32,
-                  vertical: 16,
-                ),
-                textStyle: const TextStyle(fontSize: 16),
-              ),
+              label: const Text("Create First Survey"),
             ),
           ],
         ),
-      ),
+      );
+    }
+
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                "Active Surveys (${_activeSurveys.length})",
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              ElevatedButton.icon(
+                onPressed: _showCreateSurveyDialog,
+                icon: const Icon(Icons.add),
+                label: const Text("New Survey"),
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: ListView.builder(
+            itemCount: _activeSurveys.length,
+            itemBuilder: (context, index) {
+              final s = _activeSurveys[index];
+              return Card(
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: ListTile(
+                  leading: const CircleAvatar(child: Icon(Icons.poll)),
+                  title: Text(s['name'] ?? "Unnamed Survey"),
+                  subtitle: Text(
+                    "Code: ${s['survey_code'] ?? 'N/A'} | Scope: ${s['scope_type']}",
+                  ),
+                  trailing: IconButton(
+                    icon: const Icon(Icons.delete, color: Colors.red),
+                    onPressed: () => _deleteSurvey(s['id']),
+                  ),
+                  onTap: () {
+                    setState(() {
+                      _api.currentSurveyId = s['id'];
+                      _selectedAssignmentSurveyId = s['id'];
+                    });
+                    _loadDashboardData();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text("Switched context to: ${s['name']}"),
+                      ),
+                    );
+                  },
+                ),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 
   Widget _buildAssignmentsTab() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.task, size: 64, color: Colors.teal[300]),
-            const SizedBox(height: 16),
-            Text(
-              "Survey Assignments",
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.teal[800],
+    return Column(
+      children: [
+        // 1. Survey Selection
+        Container(
+          padding: const EdgeInsets.all(16),
+          color: Colors.white,
+          child: Row(
+            children: [
+              const Icon(Icons.poll, color: Colors.blue),
+              const SizedBox(width: 12),
+              Expanded(
+                child: DropdownButtonFormField<int>(
+                  value: _selectedAssignmentSurveyId,
+                  decoration: const InputDecoration(
+                    labelText: "Select Survey to Manage Assignments",
+                    border: OutlineInputBorder(),
+                  ),
+                  items: _activeSurveys.map((s) {
+                    return DropdownMenuItem<int>(
+                      value: s['id'],
+                      child: Text(s['name']),
+                    );
+                  }).toList(),
+                  onChanged: (val) {
+                    if (val != null) {
+                      setState(() => _selectedAssignmentSurveyId = val);
+                      _loadAssignmentDetails(val);
+                    }
+                  },
+                ),
               ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              "Assign surveys to coordinators and surveyors",
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 16, color: Colors.grey[600]),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              "Coming Soon",
-              style: TextStyle(
-                fontSize: 18,
-                fontStyle: FontStyle.italic,
-                color: Colors.grey[500],
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
-      ),
+
+        const Divider(height: 1),
+
+        // 2. Content
+        Expanded(
+          child: _isAssignmentLoading
+              ? const Center(child: CircularProgressIndicator())
+              : Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // LEFT: Available Surveyors
+                    Expanded(
+                      flex: 1,
+                      child: Column(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            color: Colors.grey[100],
+                            width: double.infinity,
+                            child: const Text(
+                              "UNASSIGNED SURVEYORS",
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                          Expanded(
+                            child: ListView.builder(
+                              itemCount: _unassignedSurveyors.length,
+                              itemBuilder: (ctx, i) {
+                                final s = _unassignedSurveyors[i];
+                                return ListTile(
+                                  title: Text(s['name']),
+                                  subtitle: Text(s['mobile']),
+                                  trailing: IconButton(
+                                    icon: const Icon(
+                                      Icons.add_circle,
+                                      color: Colors.green,
+                                    ),
+                                    onPressed: () => _handleAssign(s['id']),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const VerticalDivider(width: 1),
+                    // RIGHT: Current Assignments
+                    Expanded(
+                      flex: 1,
+                      child: Column(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            color: Colors.blue[50],
+                            width: double.infinity,
+                            child: const Text(
+                              "CURRENTLY ASSIGNED",
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.blue,
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            child: ListView.builder(
+                              itemCount: _currentAssignments.length,
+                              itemBuilder: (ctx, i) {
+                                final a = _currentAssignments[i];
+                                return ListTile(
+                                  title: Text(a['surveyor_name'] ?? "Unknown"),
+                                  subtitle: Text(a['surveyor_mobile'] ?? ""),
+                                  trailing: IconButton(
+                                    icon: const Icon(
+                                      Icons.remove_circle,
+                                      color: Colors.red,
+                                    ),
+                                    onPressed: () =>
+                                        _handleUnassign(a['surveyor_id']),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+        ),
+      ],
     );
   }
 }

@@ -1635,6 +1635,25 @@ async def unassign_surveyor(req: AssignmentRequest, db: AsyncSession = Depends(g
     
     return {"status": "success", "message": "Unassigned successfully"}
 
+@app.delete("/surveys/{survey_id}")
+async def delete_survey(survey_id: int, db: AsyncSession = Depends(get_db)):
+    from sqlalchemy import select, delete
+    # 1. Check if survey exists
+    res = await db.execute(select(Survey).filter(Survey.id == survey_id))
+    survey = res.scalar()
+    if not survey:
+        raise HTTPException(status_code=404, detail="Survey not found")
+    
+    # 2. Delete related data first (cascade)
+    await db.execute(delete(SurveyVoter).filter(SurveyVoter.survey_id == survey_id))
+    await db.execute(delete(SurveyAssignment).filter(SurveyAssignment.survey_id == survey_id))
+    
+    # 3. Delete survey
+    await db.delete(survey)
+    await db.commit()
+    
+    return {"status": "success", "message": "Survey and all related records deleted"}
+
 # --- 15. STATIC & DASHBOARD ROUTING (Root Fallback) ---
 # Simple root fallback using mount only (StaticFiles with html=True handles / automatically)
 
