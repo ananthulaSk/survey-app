@@ -666,20 +666,22 @@ async def get_active_surveys(
     
     
 @app.post("/assignments/create")
-def create_assignment(survey_id: int = Body(...), surveyor_id: int = Body(...), db: Session = Depends(get_db)):
+async def create_assignment(survey_id: int = Body(...), surveyor_id: int = Body(...), db: AsyncSession = Depends(get_db)):
+    from sqlalchemy import select
     # Check if exists
-    existing = db.query(SurveyAssignment).filter(
+    res = await db.execute(select(SurveyAssignment).filter(
         SurveyAssignment.survey_id == survey_id,
         SurveyAssignment.surveyor_id == surveyor_id,
         SurveyAssignment.status == "ACTIVE"
-    ).first()
+    ))
+    existing = res.scalar()
     
     if existing:
         return {"status": "exists", "message": "Already assigned"}
         
     new_assign = SurveyAssignment(survey_id=survey_id, surveyor_id=surveyor_id)
     db.add(new_assign)
-    db.commit()
+    await db.commit()
     return {"status": "success"}
 
 @app.get("/assignments/list")
@@ -1630,9 +1632,20 @@ async def delete_survey(survey_id: int, db: AsyncSession = Depends(get_db)):
 # --- 15. STATIC & DASHBOARD ROUTING (Root Fallback) ---
 # Simple root fallback using mount only (StaticFiles with html=True handles / automatically)
 
+# Explicit routes for Dashboard and Mobile App as requested
+@app.get("/dashboard", response_class=FileResponse)
+async def serve_dashboard_link():
+    """Serves the dashboard entry point"""
+    return FileResponse("static/index.html")
+
+@app.get("/app", response_class=FileResponse)
+async def serve_app_link():
+    """Serves the mobile app entry point"""
+    return FileResponse("static/index.html")
+
 # Duplicate mounts to ensure backward compatibility and asset resolution
 app.mount("/static", StaticFiles(directory="static", html=True), name="static_path")
-app.mount("/app", StaticFiles(directory="static", html=True), name="app_path")
+app.mount("/app_static", StaticFiles(directory="static", html=True), name="app_path_static")
 
 # Root fallback mount - MUST BE LAST. This serves as both / and all asset requests
 app.mount("/", StaticFiles(directory="static", html=True), name="root_static")
