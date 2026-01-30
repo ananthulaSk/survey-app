@@ -437,15 +437,13 @@ async def serve_spa(request: Request):
 @app.get("/app/index.html")
 async def serve_app_index():
     return FileResponse(
-        "static/flutter_app/index.html", 
+        "static/index.html", 
         headers={
             "Cache-Control": "no-cache, no-store, must-revalidate", 
             "Pragma": "no-cache", 
             "Expires": "0"
         }
     )
-
-app.mount("/app", StaticFiles(directory="static/flutter_app", html=True), name="flutter_app")
 
 # --- Pydantic Models for Request Body ---
 class VoterUpdate(BaseModel):
@@ -1274,10 +1272,6 @@ async def check_registration_status(request_id: int, db: AsyncSession = Depends(
         raise HTTPException(status_code=404, detail="Request not found")
     return {"status": "success", "approval_status": req.status}
 
-# --- FINAL FALLBACK: Serve Flutter App at Root ---
-# This ensures that /flutter_bootstrap.js, /main.dart.js, etc. are found.
-# API routes defined above take precedence.
-app.mount("/flutter_app", StaticFiles(directory="static/flutter_app", html=True), name="flutter_app")
 
 # --- 6. BULK UPLOAD API (Part 1 - Data Onboarding) ---
 @app.post("/admin/upload-voters")

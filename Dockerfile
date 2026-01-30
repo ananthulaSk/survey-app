@@ -2,7 +2,7 @@
 FROM python:3.10-slim
 
 # Set working directory
-# CACHEBUST=v20.18-SEPARATE-LINKS
+# CACHEBUST=v20.20-DEFINITIVE-FIX
 ENV PYTHONUNBUFFERED=1
 WORKDIR /app
 
@@ -12,12 +12,11 @@ COPY voter_api/requirements.txt .
 # Install dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the backend code (including static/flutter_app) from subfolder to /app
+# Copy the backend code from subfolder to /app
 COPY voter_api/ .
 
 # Expose port
 EXPOSE 8080
 
-# Run the application
-# Run the application using the python script to properly handle PORT env var
-CMD ["python", "main.py"]
+# Run the application using uvicorn directly for better Cloud Run compatibility
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
