@@ -733,6 +733,7 @@ async def get_all_districts(db: AsyncSession = Depends(get_db)):
         
     return [DistrictOut(id=d.id, name=d.name) for d in districts]
 
+
 @app.get("/master/mandals/{district_id}")
 async def get_mandals(district_id: int, db: AsyncSession = Depends(get_db)):
     from sqlalchemy import select
