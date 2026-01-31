@@ -630,6 +630,28 @@ async def create_survey(
         "derived_villages_count": len(target_village_ids)
     })
 
+    # Verify and Fetch Location Names
+    dist_name = None
+    mandal_name = None
+    village_name = None
+    
+    if target_dist: dist_name = target_dist.name
+    
+    # We need to fetch names for Mandals/Villages if they are 'ALL' or specific
+    # For simplicity in this fix, we will just use the first one if specific, or "ALL" string
+    if req_mandals == "ALL": mandal_name = "ALL"
+    else:
+        # Fetch first mandal name for metadata
+        m_res = await db.execute(select(MandalMaster).filter(MandalMaster.id == final_mandal_ids[0]))
+        m_obj = m_res.scalar()
+        if m_obj: mandal_name = m_obj.name
+        
+    if req_villages == "ALL": village_name = "ALL"
+    else:
+         v_res = await db.execute(select(VillageMaster).filter(VillageMaster.id == target_village_ids[0]))
+         v_obj = v_res.scalar()
+         if v_obj: village_name = v_obj.name
+
     new_survey = Survey(
         name=name,
         scope_type=scope_type,
@@ -637,7 +659,10 @@ async def create_survey(
         scope_config=config_json,
         status="ACTIVE", 
         survey_code=code,
-        survey_type=survey_type
+        survey_type=survey_type,
+        district=dist_name,
+        mandal=mandal_name,
+        village=village_name
     )
     db.add(new_survey)
     await db.flush() # Get ID
@@ -699,36 +724,46 @@ async def create_survey(
 
 @app.get("/surveys/active")
 async def get_active_surveys(
-    mobile_no: Optional[str] = None, 
-    village_filter: Optional[str] = None, 
-    mandal_filter: Optional[str] = None,
-    district_filter: Optional[str] = None,
+    mobile_no: Optional[str] = Query(None), 
+    village_filter: Optional[str] = Query(None), 
+    mandal_filter: Optional[str] = Query(None),
+    district_filter: Optional[str] = Query(None),
     db: AsyncSession = Depends(get_db)
 ):
-    from sqlalchemy import select, or_, and_
-    query = select(Survey).filter(Survey.status == "ACTIVE")
+    from sqlalchemy import select, or_, and_, desc
     
-    if village_filter or mandal_filter or district_filter:
-        conditions = []
-        if district_filter:
-            conditions.append(and_(Survey.scope_type=="DISTRICT", func.lower(Survey.district) == district_filter.lower().strip()))
-        if mandal_filter:
-            conditions.append(and_(Survey.scope_type=="MANDAL", func.lower(Survey.mandal) == mandal_filter.lower().strip()))
-        if village_filter:
-            conditions.append(func.lower(Survey.village) == village_filter.lower().strip())
-
-        if conditions:
-            query = query.filter(or_(*conditions))
-
-    elif mobile_no:
+    # 1. Base Query
+    query = select(Survey).filter(
+        or_(Survey.status == "ACTIVE", Survey.status == "CREATED")
+    )
+    
+    # 2. Surveyor View (Filtered by Assignment)
+    if mobile_no:
         mobile_no = clean_mobile(mobile_no)
         res = await db.execute(select(SurveyorRequest).filter(SurveyorRequest.mobile_no == mobile_no, SurveyorRequest.status == "APPROVED"))
         surveyor = res.scalar()
-        if not surveyor: return []
-            
-        query = query.join(SurveyAssignment, Survey.id == SurveyAssignment.survey_id)\
-                     .filter(SurveyAssignment.surveyor_id == surveyor.id, SurveyAssignment.status == "ACTIVE")
+        
+        if surveyor:
+            # Join assignments
+            query = query.join(SurveyAssignment, Survey.id == SurveyAssignment.survey_id)\
+                         .filter(SurveyAssignment.surveyor_id == surveyor.id, SurveyAssignment.status == "ACTIVE")
+        else:
+            # Unknown surveyor sees nothing
+            return []
+
+    # 3. Location Filters (Optional)
+    conditions = []
+    if district_filter:
+        conditions.append(and_(Survey.scope_type=="DISTRICT", func.lower(Survey.district) == district_filter.lower().strip()))
+    if mandal_filter:
+        conditions.append(and_(Survey.scope_type=="MANDAL", func.lower(Survey.mandal) == mandal_filter.lower().strip()))
+    if village_filter:
+        conditions.append(func.lower(Survey.village) == village_filter.lower().strip())
+
+    if conditions:
+        query = query.filter(or_(*conditions))
     
+    # 4. Execute
     res = await db.execute(query.order_by(desc(Survey.created_at)))
     return res.scalars().all()
     
@@ -1119,26 +1154,7 @@ async def export_survey_csv(survey_id: int, db: AsyncSession = Depends(get_db)):
         headers={"Content-Disposition": f"attachment; filename={filename}"}
     )
 
-@app.get("/surveys/active")
-async def get_active_surveys(mobile_no: str = Query(None), db: AsyncSession = Depends(get_db)):
-    from sqlalchemy import select
-    res = await db.execute(select(Survey).filter(Survey.status == "ACTIVE"))
-    surveys = res.scalars().all()
-    
-    if not surveys:
-        res = await db.execute(select(Survey).filter(Survey.status == "CREATED"))
-        surveys = res.scalars().all()
-
-    return [
-        {
-            "id": s.id, 
-            "name": s.name, 
-            "status": s.status,
-            "scope_type": s.scope_type,
-            "scope_value": s.scope_value
-        }
-        for s in surveys
-    ]
+# Duplicate get_active_surveys removed
 
 @app.get("/dashboard/analytics")
 async def get_dashboard_analytics(survey_id: int, db: AsyncSession = Depends(get_db)):
