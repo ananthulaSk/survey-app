@@ -555,135 +555,92 @@ async def create_survey(
     x_admin_token: Optional[str] = Header(None),
     db: AsyncSession = Depends(get_db)
 ):
-    if x_admin_token != "admin-secret-123":
-        raise HTTPException(status_code=403, detail="Forbidden: Admin Access Required")
-
-    from sqlalchemy import select, or_
-    
-    # --- AUTO-HEALING LOGIC ---
-    target_dist_id = district_id
-    if not target_dist_id or target_dist_id <= 0:
-        res = await db.execute(select(DistrictMaster).filter(DistrictMaster.name == "Yadadri Bhuvanagiri"))
-        target_dist = res.scalar()
-        
-        if not target_dist:
-             # Use the inline seeder we defined
-             await seed_master_data(db)
-             res = await db.execute(select(DistrictMaster).filter(DistrictMaster.name == "Yadadri Bhuvanagiri"))
-             target_dist = res.scalar()
-        
-        if target_dist:
-            target_dist_id = target_dist.id
-        else:
-            first_res = await db.execute(select(DistrictMaster).limit(1))
-            first = first_res.scalar()
-            if first: target_dist_id = first.id
-            else: raise HTTPException(status_code=500, detail="Auto-Seeder failed completely.")
-
-    target_village_ids = []
     try:
-        req_mandals = mandal_ids if mandal_ids == "ALL" else json.loads(mandal_ids)
-        req_villages = village_ids if village_ids == "ALL" else json.loads(village_ids)
-    except:
-        raise HTTPException(status_code=400, detail="Invalid Mandal/Village ID format")
+        if x_admin_token != "admin-secret-123":
+            raise HTTPException(status_code=403, detail="Forbidden: Admin Access Required")
 
-    final_mandal_ids = []
-    if req_mandals == "ALL":
-        res = await db.execute(select(MandalMaster).filter(MandalMaster.district_id == target_dist_id))
-        mandals = res.scalars().all()
-        final_mandal_ids = [m.id for m in mandals]
-    else:
-        final_mandal_ids = [int(m) for m in req_mandals]
+        from sqlalchemy import select, or_
+        
+        # --- AUTO-HEALING LOGIC ---
+        target_dist_id = district_id
+        if not target_dist_id or target_dist_id <= 0:
+            res = await db.execute(select(DistrictMaster).filter(DistrictMaster.name == "Yadadri Bhuvanagiri"))
+            target_dist = res.scalar()
+            
+            if not target_dist:
+                 # Use the inline seeder we defined
+                 await seed_master_data(db)
+                 res = await db.execute(select(DistrictMaster).filter(DistrictMaster.name == "Yadadri Bhuvanagiri"))
+                 target_dist = res.scalar()
+            
+            if target_dist:
+                target_dist_id = target_dist.id
+            else:
+                first_res = await db.execute(select(DistrictMaster).limit(1))
+                first = first_res.scalar()
+                if first: target_dist_id = first.id
+                else: raise HTTPException(status_code=500, detail="Auto-Seeder failed completely.")
 
-    if req_villages == "ALL":
-        res = await db.execute(select(VillageMaster).filter(VillageMaster.mandal_id.in_(final_mandal_ids)))
-        villages = res.scalars().all()
-        target_village_ids = [v.id for v in villages]
-    else:
-        target_village_ids = [int(v) for v in req_villages]
-
-    if not target_village_ids:
-         raise HTTPException(status_code=400, detail="Scope resolution failed: No villages found.")
-
-    res = await db.execute(select(WardMaster).filter(WardMaster.village_id.in_(target_village_ids)))
-    wards = res.scalars().all()
-    target_ward_nums = []
-    for w in wards:
+        target_village_ids = []
         try:
-            num_str = ''.join(filter(str.isdigit, w.name))
-            if num_str: target_ward_nums.append(int(num_str))
-        except: pass
-    target_ward_nums = list(set(target_ward_nums))
-    
-    date_str = datetime.utcnow().strftime("%Y%m%d")
-    code = f"{scope_type}-{target_dist_id}-{survey_type}-{date_str}"
-    
-    existing_res = await db.execute(select(Survey).filter(Survey.survey_code == code))
-    if existing_res.scalar():
-        code = f"{code}-{datetime.utcnow().strftime('%H%M%S')}"
+            req_mandals = mandal_ids if mandal_ids == "ALL" else json.loads(mandal_ids)
+            req_villages = village_ids if village_ids == "ALL" else json.loads(village_ids)
+        except:
+            raise HTTPException(status_code=400, detail="Invalid Mandal/Village ID format")
 
-    config_json = json.dumps({
-        "district_id": target_dist_id,
-        "mandal_ids": req_mandals,
-        "village_ids": req_villages,
-        "derived_wards_count": len(target_ward_nums),
-        "derived_villages_count": len(target_village_ids)
-    })
+        final_mandal_ids = []
+        if req_mandals == "ALL":
+            res = await db.execute(select(MandalMaster).filter(MandalMaster.district_id == target_dist_id))
+            mandals = res.scalars().all()
+            final_mandal_ids = [m.id for m in mandals]
+        else:
+            final_mandal_ids = [int(m) for m in req_mandals]
 
-    # Verify and Fetch Location Names
-    dist_name = "Unknown District"
-    mandal_name = "ALL"
-    village_name = "ALL"
-    
-    # Needs to be re-fetched because target_dist logic above might have manipulated ID
-    if target_dist: 
-        dist_name = target_dist.name
-    elif target_dist_id:
+        if req_villages == "ALL":
+            res = await db.execute(select(VillageMaster).filter(VillageMaster.mandal_id.in_(final_mandal_ids)))
+            villages = res.scalars().all()
+            target_village_ids = [v.id for v in villages]
+        else:
+            target_village_ids = [int(v) for v in req_villages]
+
+        if not target_village_ids:
+             raise HTTPException(status_code=400, detail="Scope resolution failed: No villages found.")
+
+        res = await db.execute(select(WardMaster).filter(WardMaster.village_id.in_(target_village_ids)))
+        wards = res.scalars().all()
+        target_ward_nums = []
+        for w in wards:
+            try:
+                num_str = ''.join(filter(str.isdigit, w.name))
+                if num_str: target_ward_nums.append(int(num_str))
+            except: pass
+        target_ward_nums = list(set(target_ward_nums))
+        
+        date_str = datetime.utcnow().strftime("%Y%m%d")
+        code = f"{scope_type}-{target_dist_id}-{survey_type}-{date_str}"
+        
+        existing_res = await db.execute(select(Survey).filter(Survey.survey_code == code))
+        if existing_res.scalar():
+            code = f"{code}-{datetime.utcnow().strftime('%H%M%S')}"
+
+        config_json = json.dumps({
+            "district_id": target_dist_id,
+            "mandal_ids": req_mandals,
+            "village_ids": req_villages,
+            "derived_wards_count": len(target_ward_nums),
+            "derived_villages_count": len(target_village_ids)
+        })
+
+        # Verify and Fetch Location Names
+        dist_name = "Unknown District"
+        mandal_name = "ALL"
+        village_name = "ALL"
+        
+        # Needs to be re-fetched because target_dist logic above might have manipulated ID
         d_res = await db.execute(select(DistrictMaster).filter(DistrictMaster.id == target_dist_id))
         d_obj = d_res.scalar()
         if d_obj: dist_name = d_obj.name
 
-    # Fetch Mandal Name
-    if req_mandals != "ALL" and final_mandal_ids:
-        try:
-            m_res = await db.execute(select(MandalMaster).filter(MandalMaster.id == final_mandal_ids[0]))
-            m_obj = m_res.scalar()
-            if m_obj: mandal_name = m_obj.name
-        except Exception as e:
-            print(f"Error fetching mandal name: {e}")
-            
-    # Fetch Village Name
-    if req_villages != "ALL" and target_village_ids:
-        try:
-             v_res = await db.execute(select(VillageMaster).filter(VillageMaster.id == target_village_ids[0]))
-             v_obj = v_res.scalar()
-             if v_obj: village_name = v_obj.name
-        except Exception as e:
-            print(f"Error fetching village name: {e}")
-
-    new_survey = Survey(
-        name=name,
-        scope_type=scope_type,
-        scope_value=str(target_dist_id),
-        scope_config=config_json,
-        status="ACTIVE", 
-        survey_code=code,
-        survey_type=survey_type,
-        district=dist_name,
-        mandal=mandal_name,
-        village=village_name
-    )
-    db.add(new_survey)
-    await db.flush() # Get ID
-
-    # 4. Snapshot Logic
-    copied_count = 0
-    if target_ward_nums or wards:
-        target_ward_ids = [w.id for w in wards]
-        ward_id_map = {}
-        import re
-        for w in wards:
-            match = re.search(r'\d+', w.name)
             if match: ward_id_map[w.id] = int(match.group())
 
         masters_res = await db.execute(select(VoterMaster).filter(
