@@ -346,13 +346,26 @@ class ApiService {
 
   Future<Map<String, dynamic>> getDashboardAnalytics() async {
     if (currentSurveyId == null) throw Exception("No survey selected");
-    final response = await http.get(
-      Uri.parse('$baseUrl/dashboard/analytics?survey_id=$currentSurveyId'),
-    );
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body); // Returns {status, total_polled, data}
+
+    final url = '$baseUrl/dashboard/analytics?survey_id=$currentSurveyId';
+    print("[API] Fetching Analytics: $url");
+
+    try {
+      final response = await http.get(Uri.parse(url));
+      print("[API] Response Status: ${response.statusCode}");
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        print("[API ERROR] Body: ${response.body}");
+        throw Exception(
+          "Failed to load analytics (${response.statusCode}): ${response.body}",
+        );
+      }
+    } catch (e) {
+      print("[API NETWORK ERROR] $e");
+      rethrow;
     }
-    throw Exception("Failed to load analytics");
   }
 
   Future<List<dynamic>> getPendingApprovals() async {

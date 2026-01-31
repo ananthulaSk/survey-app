@@ -78,11 +78,21 @@ class _DashboardScreenState extends State<DashboardScreen>
         }
       }
     } catch (e) {
+      print("[DASHBOARD ERROR] Failed to load data: $e");
       if (mounted) {
         setState(() {
-          _errorMessage = e.toString();
+          _errorMessage = "Load Error: $e"; // Show detailed error in UI
           _isLoading = false;
         });
+
+        // Optional: Show snackbar for visibility if error message is hidden
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Dashboard Error: $e"),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
+          ),
+        );
       }
     }
   }

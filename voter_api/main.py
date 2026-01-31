@@ -57,6 +57,7 @@ class VoterMaster(Base):
     voter_name = Column(String)
     gender = Column(String)
     age = Column(Integer)
+    voter_id_no = Column(String, index=True, nullable=True) # Added for EPIC No
     relation_name = Column(String)
     surname = Column(String)
     ward_no = Column(Integer)
@@ -1706,6 +1707,16 @@ async def startup_event():
     
     # Run Defaults Seeder
     async with AsyncSession(engine) as session:
+        # Schema Patch for v20.101 (Poor Man's Migration)
+        try:
+             from sqlalchemy import text
+             await session.execute(text("ALTER TABLE voters ADD COLUMN voter_id_no VARCHAR"))
+             await session.commit()
+             print("Schema Patch: Added voter_id_no")
+        except Exception as e:
+             # Ignore if column exists
+             pass
+             
         await seed_master_data(session)
 
 # Duplicate mounts to ensure backward compatibility and asset resolution
