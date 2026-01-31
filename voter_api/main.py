@@ -14,21 +14,9 @@ from datetime import datetime
 from pydantic import BaseModel
 
 # --- CONFIGURATION (Dynamic Versioning) ---
-def get_version_from_file():
-    try:
-        # Robust path lookup
-        base_dir = os.path.dirname(__file__)
-        v_path = os.path.join(base_dir, "version.txt")
-        if os.path.exists(v_path):
-            with open(v_path, "r") as f:
-                ver = f.read().strip()
-                return f"v{ver}"
-        return "v20.00"
-    except:
-        return "v20.00"
-
-MAIN_VERSION = f"{get_version_from_file()} (Dynamic)"
-EXPECTED_FRONTEND_VERSION = get_version_from_file()
+# --- CONFIGURATION (Static Versioning for Debug) ---
+MAIN_VERSION = "v20.96"
+EXPECTED_FRONTEND_VERSION = "v20.96"
 
 # Import robust database setup
 # Import robust database setup
