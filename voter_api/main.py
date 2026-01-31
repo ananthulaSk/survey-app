@@ -98,6 +98,18 @@ class SurveyVoter(Base):
     snapshot_created_at = Column(DateTime, default=datetime.utcnow)
     voter_name = Column(String)
     surname = Column(String)
+    ward_no = Column(Integer)
+    house_no = Column(String)
+    age = Column(Integer)
+    gender = Column(String)
+    relation_name = Column(String)
+    expected_party = Column(String, nullable=True)
+    occupation = Column(String, nullable=True)
+    religion = Column(String, nullable=True)
+    caste = Column(String, nullable=True)
+    sub_caste = Column(String, nullable=True)
+    mobile_no = Column(String, nullable=True)
+    voter_status = Column(String, default="AVAILABLE")
 
 # --- SEEDING LOGIC (Inline) ---
 async def seed_master_data(db: AsyncSession):
@@ -138,18 +150,6 @@ async def seed_master_data(db: AsyncSession):
         await db.commit()
     except Exception as e:
         print(f"Seeding Warning: {e}")
-    ward_no = Column(Integer)
-    house_no = Column(String)
-    age = Column(Integer)
-    gender = Column(String)
-    relation_name = Column(String)
-    expected_party = Column(String, nullable=True)
-    occupation = Column(String, nullable=True)
-    religion = Column(String, nullable=True)
-    caste = Column(String, nullable=True)
-    sub_caste = Column(String, nullable=True)
-    mobile_no = Column(String, nullable=True)
-    voter_status = Column(String, default="AVAILABLE")
 
 class SurveyorRequest(Base):
     __tablename__ = "surveyor_requests"
