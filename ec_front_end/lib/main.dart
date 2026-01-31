@@ -28,7 +28,9 @@ class VoterApp extends StatelessWidget {
       // DYNAMIC HOME SCREEN based on URL
       // If we are on the Admin Dashboard Link (/static/), show AdminAuth.
       // If we are on the Mobile App Link (/app/), show Registration.
-      home: Uri.base.toString().contains("/static/")
+      home:
+          Uri.base.toString().contains("/dashboard") ||
+              Uri.base.toString().contains("/admin")
           ? const AdminLoginScreen()
           : const RegistrationScreen(),
     );
