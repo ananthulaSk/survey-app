@@ -723,9 +723,11 @@ async def get_voter_by_id(voter_id: int, survey_id: int, db: AsyncSession = Depe
 @app.get("/master/districts", response_model=List[DistrictOut])
 async def get_all_districts(db: AsyncSession = Depends(get_db)):
     from sqlalchemy import select
+    # Fetch districts
     res = await db.execute(select(DistrictMaster))
     districts = res.scalars().all()
     
+    # Auto-seed if empty
     if not districts:
         await seed_master_data(db)
         res = await db.execute(select(DistrictMaster))
