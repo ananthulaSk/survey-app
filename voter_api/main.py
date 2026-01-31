@@ -641,7 +641,49 @@ async def create_survey(
         d_obj = d_res.scalar()
         if d_obj: dist_name = d_obj.name
 
-            if match: ward_id_map[w.id] = int(match.group())
+        # Fetch Mandal Name
+        if req_mandals != "ALL" and final_mandal_ids:
+            try:
+                m_res = await db.execute(select(MandalMaster).filter(MandalMaster.id == final_mandal_ids[0]))
+                m_obj = m_res.scalar()
+                if m_obj: mandal_name = m_obj.name
+            except Exception as e:
+                print(f"Error fetching mandal name: {e}")
+                
+        # Fetch Village Name
+        if req_villages != "ALL" and target_village_ids:
+            try:
+                 v_res = await db.execute(select(VillageMaster).filter(VillageMaster.id == target_village_ids[0]))
+                 v_obj = v_res.scalar()
+                 if v_obj: village_name = v_obj.name
+            except Exception as e:
+                print(f"Error fetching village name: {e}")
+
+        new_survey = Survey(
+            name=name,
+            scope_type=scope_type,
+            scope_value=str(target_dist_id),
+            scope_config=config_json,
+            status="ACTIVE", 
+            survey_code=code,
+            survey_type=survey_type,
+            district=dist_name, 
+            mandal=mandal_name, 
+            village=village_name 
+        )
+        
+        db.add(new_survey)
+        await db.flush() # Get ID
+
+        # 4. Snapshot Logic
+        copied_count = 0
+        if target_ward_nums or wards:
+            target_ward_ids = [w.id for w in wards]
+            ward_id_map = {}
+            import re
+            for w in wards:
+                match = re.search(r'\d+', w.name)
+                if match: ward_id_map[w.id] = int(match.group())
 
         masters_res = await db.execute(select(VoterMaster).filter(
             or_(
