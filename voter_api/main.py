@@ -631,26 +631,35 @@ async def create_survey(
     })
 
     # Verify and Fetch Location Names
-    dist_name = None
-    mandal_name = None
-    village_name = None
+    dist_name = "Unknown District"
+    mandal_name = "ALL"
+    village_name = "ALL"
     
-    if target_dist: dist_name = target_dist.name
-    
-    # We need to fetch names for Mandals/Villages if they are 'ALL' or specific
-    # For simplicity in this fix, we will just use the first one if specific, or "ALL" string
-    if req_mandals == "ALL": mandal_name = "ALL"
-    else:
-        # Fetch first mandal name for metadata
-        m_res = await db.execute(select(MandalMaster).filter(MandalMaster.id == final_mandal_ids[0]))
-        m_obj = m_res.scalar()
-        if m_obj: mandal_name = m_obj.name
-        
-    if req_villages == "ALL": village_name = "ALL"
-    else:
-         v_res = await db.execute(select(VillageMaster).filter(VillageMaster.id == target_village_ids[0]))
-         v_obj = v_res.scalar()
-         if v_obj: village_name = v_obj.name
+    # Needs to be re-fetched because target_dist logic above might have manipulated ID
+    if target_dist: 
+        dist_name = target_dist.name
+    elif target_dist_id:
+        d_res = await db.execute(select(DistrictMaster).filter(DistrictMaster.id == target_dist_id))
+        d_obj = d_res.scalar()
+        if d_obj: dist_name = d_obj.name
+
+    # Fetch Mandal Name
+    if req_mandals != "ALL" and final_mandal_ids:
+        try:
+            m_res = await db.execute(select(MandalMaster).filter(MandalMaster.id == final_mandal_ids[0]))
+            m_obj = m_res.scalar()
+            if m_obj: mandal_name = m_obj.name
+        except Exception as e:
+            print(f"Error fetching mandal name: {e}")
+            
+    # Fetch Village Name
+    if req_villages != "ALL" and target_village_ids:
+        try:
+             v_res = await db.execute(select(VillageMaster).filter(VillageMaster.id == target_village_ids[0]))
+             v_obj = v_res.scalar()
+             if v_obj: village_name = v_obj.name
+        except Exception as e:
+            print(f"Error fetching village name: {e}")
 
     new_survey = Survey(
         name=name,
