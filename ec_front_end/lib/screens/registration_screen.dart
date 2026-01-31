@@ -31,7 +31,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   static const String EXPECTED_BACKEND_VERSION =
       "v20.100"; // Backend logic stable
   String _backendVersion = "Fetching...";
-  final String _appVersionDisplay = "v20.106 (STABLE)";
+  final String _appVersionDisplay = "v20.107 (DEPLOY FIX)";
 
   // API Service
   final _api = ApiService();
