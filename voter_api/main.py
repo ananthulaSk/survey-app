@@ -1029,8 +1029,15 @@ async def get_previous_voter(survey_id: int, current_id: int, skip_completed: bo
 
 
 @app.put("/voters/update")
-async def update_voter_data(data: VoterUpdate, db: AsyncSession = Depends(get_db)):
+async def update_voter_data(
+    data: VoterUpdate, 
+    db: AsyncSession = Depends(get_db)
+):
     from sqlalchemy import select
+
+    # Debug log to verify payload
+    print(f"UPDATE PAYLOAD: {data.model_dump()}")
+
     res_s = await db.execute(select(Survey).filter(Survey.id == data.survey_id))
     survey = res_s.scalar()
     if not survey:
@@ -1050,7 +1057,10 @@ async def update_voter_data(data: VoterUpdate, db: AsyncSession = Depends(get_db
     if data.voter_status is not None: 
         voter.voter_status = data.voter_status
     
-    if data.party is not None: voter.expected_party = data.party
+    # Corrected Field Mapping
+    if data.expected_party is not None: 
+        voter.expected_party = data.expected_party
+
     if data.occupation is not None: voter.occupation = data.occupation
     if data.religion is not None: voter.religion = data.religion
     if data.caste is not None: voter.caste = data.caste
@@ -1058,7 +1068,13 @@ async def update_voter_data(data: VoterUpdate, db: AsyncSession = Depends(get_db
     if data.mobile_no is not None: voter.mobile_no = data.mobile_no
     
     await db.commit()
-    return {"status": "success"}
+    await db.refresh(voter)
+    
+    return {
+        "status": "success",
+        "voter_id": voter.master_voter_id,
+        "expected_party": voter.expected_party
+    }
 
 @app.get("/voters/stats")
 async def get_voter_stats(survey_id: int, ward: Optional[int] = None, current_voter_id: Optional[int] = None, db: AsyncSession = Depends(get_db)):
