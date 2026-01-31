@@ -250,6 +250,28 @@ Survey Submission
   "submitted_at": "2026-01-29T10:21:00Z"
 }
 
+
+====================================================
+10. RECENT CRITICAL DECISIONS (v20.100+)
+====================================================
+
+1. **Session Persistence**: 
+   - `Role` (ADMIN/SURVEYOR) MUST be persisted in SharedPreferences. 
+   - Failure to do so causes Admin privileges to be lost on page reload.
+
+2. **Survey Creation Safety**:
+   - Creating a survey MUST NOT fail if location metadata (Names) cannot be fetched.
+   - Use `try/except` blocks and default to "Unknown" for District/Mandal/Village names.
+
+3. **Consolidated Survey Logic**:
+   - There must be ONLY ONE `get_active_surveys` endpoint.
+   - It must handle BOTH Admin (List All) and Surveyor (Filter by Assignment) logic.
+   - Duplicate endpoints cause conflicting behavior and invisible data.
+
+4. **Snapshot Integrity**:
+   - `SurveyVoter` snapshots are created at Survey Creation time.
+   - They MUST include `ward_no` mapped correctly from `WardMaster`.
+
 ====================================================
 END OF CONSTITUTION
 ====================================================
