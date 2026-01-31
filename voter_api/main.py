@@ -15,10 +15,9 @@ from pydantic import BaseModel
 
 # --- CONFIGURATION (Dynamic Versioning) ---
 # --- CONFIGURATION (Static Versioning for Debug) ---
-MAIN_VERSION = "v20.100"
-EXPECTED_FRONTEND_VERSION = "v20.100"
+MAIN_VERSION = os.getenv("APP_VERSION", "v20.100")
+EXPECTED_FRONTEND_VERSION = os.getenv("FRONTEND_VERSION", "v20.100")
 
-# Import robust database setup
 # Import robust database setup
 from database import engine, Base, get_db
 
@@ -721,14 +720,18 @@ async def create_survey(
         # We assume they are added.
         copied_count = len(masters)
     
-    await db.commit()
+        await db.commit()
 
-    return {
-        "status": "success",
-        "survey_id": new_survey.id,
-        "survey_code": new_survey.survey_code,
-        "message": f"Survey created. Snapshot size: {copied_count}"
-    }
+        return {
+            "status": "success",
+            "survey_id": new_survey.id,
+            "survey_code": new_survey.survey_code,
+            "message": f"Survey created. Snapshot size: {copied_count}"
+        }
+    except Exception as e:
+        await db.rollback()
+        print(f"Error creating survey: {e}")
+        raise HTTPException(status_code=500, detail=f"Survey Creation Failed: {str(e)}")
 
 @app.get("/surveys/active")
 async def get_active_surveys(
