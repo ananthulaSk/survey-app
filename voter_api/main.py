@@ -1140,6 +1140,11 @@ async def get_surveyor_requests(db: AsyncSession = Depends(get_db)):
         })
     return response_data
 
+# Legacy route alias for backward compatibility
+@app.get("/approvals")
+async def get_surveyor_requests_legacy(db: AsyncSession = Depends(get_db)):
+    return await get_surveyor_requests(db)
+
 @app.delete("/dashboard/surveyor/{surveyor_id}")
 async def delete_surveyor(surveyor_id: int, db: AsyncSession = Depends(get_db)):
     from sqlalchemy import select, delete
@@ -1565,6 +1570,20 @@ class AssignmentRequest(BaseModel):
 @app.post("/surveys/assign")
 async def assign_surveyor(req: AssignmentRequest, db: AsyncSession = Depends(get_db)):
     from sqlalchemy import select
+    
+    # Validate survey exists
+    res_survey = await db.execute(select(Survey).filter(Survey.id == req.survey_id))
+    survey = res_survey.scalar()
+    if not survey:
+        raise HTTPException(status_code=404, detail="Survey not found")
+    
+    # Validate surveyor exists
+    res_surveyor = await db.execute(select(SurveyorRequest).filter(SurveyorRequest.id == req.surveyor_id))
+    surveyor = res_surveyor.scalar()
+    if not surveyor:
+        raise HTTPException(status_code=404, detail="Surveyor not found")
+    
+    # Check for existing assignment
     res = await db.execute(select(SurveyAssignment).filter(
         SurveyAssignment.survey_id == req.survey_id,
         SurveyAssignment.surveyor_id == req.surveyor_id
@@ -1587,6 +1606,11 @@ async def assign_surveyor(req: AssignmentRequest, db: AsyncSession = Depends(get
     await db.commit()
     return {"status": "success", "message": "Assigned successfully"}
 
+# Legacy route alias for backward compatibility
+@app.post("/assign")
+async def assign_surveyor_legacy(req: AssignmentRequest, db: AsyncSession = Depends(get_db)):
+    return await assign_surveyor(req, db)
+
 @app.post("/surveys/unassign")
 async def unassign_surveyor(req: AssignmentRequest, db: AsyncSession = Depends(get_db)):
     from sqlalchemy import select
@@ -1601,6 +1625,11 @@ async def unassign_surveyor(req: AssignmentRequest, db: AsyncSession = Depends(g
         await db.commit()
     
     return {"status": "success", "message": "Unassigned successfully"}
+
+# Legacy route alias for backward compatibility
+@app.post("/unassign")
+async def unassign_surveyor_legacy(req: AssignmentRequest, db: AsyncSession = Depends(get_db)):
+    return await unassign_surveyor(req, db)
 
 @app.delete("/surveys/{survey_id}")
 async def delete_survey(survey_id: int, db: AsyncSession = Depends(get_db)):
