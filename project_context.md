@@ -1,157 +1,238 @@
-
 ⚠️ ANTIGRAVITY HARD CONSTRAINT FILE
-ELECTION SURVEY APPLICATION — SINGLE SOURCE OF TRUTH
+ELECTION SURVEY SYSTEM — SINGLE SOURCE OF TRUTH
 
 This document is a HARD CONSTRAINT CONTRACT.
-DO NOT summarize, compress, reinterpret, or weaken any rule.
-EVERY rule is mandatory.
-If anything is unclear → STOP and ASK.
-If a conflict exists → DO NOT auto-resolve.
 
-====================================================================
-SECTION 1: CORE PRINCIPLES (AUTHORITY)
-====================================================================
-- This is an Election Survey App, NOT an official election system
-- Data correctness > speed > UI polish
-- Ward-level isolation is a SECURITY BOUNDARY
-- Backend is the final authority; frontend is never trusted
-- Survey data must be auditable and reproducible
+NO rule may be weakened, summarized, or bypassed.
 
-====================================================================
-SECTION 2: BACKEND RULES (FastAPI / Python)
-====================================================================
-- ALL endpoints MUST be `async def`
-- ONLY `AsyncSession` is allowed (no sync DB access)
-- Pydantic v2 ONLY (no v1 syntax, no orm_mode)
-- SQLAlchemy Models ≠ Pydantic Schemas
-- ALL errors MUST return JSON using HTTPException
-- Backend MUST NEVER return HTML responses
-- Related queries MUST use joinedload() to avoid N+1
-- Any DB schema change REQUIRES Alembic migration
+If any rule is unclear → STOP and ASK.
 
-====================================================================
-SECTION 3: API CONTRACT LAW (CRITICAL)
-====================================================================
-- Every endpoint MUST define:
-  - Request schema (Pydantic)
-  - Response schema (Pydantic)
-- Frontend may ONLY consume declared JSON fields
-- Backend must NEVER silently change JSON shape
-- Endpoint renames require frontend update in SAME change
-- Non-JSON backend response is ALWAYS a BUG
+If rules conflict → DO NOT auto-resolve.
 
-====================================================================
-SECTION 4: ELECTION DATA ISOLATION (MOST CRITICAL)
-====================================================================
-- Surveyors MUST see ONLY voters from their assigned ward
-- Ward filtering MUST be enforced in backend queries
-- Frontend ward filters are advisory ONLY
-- Missing ward context MUST reject the request
-- Cross-ward data leakage is ZERO tolerance
+Convenience is never a justification for violation.
 
-====================================================================
-SECTION 5: SURVEY DATA INTEGRITY
-====================================================================
-- Every voter response MUST store:
-  - survey_id
-  - voter_id
-  - ward_no
-  - surveyor_id
-  - timestamp
-- Responses are append-only (no silent overwrite)
-- Any correction MUST be traceable (audit-safe)
-- No auto-correction of political data
+====================================================
+1. AUTHORITY & CORE PRINCIPLES
+====================================================
 
-====================================================================
-SECTION 6: FRONTEND RULES (Flutter Web)
-====================================================================
-- Web-first layout (desktop safe)
-- NEVER assume mobile screen
-- LayoutBuilder OR MediaQuery is mandatory
-- Desktop MUST use ConstrainedBox
-- NO default Material blue theme
-- API calls ONLY via service layer
-- NEVER call APIs inside build()
-- Services MUST initialize before UI renders
-- UI MUST handle loading / empty / denied states
-- JSON parsing MUST be type-safe and defensive
+The Backend is the single source of truth. Frontend is never trusted.
 
-====================================================================
-SECTION 7: WORKFLOW ORDER (MANDATORY)
-====================================================================
-1. Define Pydantic data model
-2. Validate ward & role isolation
-3. Verify Flutter can parse response
-4. Implement backend logic
-5. Implement frontend consumption
-6. Test using ward-bound test accounts
+Data correctness and auditability override speed and UI polish.
 
-Skipping steps is NOT allowed.
+Ward-level isolation is a non-negotiable security boundary.
 
-====================================================================
-SECTION 8: DEPLOYMENT & OPERATIONS
-====================================================================
-- Frontend code change REQUIRES `flutter build web`
-- Docker deploy REQUIRES CACHEBUST update
-- Cloud Run deploy REQUIRES traffic = 100%
-- Cached frontend MUST be invalidated or bypassed
-- Deploy success ≠ live traffic
+No auto-logic, inference, or silent correction is permitted.
 
-====================================================================
-SECTION 9: AUTO-LOGIC FORBIDDEN
-====================================================================
-- Do NOT guess missing logic
-- Do NOT infer voter intent
-- Do NOT auto-correct survey answers
-- Do NOT fabricate analytics
-- Do NOT downgrade async → sync
-- Do NOT simplify rules for convenience
+This system is for internal analysis only, not official election results.
 
-====================================================================
-SECTION 10: DOMAIN CONTEXT (REFERENCE)
-====================================================================
+====================================================
+2. BACKEND CONSTRAINTS (FastAPI / SQLAlchemy)
+====================================================
+
+All endpoints MUST be async def.
+
+ONLY AsyncSession is permitted for database access.
+
+Pydantic v2 ONLY. No v1 syntax. No orm_mode.
+
+SQLAlchemy models MUST remain separate from Pydantic schemas.
+
+All errors MUST return JSON via HTTPException. HTML is forbidden.
+
+Related queries MUST use joinedload() to prevent N+1 queries.
+
+Any schema change REQUIRES an Alembic migration.
+
+Manual database editing is forbidden.
+
+====================================================
+3. API & DATA CONTRACT LAW (CRITICAL)
+====================================================
+
+Every endpoint MUST define:
+
+Request schema (Pydantic)
+
+Response schema (Pydantic)
+
+Backend MUST NOT silently change JSON structures.
+
+Endpoint renames require simultaneous frontend updates.
+
+Frontend may ONLY consume declared fields.
+
+Non-JSON backend responses are ALWAYS a bug.
+
+Ward filtering MUST be enforced at SQL level using auth context.
+
+====================================================
+4. ELECTION DATA ISOLATION (SECURITY BOUNDARY)
+====================================================
+
+Surveyors may access ONLY voters in assigned wards.
+
+Ward context MUST be validated in every relevant query.
+
+Frontend filters are advisory only.
+
+Missing ward context MUST reject the request.
+
+Cross-ward data leakage is ZERO tolerance.
+
+====================================================
+5. SURVEY DATA INTEGRITY & AUDITABILITY
+====================================================
+
+Every voter response MUST store:
+
+survey_id
+
+voter_id
+
+ward_no
+
+surveyor_id
+
+timestamp
+
+Rules:
+
+Responses are append-only.
+
+Silent overwrites are forbidden.
+
+All corrections must be traceable.
+
+No automated modification of political data.
+
+====================================================
+6. FRONTEND CONSTRAINTS (Flutter Web)
+====================================================
+
+Web-first, desktop-safe layout is mandatory.
+
+LayoutBuilder or ConstrainedBox MUST be used.
+
+Mobile-first assumptions are forbidden.
+
+API calls MUST go through a Service Layer.
+
+API calls inside build() are forbidden.
+
+Services MUST initialize before UI render.
+
+UI MUST handle: Loading, Empty, Error, Denied states.
+
+JSON parsing MUST be defensive and type-safe.
+
+Deep linking MUST preserve session context.
+
+====================================================
+7. DEVELOPMENT WORKFLOW (MANDATORY)
+====================================================
+
+All features MUST follow this order:
+
+Define Pydantic models
+
+Validate ward & role isolation
+
+Verify Flutter parsing
+
+Implement backend logic
+
+Implement frontend consumption
+
+Test using ward-bound accounts
+
+Skipping steps is forbidden.
+
+====================================================
+8. MIGRATION, DEPLOYMENT & OPERATIONS
+====================================================
+
+Frontend changes REQUIRE flutter build web.
+
+Docker builds REQUIRE cache-busting updates.
+
+Environment variables MUST be validated before deploy.
+
+Production/Staging DB mismatch is forbidden.
+
+Cloud Run traffic may move to 100% ONLY after:
+
+Successful migration
+
+Data verification
+
+Cached frontend MUST be invalidated.
+
+Deploy success ≠ Live traffic success.
+
+====================================================
+9. AUTO-LOGIC & FABRICATION FORBIDDEN
+====================================================
+
+The system MUST NOT:
+
+Guess missing logic
+
+Infer voter intent
+
+Auto-correct responses
+
+Fabricate analytics
+
+Downgrade async → sync
+
+Bypass validation for convenience
+
+Any violation is a critical defect.
+
+====================================================
+10. DOMAIN & ETHICAL LIMITS
+====================================================
+
 SYSTEM PURPOSE:
-- Secure, ward-isolated election survey platform
-- Used for internal voter sentiment analysis only
-- NOT for declaring winners or official predictions
 
-USER ROLES:
-- Admin: Full system control
-- Coordinator: Survey & assignment management
-- Surveyor: Data collection (ward-bound)
+Secure, ward-isolated survey platform
 
-SURVEY FLOW:
-1. Admin creates survey
-2. Surveyors assigned via SurveyAssignment
-3. Surveyor fetches next voter (ward-filtered)
-4. Surveyor submits response
-5. Data stored with audit context
+Internal voter sentiment analysis only
 
-DATA IMPORT (VOTER LISTS):
-- CSV ward values may be inconsistent
-- `safe_int()` extracts first integer via regex
-- Dropdown-selected ward overrides invalid CSV ward
+Not an official election authority
 
-ANALYTICS INTENT:
-- Aggregated counts only
-- Ward / booth-level summaries
-- Trends over time
-- No individual voter exposure
+PROHIBITED:
 
-SYSTEM INITIALIZATION:
-- Empty database supported
-- Geo data auto-seeded if missing
-- Survey creation self-heals missing district IDs
+Declaring winners
 
-LEGAL & ETHICAL LIMITS:
-- No coercion logic
-- No voter manipulation
-- No individual profiling beyond survey scope
+Individual voter prediction
 
-====================================================================
-SECTION 11: EXAMPLES (NON-AUTHORITATIVE)
-====================================================================
-EXAMPLE: VOTER FETCH RESPONSE
+Manipulation logic
+
+Profiling beyond survey scope
+
+Political targeting automation
+
+====================================================
+11. DATA IMPORT & INITIALIZATION
+====================================================
+
+CSV ward values may be inconsistent.
+
+safe_int() must extract numeric ward IDs.
+
+UI-selected ward overrides invalid CSV data.
+
+Empty database must be supported.
+
+Geo data may be auto-seeded.
+
+Survey creation must self-heal missing references.
+
+====================================================
+12. EXAMPLES (NON-AUTHORITATIVE)
+====================================================
+Voter Fetch Response
 {
   "voter_id": 10234,
   "name": "Ramesh",
@@ -160,7 +241,7 @@ EXAMPLE: VOTER FETCH RESPONSE
   "gender": "M"
 }
 
-EXAMPLE: SURVEY RESPONSE PAYLOAD
+Survey Submission
 {
   "survey_id": 7,
   "voter_id": 10234,
@@ -169,7 +250,6 @@ EXAMPLE: SURVEY RESPONSE PAYLOAD
   "submitted_at": "2026-01-29T10:21:00Z"
 }
 
-FORBIDDEN OUTPUTS:
-❌ Declaring winners
-❌ Individual voter predictions
-❌ Official election claims
+====================================================
+END OF CONSTITUTION
+====================================================
