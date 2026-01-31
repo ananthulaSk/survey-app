@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dashboard_screen.dart';
+import '../services/api_service.dart';
 
 class AdminLoginScreen extends StatefulWidget {
   const AdminLoginScreen({super.key});
@@ -16,8 +17,15 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
     // Optional: Add listeners if needed
   }
 
-  void _login() {
+  void _login() async {
     if (_secretController.text.trim() == _adminSecret) {
+      // Clear persistence and memory
+      await ApiService.clearSession();
+
+      // Set Session to Admin
+      ApiService.loggedInRole = 'ADMIN';
+
+      if (!mounted) return;
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const DashboardScreen()),

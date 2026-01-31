@@ -51,6 +51,16 @@ class ApiService {
     loggedInWard = ward;
   }
 
+  // Clear Session (Logout)
+  static Future<void> clearSession() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.clear();
+    loggedInMobile = null;
+    loggedInSurveyorId = null;
+    loggedInWard = null;
+    loggedInRole = null;
+  }
+
   // Restore Session
   static Future<bool> restoreSession() async {
     final prefs = await SharedPreferences.getInstance();
@@ -134,7 +144,8 @@ class ApiService {
 
   Future<List<dynamic>> getActiveSurveys() async {
     String url = '$baseUrl/surveys/active';
-    if (loggedInMobile != null) {
+    // ONLY filter by mobile if NOT Admin
+    if (loggedInMobile != null && loggedInRole != 'ADMIN') {
       url += '?mobile_no=${normalizeMobile(loggedInMobile!)}';
     }
 
