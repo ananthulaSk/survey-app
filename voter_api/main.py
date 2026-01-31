@@ -18,8 +18,8 @@ from fastapi.security import APIKeyHeader
 # --- CONFIGURATION (Dynamic Versioning) ---
 # Auto-increment version using BUILD_NUMBER from CI/CD
 BUILD_NUMBER = os.getenv("BUILD_NUMBER", "111")  # Cloud Build will set this
-MAIN_VERSION = os.getenv("APP_VERSION", f"v20.{BUILD_NUMBER}")
-EXPECTED_FRONTEND_VERSION = os.getenv("FRONTEND_VERSION", f"v20.{BUILD_NUMBER}")
+MAIN_VERSION = os.getenv("APP_VERSION", f"v20.{int(BUILD_NUMBER):03d}")
+EXPECTED_FRONTEND_VERSION = os.getenv("FRONTEND_VERSION", f"v20.{int(BUILD_NUMBER):03d}")
 
 # Import robust database setup
 from database import engine, Base, get_db
@@ -662,48 +662,55 @@ async def create_survey(
     district = res_d.scalar()
     district_name = district.name if district else "UNKNOWN"
     
-    # Create survey
-    new_survey = Survey(
-        name=name,
-        district=district_name,
-        mandal=str(mandal_ids) if mandal_ids != "ALL" else "ALL",
-        village=str(village_ids) if village_ids != "ALL" else "ALL",
-        survey_code=survey_code,
-        survey_type=survey_type,
-        status="CREATED"
-    )
     
-    db.add(new_survey)
-    await db.commit()
-    await db.refresh(new_survey)
-    
-    # Create snapshots for all voters matching the scope
-    res_voters = await db.execute(select(VoterMaster))
-    all_voters = res_voters.scalars().all()
-    
-    for voter in all_voters:
-        snapshot = SurveyVoter(
-            survey_id=new_survey.id,
-            master_voter_id=voter.voter_id,
-            name=voter.voter_name,
-            surname=voter.surname,
-            house_no=voter.house_no,
-            age=voter.age,
-            gender=voter.gender,
-            relation=voter.relation,
-            ward=voter.ward_id,
-            snapshot_created_at=datetime.utcnow()
+    try:
+        # Create survey
+        new_survey = Survey(
+            name=name,
+            district=district_name,
+            mandal=str(mandal_ids) if mandal_ids != "ALL" else "ALL",
+            village=str(village_ids) if village_ids != "ALL" else "ALL",
+            survey_code=survey_code,
+            survey_type=survey_type,
+            status="CREATED"
         )
-        db.add(snapshot)
+        
+        db.add(new_survey)
+        await db.flush()  # Get ID before commit
+        
+        # Create snapshots for all voters matching the scope
+        res_voters = await db.execute(select(VoterMaster))
+        all_voters = res_voters.scalars().all()
+        
+        for voter in all_voters:
+            snapshot = SurveyVoter(
+                survey_id=new_survey.id,
+                master_voter_id=voter.voter_id,
+                voter_name=voter.voter_name,
+                surname=voter.surname,
+                house_no=voter.house_no,
+                age=voter.age,
+                gender=voter.gender,
+                relation_name=voter.relation_name,
+                ward_no=voter.ward_no,
+                snapshot_created_at=datetime.utcnow(),
+                voter_status="AVAILABLE"
+            )
+            db.add(snapshot)
+        
+        await db.commit()
+        
+        return {
+            "status": "success",
+            "survey_id": new_survey.id,
+            "survey_code": survey_code,
+            "message": f"Survey '{name}' created successfully"
+        }
     
-    await db.commit()
-    
-    return {
-        "status": "success",
-        "survey_id": new_survey.id,
-        "survey_code": survey_code,
-        "message": f"Survey '{name}' created successfully"
-    }
+    except Exception as e:
+        await db.rollback()
+        print(f"SURVEY CREATE ERROR: {e}")
+        raise HTTPException(status_code=500, detail=f"Survey creation failed: {str(e)}")
 
 @app.get("/surveys/active")
 async def get_active_surveys(
