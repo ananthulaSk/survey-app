@@ -22,8 +22,9 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
       // Clear persistence and memory
       await ApiService.clearSession();
 
-      // Set Session to Admin
+      // Set Session to Admin & Persist
       ApiService.loggedInRole = 'ADMIN';
+      await ApiService.saveSession("ADMIN", null, null, "ADMIN");
 
       if (!mounted) return;
       Navigator.pushReplacement(

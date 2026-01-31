@@ -31,7 +31,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   static const String EXPECTED_BACKEND_VERSION =
       "v20.100"; // Backend logic stable
   String _backendVersion = "Fetching...";
-  final String _appVersionDisplay = "v20.104 (SURVEY FIX)";
+  final String _appVersionDisplay = "v20.105 (FINAL)";
 
   // API Service
   final _api = ApiService();
@@ -291,6 +291,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                               _mobileController.text.trim(),
                               null,
                               _selectedWard,
+                              "SURVEYOR", // Default role for new registration
                             );
 
                             ScaffoldMessenger.of(context).showSnackBar(

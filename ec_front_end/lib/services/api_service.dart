@@ -37,6 +37,7 @@ class ApiService {
     String mobile,
     int? surveyorId,
     String? ward,
+    String? role,
   ) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('mobile', normalizeMobile(mobile));
@@ -46,9 +47,14 @@ class ApiService {
     if (ward != null) {
       await prefs.setString('ward', ward);
     }
+    if (role != null) {
+      prefs.setString('role', role);
+    }
+
     loggedInMobile = mobile;
     loggedInSurveyorId = surveyorId;
     loggedInWard = ward;
+    loggedInRole = role;
   }
 
   // Clear Session (Logout)
@@ -67,18 +73,22 @@ class ApiService {
     final mobile = prefs.getString('mobile');
     final surveyorId = prefs.getInt('surveyor_id');
     final ward = prefs.getString('ward');
+    final role = prefs.getString('role');
 
     if (mobile != null && mobile.isNotEmpty) {
       loggedInMobile = mobile;
       loggedInSurveyorId = surveyorId;
       loggedInWard = ward;
+      loggedInRole = role;
 
       // FORCE REFRESH: Fetch latest security context (Ward) from Backend
       // This ensures that even if local prefs are old, we get the Strict Policy from Main.py
       try {
         final api = ApiService();
         await api.checkStatusByMobile(mobile);
-        print("Session Restored & Refreshed: Ward = $loggedInWard");
+        print(
+          "Session Restored & Refreshed: Role=$loggedInRole, Ward=$loggedInWard",
+        );
       } catch (e) {
         print("Session refresh warning upstream: $e");
         // We continue even if offline, trusting the cached 'ward' if it exists.
