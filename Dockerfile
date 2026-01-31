@@ -2,7 +2,7 @@
 FROM python:3.10-slim
 
 # Set working directory
-# CACHEBUST=v20.92-FULL-SYNC
+# CACHEBUST=v20.93-RETRY-DEPLOY
 ENV PYTHONUNBUFFERED=1
 WORKDIR /app
 
