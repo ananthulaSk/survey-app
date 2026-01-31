@@ -188,7 +188,7 @@ class _VoterProfileScreenState extends State<VoterProfileScreen> {
     if (_currentVoter == null) return;
 
     final updates = {
-      "party": _selectedParty,
+      "expected_party": _selectedParty, // MATCHED BACKEND 'expected_party'
       "mobile_no": _mobileController.text,
       "occupation": _occupationController.text,
       "religion": _religionController.text,
@@ -196,7 +196,7 @@ class _VoterProfileScreenState extends State<VoterProfileScreen> {
       "sub_caste": _subCasteController.text,
       "voter_status": _voterStatus,
       "voter_id": _currentVoter!.id, // Required for offline sync
-      "ward": _currentVoter!.ward, // Helper for offline stats
+      // "ward": _currentVoter!.ward, // Helper for offline stats (REMOVED FOR BACKEND COMPLIANCE)
     };
 
     final offlineService = OfflineService();

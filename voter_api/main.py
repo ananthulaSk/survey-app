@@ -592,7 +592,7 @@ class VoterOut(BaseModel):
     snapshot_id: Optional[int] = None # Added for search compatibility
 
 class VoterUpdate(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="ignore")
     voter_id: int
     survey_id: int 
     expected_party: Optional[str] = None
