@@ -595,7 +595,7 @@ class VoterUpdate(BaseModel):
     model_config = ConfigDict(extra="forbid")
     voter_id: int
     survey_id: int 
-    party: Optional[str] = None
+    expected_party: Optional[str] = None
     occupation: Optional[str] = None
     religion: Optional[str] = None
     caste: Optional[str] = None
@@ -908,41 +908,7 @@ async def list_assignments(survey_id: Optional[int] = None, db: AsyncSession = D
             })
     return results
 
-@app.get("/voters/search", response_model=List[dict])
-async def search_voters(query: str, survey_id: int, ward: Optional[int] = None, db: AsyncSession = Depends(get_db)):
-    from sqlalchemy import select, or_
-    q = select(SurveyVoter).filter(
-        SurveyVoter.survey_id == survey_id,
-        or_(
-            SurveyVoter.voter_name.ilike(f"%{query}%"),
-            SurveyVoter.surname.ilike(f"%{query}%")
-        )
-    )
-    if ward is not None:
-        q = q.filter(SurveyVoter.ward_no == ward)
-        
-    res = await db.execute(q.limit(50))
-    voters = res.scalars().all()
-    
-    return [
-        {
-            "voter_id": v.master_voter_id,
-            "snapshot_id": v.id,
-            "name": v.voter_name,
-            "surname": v.surname,
-            "ward": v.ward_no,
-            "house_no": v.house_no,
-            "age": v.age,
-            "gender": v.gender,
-            "relation": v.relation_name,
-            "expected_party": v.expected_party,
-            "occupation": v.occupation,
-            "religion": v.religion,
-            "caste": v.caste,
-            "sub_caste": v.sub_caste,
-            "mobile_no": v.mobile_no
-        } for v in voters
-    ]
+
 
 @app.get("/voters/next")
 async def get_next_voter(survey_id: int, current_id: int = 0, skip_completed: bool = True, ward: Optional[int] = None, db: AsyncSession = Depends(get_db)):
