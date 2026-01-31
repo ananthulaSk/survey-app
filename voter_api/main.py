@@ -1743,24 +1743,7 @@ async def serve_app_link():
     return FileResponse("static/index.html")
 
 # --- STARTUP EVENT ---
-@app.on_event("startup")
-async def startup_event():
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-    
-    # Run Defaults Seeder
-    async with AsyncSession(engine) as session:
-        # Schema Patch for v20.101 (Poor Man's Migration)
-        try:
-             from sqlalchemy import text
-             await session.execute(text("ALTER TABLE voters ADD COLUMN voter_id_no VARCHAR"))
-             await session.commit()
-             print("Schema Patch: Added voter_id_no")
-        except Exception as e:
-             # Ignore if column exists
-             pass
-             
-        await seed_master_data(session)
+# Duplicate Startup Event Removed
 
 # Duplicate mounts to ensure backward compatibility and asset resolution
 app.mount("/static", StaticFiles(directory="static", html=True), name="static_path")
