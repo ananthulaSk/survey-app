@@ -1362,7 +1362,7 @@ async def get_dashboard_analytics(survey_id: int, db: AsyncSession = Depends(get
 
 @app.get("/dashboard/approvals")
 async def get_surveyor_requests(db: AsyncSession = Depends(get_db)):
-    from sqlalchemy import select
+    from sqlalchemy import select, desc
     res = await db.execute(select(SurveyorRequest).order_by(desc(SurveyorRequest.created_at)))
     requests = res.scalars().all()
     response_data = []
@@ -1442,7 +1442,7 @@ async def register_surveyor(
     new_req = SurveyorRequest(
         name=name, mobile_no=mobile, device_id=device_id,
         district_name=district_name, mandal_name=mandal_name, village_name=village_name, ward_no=ward_no,
-        role=role.upper(), assigned_village_id=village_id
+        role=role.strip().upper(), assigned_village_id=village_id
     )
     db.add(new_req)
     await db.commit()
