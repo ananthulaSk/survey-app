@@ -326,7 +326,7 @@ async def upload_voters_bulk(
                         voter_name=row.get('voter_name', ''),
                         gender=row.get('gender', ''),
                         age=int(row.get('age', 0)) if row.get('age') else None,
-                        voter_id_no=v_id_no,
+                        voter_id_no=row.get('voter_id_no', ''),
                         mobile_no=row.get('mobile_no', ''),
                         ward_id=ward_id
                     )
@@ -619,11 +619,13 @@ async def create_survey(
             )
             db.add(sv)
         
-        await db.commit()
+        
         # Note: In async, we can't easily count before commit in the same way without flush/refresh
         # We assume they are added.
         copied_count = len(masters)
     
+    await db.commit()
+
     return {
         "status": "success",
         "survey_id": new_survey.id,
