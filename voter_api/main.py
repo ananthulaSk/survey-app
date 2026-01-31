@@ -1044,6 +1044,12 @@ async def get_all_districts(db: AsyncSession = Depends(get_db)):
     from sqlalchemy import select
     res = await db.execute(select(DistrictMaster))
     districts = res.scalars().all()
+    
+    if not districts:
+        await seed_master_data(db)
+        res = await db.execute(select(DistrictMaster))
+        districts = res.scalars().all()
+        
     return [{"id": d.id, "name": d.name} for d in districts]
 
 @app.get("/master/mandals/{district_id}")
