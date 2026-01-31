@@ -119,9 +119,16 @@ class _BulkUploadScreenState extends State<BulkUploadScreen> {
 
         if (response.statusCode == 200) {
           final json = jsonDecode(response.body);
+          String msg =
+              "Success!\nProcessed: ${json['total_processed']}\nAdded: ${json['added']}\nUpdated: ${json['updated']}";
+
+          if (json['errors'] != null && (json['errors'] as List).isNotEmpty) {
+            msg +=
+                "\n\nErrors:\n" + (json['errors'] as List).take(3).join("\n");
+          }
+
           setState(() {
-            _statusMessage =
-                "Success!\nProcessed: ${json['total_processed']}\nAdded: ${json['added']}\nUpdated: ${json['updated']}";
+            _statusMessage = msg;
             _isSuccess = true;
           });
         } else {

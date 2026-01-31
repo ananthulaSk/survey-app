@@ -297,6 +297,7 @@ async def upload_voters_bulk(
         ward = ward_res.scalar()
         ward_id = ward.id if ward else None
         
+        errors_log = []
         for row in reader:
             total_processed += 1
             try:
@@ -344,7 +345,6 @@ async def upload_voters_bulk(
                     existing_voter.gender = gen or existing_voter.gender
                     existing_voter.age = age or existing_voter.age
                     existing_voter.relation_name = rel_name or existing_voter.relation_name
-                    # existing_voter.surname = ... # Surname not reliably parsed yet
                     updated += 1
                 else:
                     new_voter = VoterMaster(
@@ -360,16 +360,24 @@ async def upload_voters_bulk(
                     db.add(new_voter)
                     added += 1
             except Exception as e:
-                print(f"Error processing row {total_processed}: {e}")
+                err_msg = f"Row {total_processed}: {str(e)}"
+                print(err_msg)
+                if len(errors_log) < 3:
+                     errors_log.append(err_msg)
                 continue
         
-        await db.commit()
+        try:
+            await db.commit()
+        except Exception as commit_err:
+             await db.rollback()
+             raise HTTPException(status_code=500, detail=f"Database Commit Failed: {str(commit_err)}")
         
         return {
             "status": "success",
             "total_processed": total_processed,
             "added": added,
-            "updated": updated
+            "updated": updated,
+            "errors": errors_log
         }
     except Exception as e:
         await db.rollback()
