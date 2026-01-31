@@ -5,8 +5,7 @@ import 'voter_profile_screen.dart';
 class SurveySelectionScreen extends StatefulWidget {
   final ApiService apiService;
 
-  const SurveySelectionScreen({required this.apiService, Key? key})
-    : super(key: key);
+  const SurveySelectionScreen({required this.apiService, super.key});
 
   @override
   _SurveySelectionScreenState createState() => _SurveySelectionScreenState();

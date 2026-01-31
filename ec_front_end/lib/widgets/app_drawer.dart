@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../screens/voter_profile_screen.dart';
 import '../screens/registration_screen.dart';
 import '../screens/approval_screen.dart';
 import '../services/offline_service.dart';

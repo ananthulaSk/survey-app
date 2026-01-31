@@ -364,7 +364,7 @@ class _VoterOpinionScreenState extends State<VoterOpinionScreen> {
     String? currentValue,
   ) {
     return DropdownButtonFormField<String>(
-      value: (items.contains(currentValue)) ? currentValue : null,
+      initialValue: (items.contains(currentValue)) ? currentValue : null,
       decoration: InputDecoration(
         labelText: label,
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
