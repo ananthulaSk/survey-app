@@ -44981,7 +44981,7 @@ q=t.p
 s=A.b([B.YY,B.bs,m,B.dn,k,B.dn,A.q1(B.oM,o,o,l,new A.aoj(p),r,s),B.A3],q)
 if(p.as)s.push(B.d3)
 else{m=p.r==null?o:p.gagI()
-s.push(A.uK(B.oJ,B.YQ,m,A.nr(o,o,o,o,o,o,o,o,o,o,o,o,B.bQ,o,o,o,o,o,B.X0,o)))}m=p.at
+s.push(A.uK(B.oJ,B.YR,m,A.nr(o,o,o,o,o,o,o,o,o,o,o,o,B.bQ,o,o,o,o,o,B.X0,o)))}m=p.at
 if(m!=null){l=p.ax
 k=l?B.nJ:B.nB
 B.b.O(s,A.b([B.fx,A.u4(new A.bM(B.bQ,A.aS(m,o,o,o,o,A.dB(o,o,l?B.jn:B.nA,o,o,o,o,o,o,o,o,o,o,o,B.Z,o,o,!0,o,o,o,o,o,o,o,o),B.bJ,o),o),k,o,o,o,o)],q))}return A.oi(n,o,new A.bM(B.bQ,A.cD(s,B.cM,B.B,B.C),o),o)}}
@@ -45268,7 +45268,7 @@ m===$&&A.a()
 s=o.gaeh()
 r=o.gGx()
 q=t.p
-m=A.yR(A.b([A.iG(n,n,B.oI,n,n,s,n,n,n),A.iG(n,n,B.oJ,n,n,new A.aqs(a),n,n,"Bulk Upload Voters"),A.iG(n,n,B.J6,n,n,r,n,n,n)],q),!0,B.FA,new A.E0(B.LK,m,B.k,B.T,n),n,B.k,n,B.YR)
+m=A.yR(A.b([A.iG(n,n,B.oI,n,n,s,n,n,n),A.iG(n,n,B.oJ,n,n,new A.aqs(a),n,n,"Bulk Upload Voters"),A.iG(n,n,B.J6,n,n,r,n,n,n)],q),!0,B.FA,new A.E0(B.LK,m,B.k,B.T,n),n,B.k,n,B.YH)
 if(o.f)s=B.d3
 else{p=o.r
 if(p!=null){q=A.b([B.IZ,B.bs,A.aS(p,n,n,n,n,B.AD,B.bJ,n),B.fx],q)
@@ -45307,7 +45307,7 @@ a6K(){var s,r=this,q=null,p=r.Q,o=J.f7(r.z,new A.apF(),t.kZ)
 o=A.a0(o,o.$ti.h("an.E"))
 s=t.p
 p=A.dF(q,A.eZ(A.b([B.J7,B.A_,A.hl(A.q1(B.Jh,q,q,o,new A.apG(r),p,t.S),1)],s),B.y,B.B,B.C,0),B.r,B.k,q,q,q,q,q,B.bQ,q,q,q)
-return A.cD(A.b([p,B.GH,A.hl(r.ax?B.d3:A.eZ(A.b([A.hl(A.cD(A.b([A.dF(q,B.Yy,B.r,B.eF,q,q,q,q,q,B.jR,q,q,1/0),A.hl(A.NK(new A.apH(r),r.as.length),1)],s),B.y,B.B,B.C),1),B.a_w,A.hl(A.cD(A.b([A.dF(q,B.YH,B.r,B.fU,q,q,q,q,q,B.jR,q,q,1/0),A.hl(A.NK(new A.apI(r),J.bE(r.at)),1)],s),B.y,B.B,B.C),1)],s),B.bw,B.B,B.C,0),1)],s),B.y,B.B,B.C)}}
+return A.cD(A.b([p,B.GH,A.hl(r.ax?B.d3:A.eZ(A.b([A.hl(A.cD(A.b([A.dF(q,B.Yy,B.r,B.eF,q,q,q,q,q,B.jR,q,q,1/0),A.hl(A.NK(new A.apH(r),r.as.length),1)],s),B.y,B.B,B.C),1),B.a_w,A.hl(A.cD(A.b([A.dF(q,B.YI,B.r,B.fU,q,q,q,q,q,B.jR,q,q,1/0),A.hl(A.NK(new A.apI(r),J.bE(r.at)),1)],s),B.y,B.B,B.C),1)],s),B.bw,B.B,B.C,0),1)],s),B.y,B.B,B.C)}}
 A.aq6.prototype={
 $0(){var s=this.a
 s.f=!0
@@ -45342,7 +45342,7 @@ A.apX.prototype={
 $1(a){return J.d(J.at(a,"id"),this.a)},
 $S:81}
 A.apU.prototype={
-$1(a){return A.yx(A.b([A.kM(B.m0,new A.apS(a),null),A.kM(B.Yw,new A.apT(a),null)],t.p),B.Z6,B.YP)},
+$1(a){return A.yx(A.b([A.kM(B.m0,new A.apS(a),null),A.kM(B.Yw,new A.apT(a),null)],t.p),B.Z6,B.YQ)},
 $S:57}
 A.apS.prototype={
 $0(){A.d7(this.a,!1).fA(!1)
@@ -97456,8 +97456,8 @@ B.E1=new A.fM(B.a9,null,null,B.YU,null)
 B.a1p=new A.amS(0,"material")
 B.E7=new A.pI(null,null,null)
 B.d3=new A.fM(B.a9,null,null,B.E7,null)
-B.YN=new A.b0("No Data Yet",null,null,null,null,null,null,null,null,null)
-B.E2=new A.fM(B.a9,null,null,B.YN,null)
+B.YO=new A.b0("No Data Yet",null,null,null,null,null,null,null,null,null)
+B.E2=new A.fM(B.a9,null,null,B.YO,null)
 B.E3=new A.zd(null,null,null,null,null,null,null,null,null)
 B.dC=new A.u7(0,"none")
 B.dD=new A.u7(1,"isTrue")
@@ -97575,12 +97575,12 @@ B.B=new A.nT(0,"start")
 B.bd=new A.NU(0,"min")
 B.y=new A.pT(2,"center")
 B.cf=new A.amq(1,"down")
-B.YO=new A.b0("To verify your request, please contact:",null,null,null,null,null,null,null,null,null)
+B.YP=new A.b0("To verify your request, please contact:",null,null,null,null,null,null,null,null,null)
 B.dn=new A.d8(null,12,null,null)
 B.Z=new A.iE(6)
 B.AA=new A.o(!0,B.cL,null,null,null,null,20,B.Z,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null)
-B.YJ=new A.b0("9010094432",null,B.AA,null,null,null,null,null,null,null)
-B.LR=s([B.YO,B.dn,B.YJ],t.p)
+B.YK=new A.b0("9010094432",null,B.AA,null,null,null,null,null,null,null)
+B.LR=s([B.YP,B.dn,B.YK],t.p)
 B.G_=new A.zt(B.ah,B.B,B.bd,B.y,null,B.cf,null,0,B.LR,null)
 B.G0=new A.eQ(0,"bluetooth")
 B.jv=new A.eQ(1,"wifi")
@@ -99716,12 +99716,12 @@ B.Yf=new A.b0("Survey deleted successfully",null,null,null,null,null,null,null,n
 B.SF=new A.ff(B.Yf,null,null,null,null,null,null,null,null,null,null,null,null,B.aI,!1,null,null,null,B.w,null)
 B.Z3=new A.b0("Invalid Secret Key",null,null,null,null,null,null,null,null,null)
 B.SG=new A.ff(B.Z3,B.be,null,null,null,null,null,null,null,null,null,null,null,B.aI,!1,null,null,null,B.w,null)
-B.YL=new A.b0("Request Sent! Redirecting...",null,null,null,null,null,null,null,null,null)
-B.SH=new A.ff(B.YL,null,null,null,null,null,null,null,null,null,null,null,null,B.aI,!1,null,null,null,B.w,null)
-B.YK=new A.b0("Action Failed",null,null,null,null,null,null,null,null,null)
-B.SI=new A.ff(B.YK,null,null,null,null,null,null,null,null,null,null,null,null,B.aI,!1,null,null,null,B.w,null)
-B.YI=new A.b0("Request Rejected by Admin.",null,null,null,null,null,null,null,null,null)
-B.SJ=new A.ff(B.YI,B.be,null,null,null,null,null,null,null,null,null,null,null,B.aI,!1,null,null,null,B.w,null)
+B.YM=new A.b0("Request Sent! Redirecting...",null,null,null,null,null,null,null,null,null)
+B.SH=new A.ff(B.YM,null,null,null,null,null,null,null,null,null,null,null,null,B.aI,!1,null,null,null,B.w,null)
+B.YL=new A.b0("Action Failed",null,null,null,null,null,null,null,null,null)
+B.SI=new A.ff(B.YL,null,null,null,null,null,null,null,null,null,null,null,null,B.aI,!1,null,null,null,B.w,null)
+B.YJ=new A.b0("Request Rejected by Admin.",null,null,null,null,null,null,null,null,null)
+B.SJ=new A.ff(B.YJ,B.be,null,null,null,null,null,null,null,null,null,null,null,B.aI,!1,null,null,null,B.w,null)
 B.YW=new A.b0("Error: No mobile number found. Restart App.",null,null,null,null,null,null,null,null,null)
 B.SK=new A.ff(B.YW,null,null,null,null,null,null,null,null,null,null,null,null,B.aI,!1,null,null,null,B.w,null)
 B.YD=new A.b0("Please enter Name and Mobile Number",null,null,null,null,null,null,null,null,null)
@@ -99730,8 +99730,8 @@ B.Yq=new A.b0("Please select complete location details",null,null,null,null,null
 B.SM=new A.ff(B.Yq,null,null,null,null,null,null,null,null,null,null,null,null,B.aI,!1,null,null,null,B.w,null)
 B.Yv=new A.b0("Request Approved! Access Granted.",null,null,null,null,null,null,null,null,null)
 B.SN=new A.ff(B.Yv,B.ct,null,null,null,null,null,null,null,null,null,null,null,B.aI,!1,null,null,null,B.w,null)
-B.YM=new A.b0("Please select a Village first",null,null,null,null,null,null,null,null,null)
-B.SO=new A.ff(B.YM,null,null,null,null,null,null,null,null,null,null,null,null,B.aI,!1,null,null,null,B.w,null)
+B.YN=new A.b0("Please select a Village first",null,null,null,null,null,null,null,null,null)
+B.SO=new A.ff(B.YN,null,null,null,null,null,null,null,null,null,null,null,null,B.aI,!1,null,null,null,B.w,null)
 B.Yt=new A.b0("Please enter Name and select District",null,null,null,null,null,null,null,null,null)
 B.SP=new A.ff(B.Yt,null,null,null,null,null,null,null,null,null,null,null,null,B.aI,!1,null,null,null,B.w,null)
 B.A6=new A.DI(0,"permissive")
@@ -100142,13 +100142,13 @@ B.AG=new A.b0("Close",null,null,null,null,null,null,null,null,null)
 B.Vd=new A.o(!0,B.cL,null,null,null,null,null,B.Z,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null)
 B.YF=new A.b0("Start Survey",null,B.Vd,null,null,null,null,null,null,null)
 B.YG=new A.b0("Election Survey Apps",null,B.AA,null,null,null,null,null,null,null)
+B.YH=new A.b0("Admin Dashboard (v20.91 - FIXED)",null,null,null,null,null,null,null,null,null)
 B.Va=new A.o(!0,B.cP,null,null,null,null,null,B.Z,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null)
-B.YH=new A.b0("CURRENTLY ASSIGNED",null,B.Va,null,null,null,null,null,null,null)
+B.YI=new A.b0("CURRENTLY ASSIGNED",null,B.Va,null,null,null,null,null,null,null)
 B.AH=new A.b0("Create First Survey",null,null,null,null,null,null,null,null,null)
 B.AI=new A.b0("Contact Coordinator",null,null,null,null,null,null,null,null,null)
-B.YP=new A.b0("Confirm Delete",null,null,null,null,null,null,null,null,null)
-B.YQ=new A.b0("Select CSV & Upload",null,null,null,null,null,null,null,null,null)
-B.YR=new A.b0("Admin Dashboard (v20.02 - FORCE UPDATE)",null,null,null,null,null,null,null,null,null)
+B.YQ=new A.b0("Confirm Delete",null,null,null,null,null,null,null,null,null)
+B.YR=new A.b0("Select CSV & Upload",null,null,null,null,null,null,null,null,null)
 B.YS=new A.b0("Call",null,null,null,null,null,null,null,null,null)
 B.Wh=new A.o(!0,B.c9,null,null,null,null,12,B.Z,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null)
 B.YT=new A.b0("Status",null,B.Wh,null,null,null,null,null,null,null)

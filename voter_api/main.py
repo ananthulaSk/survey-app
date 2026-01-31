@@ -300,9 +300,37 @@ async def upload_voters_bulk(
         for row in reader:
             total_processed += 1
             try:
-                # Use serial_no + name as a pseudo-unique key since voter_id_no is missing in model
-                s_no = int(row.get('serial_no', 0))
-                v_name = row.get('voter_name', '')
+                # Flexible Column Mapping
+                def get_val(keys, default=''):
+                    for k in keys:
+                        if k in row and row[k]: return row[k]
+                    return default
+
+                # serial_no, s_no, sl_no
+                s_no_val = get_val(['serial_no', 's_no', 'sl_no', 'no'], '0')
+                s_no = int(s_no_val) if s_no_val.isdigit() else 0
+
+                v_name = get_val(['voter_name', 'name', 'votername'])
+                
+                # voter_id, epic_no, card_no
+                v_id_no = get_val(['voter_id_no', 'voter_id', 'epic_no', 'card_no', 'id_card_no'])
+                
+                # house_no, h_no
+                h_no = get_val(['house_no', 'h_no', 'house', 'door_no'])
+
+                # mobile, phone
+                mob = get_val(['mobile_no', 'mobile', 'phone', 'contact'])
+                
+                # gender
+                gen = get_val(['gender', 'sex'])
+
+                # age
+                age_val = get_val(['age'])
+                age = int(age_val) if age_val and age_val.isdigit() else None
+
+                # Relation
+                rel_name = get_val(['relation_name', 'father_name', 'husband_name', 'guardian_name'])
+
                 existing_res = await db.execute(select(VoterMaster).filter(
                     VoterMaster.serial_no == s_no,
                     VoterMaster.voter_name == v_name,
@@ -311,23 +339,22 @@ async def upload_voters_bulk(
                 existing_voter = existing_res.scalar()
                 
                 if existing_voter:
-                    existing_voter.house_no = row.get('house_no', existing_voter.house_no)
-                    existing_voter.serial_no = int(row.get('serial_no', 0)) if row.get('serial_no') else existing_voter.serial_no
-                    existing_voter.gender = row.get('gender', existing_voter.gender)
-                    existing_voter.age = int(row.get('age', 0)) if row.get('age') else existing_voter.age
-                    existing_voter.relation_name = row.get('relation_name', existing_voter.relation_name)
-                    existing_voter.surname = row.get('surname', existing_voter.surname)
-                    existing_voter.family_id = row.get('family_id', existing_voter.family_id)
+                    existing_voter.house_no = h_no or existing_voter.house_no
+                    existing_voter.serial_no = s_no if s_no > 0 else existing_voter.serial_no
+                    existing_voter.gender = gen or existing_voter.gender
+                    existing_voter.age = age or existing_voter.age
+                    existing_voter.relation_name = rel_name or existing_voter.relation_name
+                    # existing_voter.surname = ... # Surname not reliably parsed yet
                     updated += 1
                 else:
                     new_voter = VoterMaster(
-                        serial_no=int(row.get('serial_no', 0)) if row.get('serial_no') else None,
-                        house_no=row.get('house_no', ''),
-                        voter_name=row.get('voter_name', ''),
-                        gender=row.get('gender', ''),
-                        age=int(row.get('age', 0)) if row.get('age') else None,
-                        voter_id_no=row.get('voter_id_no', ''),
-                        mobile_no=row.get('mobile_no', ''),
+                        serial_no=s_no if s_no > 0 else None,
+                        house_no=h_no,
+                        voter_name=v_name,
+                        gender=gen,
+                        age=age,
+                        voter_id_no=v_id_no,
+                        mobile_no=mob,
                         ward_id=ward_id
                     )
                     db.add(new_voter)
