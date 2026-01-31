@@ -11,7 +11,9 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List, Optional, Dict, Any
 from datetime import datetime
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict # Pydantic V2
+from fastapi import Security
+from fastapi.security import APIKeyHeader
 
 # --- CONFIGURATION (Dynamic Versioning) ---
 # --- CONFIGURATION (Static Versioning for Debug) ---
@@ -176,6 +178,60 @@ class SurveyAssignment(Base):
 
 # Backward compatibility alias
 Voter = VoterMaster
+
+# --- SECURITY & CONTEXT ---
+api_key_header = APIKeyHeader(name="X-Auth-Token", auto_error=False)
+
+class UserContext(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    user_id: int
+    role: str
+    ward_no: int | None
+
+async def get_current_user(
+    token: str = Security(api_key_header),
+    db: AsyncSession = Depends(get_db)
+) -> UserContext:
+    if not token:
+        # For now, we allow unauthenticated access for certain things OR legacy
+        # But per constitution, we should return anonymous context or fail.
+        # For full compliance, we fail if endpoint requires it.
+        # But to avoid breaking login, we make it optional below or handle it.
+        # Actually, let's allow None token implies Anonymous, but endpoints enforce.
+        # However, the user provided code: if not token: raise 401.
+        # We will assume endpoints using this REQUIRE auth.
+        raise HTTPException(status_code=401, detail="Missing auth token")
+
+    mobile = token.replace("+91", "").replace(" ", "").replace("-", "").strip()
+    
+    # SPECIAL: Admin Bypass
+    if token == "admin-secret-123":
+        return UserContext(user_id=0, role="ADMIN", ward_no=None)
+
+    from sqlalchemy import select
+    res = await db.execute(
+        select(SurveyorRequest)
+        .filter(
+            SurveyorRequest.mobile_no == mobile,
+            SurveyorRequest.status == "APPROVED"
+        )
+    )
+    user = res.scalar()
+
+    if not user:
+        raise HTTPException(status_code=403, detail="Invalid credentials")
+
+    # Ward extraction
+    ward_no = None
+    if user.ward_no and user.ward_no.isdigit():
+        ward_no = int(user.ward_no)
+
+    return UserContext(
+        user_id=user.id,
+        role=user.role,
+        ward_no=ward_no
+    )
 
 app = FastAPI()
 
@@ -510,9 +566,35 @@ async def serve_app_index():
     )
 
 # --- Pydantic Models for Request Body ---
-class VoterUpdate(BaseModel):
+# --- STRICT API CONTRACTS (Response Models) ---
+class DistrictOut(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    id: int
+    name: str
+
+class VoterOut(BaseModel):
+    model_config = ConfigDict(extra="forbid")
     voter_id: int
-    survey_id: int # REQUIRED NOW
+    name: str | None = None
+    surname: str | None = None
+    ward: int | None = None
+    house_no: str | None = None
+    age: int | None = None
+    gender: str | None = None
+    relation: str | None = None
+    expected_party: str | None = None
+    occupation: str | None = None
+    religion: str | None = None
+    caste: str | None = None
+    sub_caste: str | None = None
+    mobile_no: str | None = None
+    voter_status: str | None = None
+    snapshot_id: Optional[int] = None # Added for search compatibility
+
+class VoterUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    voter_id: int
+    survey_id: int 
     party: Optional[str] = None
     occupation: Optional[str] = None
     religion: Optional[str] = None
@@ -522,19 +604,22 @@ class VoterUpdate(BaseModel):
     voter_status: Optional[str] = None
 
 class SurveyCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
     name: str
     scope_type: str 
     scope_value: str
-    survey_type: str = "TEST" # Default to TEST
+    survey_type: str = "TEST" 
 
 class AnalyticsFilter(BaseModel):
-    scope_type: str # "DISTRICT", "MANDAL", "VILLAGE", "CUSTOM"
+    model_config = ConfigDict(extra="forbid")
+    scope_type: str 
     district_ids: List[int] = []
     mandal_ids: List[int] = []
     village_ids: List[int] = []
     ward_ids: List[int] = []
 
 class LoginRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
     mobile_no: str
 
 @app.get("/api/status")
@@ -1039,7 +1124,7 @@ async def get_voter_by_id(voter_id: int, survey_id: int, db: AsyncSession = Depe
         }
     }
 
-@app.get("/master/districts")
+@app.get("/master/districts", response_model=List[DistrictOut])
 async def get_all_districts(db: AsyncSession = Depends(get_db)):
     from sqlalchemy import select
     res = await db.execute(select(DistrictMaster))
@@ -1050,21 +1135,75 @@ async def get_all_districts(db: AsyncSession = Depends(get_db)):
         res = await db.execute(select(DistrictMaster))
         districts = res.scalars().all()
         
-    return [{"id": d.id, "name": d.name} for d in districts]
+    return [DistrictOut(id=d.id, name=d.name) for d in districts]
 
 @app.get("/master/mandals/{district_id}")
-async def get_mandals_by_district(district_id: int, db: AsyncSession = Depends(get_db)):
+async def get_mandals(district_id: int, db: AsyncSession = Depends(get_db)):
     from sqlalchemy import select
     res = await db.execute(select(MandalMaster).filter(MandalMaster.district_id == district_id))
-    mandals = res.scalars().all()
-    return [{"id": m.id, "name": m.name} for m in mandals]
+    return res.scalars().all()
 
 @app.get("/master/villages/{mandal_id}")
-async def get_villages_by_mandal(mandal_id: int, db: AsyncSession = Depends(get_db)):
+async def get_villages(mandal_id: int, db: AsyncSession = Depends(get_db)):
     from sqlalchemy import select
     res = await db.execute(select(VillageMaster).filter(VillageMaster.mandal_id == mandal_id))
-    villages = res.scalars().all()
-    return [{"id": v.id, "name": v.name} for v in villages]
+    return res.scalars().all()
+
+# --- VOTER SEARCH (Auth Enforced) ---
+@app.get("/voters/search", response_model=List[VoterOut])
+async def search_voters(
+    query: str,
+    survey_id: int,
+    user: UserContext = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    from sqlalchemy import select, or_
+
+    # Strict Auth: Enforce Ward
+    ward_filter = None
+    if user.role == "SURVEYOR":
+        if user.ward_no is None:
+             raise HTTPException(status_code=403, detail="Ward not assigned to surveyor.")
+        ward_filter = user.ward_no
+    
+    stmt = select(SurveyVoter).filter(
+        SurveyVoter.survey_id == survey_id,
+        or_(
+            SurveyVoter.voter_name.ilike(f"%{query}%"),
+            SurveyVoter.surname.ilike(f"%{query}%"),
+            SurveyVoter.house_no.ilike(f"%{query}%")
+        )
+    )
+
+    if ward_filter is not None:
+        stmt = stmt.filter(SurveyVoter.ward_no == ward_filter)
+    
+    # Debug: Print query if needed
+    # print(stmt)
+
+    res = await db.execute(stmt)
+    voters = res.scalars().all()
+    
+    return [
+        VoterOut(
+            voter_id=v.master_voter_id, # Return master ID for updates
+            name=v.voter_name,
+            surname=v.surname,
+            ward=v.ward_no,
+            house_no=v.house_no,
+            age=v.age,
+            gender=v.gender,
+            relation=v.relation_name,
+            expected_party=v.expected_party,
+            occupation=v.occupation,
+            religion=v.religion,
+            caste=v.caste,
+            sub_caste=v.sub_caste,
+            mobile_no=v.mobile_no,
+            voter_status=v.voter_status,
+            snapshot_id=v.id
+        ) for v in voters
+    ]
 
 # --- BULK UPLOAD VALIDATION ENDPOINTS ---
 
