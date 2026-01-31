@@ -15,8 +15,8 @@ from pydantic import BaseModel
 
 # --- CONFIGURATION (Dynamic Versioning) ---
 # --- CONFIGURATION (Static Versioning for Debug) ---
-MAIN_VERSION = "v20.96"
-EXPECTED_FRONTEND_VERSION = "v20.96"
+MAIN_VERSION = "v20.100"
+EXPECTED_FRONTEND_VERSION = "v20.100"
 
 # Import robust database setup
 # Import robust database setup
@@ -98,6 +98,38 @@ class SurveyVoter(Base):
     snapshot_created_at = Column(DateTime, default=datetime.utcnow)
     voter_name = Column(String)
     surname = Column(String)
+
+# --- SEEDING LOGIC (Inline) ---
+async def seed_master_data(db: AsyncSession):
+    try:
+        from sqlalchemy import select
+        # 1. District
+        res = await db.execute(select(DistrictMaster).filter(DistrictMaster.name == "Yadadri Bhuvanagiri"))
+        dist = res.scalar()
+        if not dist:
+            dist = DistrictMaster(id=1, name="Yadadri Bhuvanagiri")
+            db.add(dist)
+            print("Seeded District: Yadadri Bhuvanagiri")
+        
+        # 2. Mandal
+        res = await db.execute(select(MandalMaster).filter(MandalMaster.name == "Choutuppal"))
+        mandal = res.scalar()
+        if not mandal:
+            mandal = MandalMaster(id=1, name="Choutuppal", district_id=1)
+            db.add(mandal)
+            print("Seeded Mandal: Choutuppal")
+            
+        # 3. Village (Example)
+        res = await db.execute(select(VillageMaster).filter(VillageMaster.name == "Choutuppal Village"))
+        vill = res.scalar()
+        if not vill:
+            vill = VillageMaster(id=1, name="Choutuppal Village", mandal_id=1)
+            db.add(vill)
+            print("Seeded Village: Choutuppal Village")
+
+        await db.commit()
+    except Exception as e:
+        print(f"Seeding Warning: {e}")
     ward_no = Column(Integer)
     house_no = Column(String)
     age = Column(Integer)
@@ -526,8 +558,8 @@ async def create_survey(
         target_dist = res.scalar()
         
         if not target_dist:
-             from seed_geo import async_seed_geo_data
-             await async_seed_geo_data(db)
+             # Use the inline seeder we defined
+             await seed_master_data(db)
              res = await db.execute(select(DistrictMaster).filter(DistrictMaster.name == "Yadadri Bhuvanagiri"))
              target_dist = res.scalar()
         
@@ -1665,6 +1697,16 @@ async def serve_dashboard_link():
 async def serve_app_link():
     """Serves the mobile app entry point"""
     return FileResponse("static/index.html")
+
+# --- STARTUP EVENT ---
+@app.on_event("startup")
+async def startup_event():
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    
+    # Run Defaults Seeder
+    async with AsyncSession(engine) as session:
+        await seed_master_data(session)
 
 # Duplicate mounts to ensure backward compatibility and asset resolution
 app.mount("/static", StaticFiles(directory="static", html=True), name="static_path")
