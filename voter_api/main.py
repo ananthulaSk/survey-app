@@ -16,9 +16,10 @@ from fastapi import Security
 from fastapi.security import APIKeyHeader
 
 # --- CONFIGURATION (Dynamic Versioning) ---
-# --- CONFIGURATION (Static Versioning for Debug) ---
-MAIN_VERSION = os.getenv("APP_VERSION", "v20.100")
-EXPECTED_FRONTEND_VERSION = os.getenv("FRONTEND_VERSION", "v20.100")
+# Auto-increment version using BUILD_NUMBER from CI/CD
+BUILD_NUMBER = os.getenv("BUILD_NUMBER", "111")  # Cloud Build will set this
+MAIN_VERSION = os.getenv("APP_VERSION", f"v20.{BUILD_NUMBER}")
+EXPECTED_FRONTEND_VERSION = os.getenv("FRONTEND_VERSION", f"v20.{BUILD_NUMBER}")
 
 # Import robust database setup
 from database import engine, Base, get_db
@@ -623,7 +624,130 @@ class LoginRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     mobile_no: str
 
-# ... (rest of code) ...
+# --- SURVEY MANAGEMENT ENDPOINTS ---
+
+@app.post("/surveys/create")
+async def create_survey(
+    name: str = Body(...),
+    scope_type: str = Body(...),
+    scope_value: str = Body(...),
+    district_id: int = Body(0),
+    mandal_ids: str = Body("ALL"),
+    village_ids: str = Body("ALL"),
+    survey_type: str = Body("TEST"),
+    x_admin_token: Optional[str] = Header(None),
+    db: AsyncSession = Depends(get_db)
+):
+    # Admin token validation
+    if x_admin_token != "admin-secret-123":
+        raise HTTPException(status_code=403, detail="Unauthorized")
+    
+    from sqlalchemy import select
+    import json
+    
+    # Generate unique survey code
+    survey_code = f"SURVEY_{name.upper().replace(' ', '_')}_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}"
+    
+    # Parse IDs if they are JSON strings
+    try:
+        if isinstance(mandal_ids, str) and mandal_ids != "ALL":
+            mandal_ids = json.loads(mandal_ids)
+        if isinstance(village_ids, str) and village_ids != "ALL":
+            village_ids = json.loads(village_ids)
+    except:
+        pass
+    
+    # Get district name
+    res_d = await db.execute(select(DistrictMaster).filter(DistrictMaster.id == district_id))
+    district = res_d.scalar()
+    district_name = district.name if district else "UNKNOWN"
+    
+    # Create survey
+    new_survey = Survey(
+        name=name,
+        district=district_name,
+        mandal=str(mandal_ids) if mandal_ids != "ALL" else "ALL",
+        village=str(village_ids) if village_ids != "ALL" else "ALL",
+        survey_code=survey_code,
+        survey_type=survey_type,
+        status="CREATED"
+    )
+    
+    db.add(new_survey)
+    await db.commit()
+    await db.refresh(new_survey)
+    
+    # Create snapshots for all voters matching the scope
+    res_voters = await db.execute(select(VoterMaster))
+    all_voters = res_voters.scalars().all()
+    
+    for voter in all_voters:
+        snapshot = SurveyVoter(
+            survey_id=new_survey.id,
+            master_voter_id=voter.voter_id,
+            name=voter.voter_name,
+            surname=voter.surname,
+            house_no=voter.house_no,
+            age=voter.age,
+            gender=voter.gender,
+            relation=voter.relation,
+            ward=voter.ward_id,
+            snapshot_created_at=datetime.utcnow()
+        )
+        db.add(snapshot)
+    
+    await db.commit()
+    
+    return {
+        "status": "success",
+        "survey_id": new_survey.id,
+        "survey_code": survey_code,
+        "message": f"Survey '{name}' created successfully"
+    }
+
+@app.get("/surveys/active")
+async def get_active_surveys(
+    mobile_no: Optional[str] = Query(None),
+    db: AsyncSession = Depends(get_db)
+):
+    from sqlalchemy import select
+    
+    # Fetch all non-locked surveys
+    query = select(Survey).filter(Survey.status != "LOCKED")
+    res = await db.execute(query)
+    surveys = res.scalars().all()
+    
+    # If mobile_no is provided, filter by assignments
+    if mobile_no:
+        mobile_no = clean_mobile(mobile_no)
+        # Get surveyor
+        res_s = await db.execute(
+            select(SurveyorRequest).filter(SurveyorRequest.mobile_no == mobile_no)
+        )
+        surveyor = res_s.scalar()
+        
+        if surveyor:
+            # Get assigned surveys
+            res_a = await db.execute(
+                select(SurveyAssignment).filter(SurveyAssignment.surveyor_id == surveyor.id)
+            )
+            assignments = res_a.scalars().all()
+            assigned_survey_ids = [a.survey_id for a in assignments]
+            surveys = [s for s in surveys if s.id in assigned_survey_ids]
+    
+    return [
+        {
+            "id": s.id,
+            "name": s.name,
+            "district": s.district,
+            "mandal": s.mandal,
+            "village": s.village,
+            "survey_code": s.survey_code,
+            "status": s.status,
+            "created_at": s.created_at.isoformat() if s.created_at else None
+        }
+        for s in surveys
+    ]
 
 @app.put("/voters/update")
 async def update_voter_data(
