@@ -604,6 +604,25 @@ class VoterUpdate(BaseModel):
     mobile_no: Optional[str] = None
     voter_status: Optional[str] = None
 
+class SurveyCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    name: str
+    scope_type: str 
+    scope_value: str
+    survey_type: str = "TEST" 
+
+class AnalyticsFilter(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    scope_type: str 
+    district_ids: List[int] = []
+    mandal_ids: List[int] = []
+    village_ids: List[int] = []
+    ward_ids: List[int] = []
+
+class LoginRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    mobile_no: str
+
 # ... (rest of code) ...
 
 @app.put("/voters/update")
