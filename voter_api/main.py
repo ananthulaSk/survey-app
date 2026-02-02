@@ -837,6 +837,126 @@ async def get_voter_stats(survey_id: int, ward: Optional[int] = None, current_vo
 
     return stats
 
+@app.get("/voters/next")
+async def get_next_voter(
+    current_id: int,
+    survey_id: int,
+    skip_completed: bool = True,
+    ward: Optional[int] = None,
+    db: AsyncSession = Depends(get_db)
+):
+    from sqlalchemy import select, and_
+    
+    # Build query for next voter
+    query = select(SurveyVoter).filter(
+        SurveyVoter.survey_id == survey_id,
+        SurveyVoter.master_voter_id > current_id
+    )
+    
+    # Filter by ward if specified
+    if ward is not None:
+        query = query.filter(SurveyVoter.ward_no == ward)
+    
+    # Skip completed voters if requested
+    if skip_completed:
+        query = query.filter(
+            and_(
+                SurveyVoter.voter_status != "COMPLETED",
+                SurveyVoter.voter_status != "DONE"
+            )
+        )
+    
+    # Order by voter_id and get first result
+    query = query.order_by(SurveyVoter.master_voter_id).limit(1)
+    
+    res = await db.execute(query)
+    voter = res.scalar()
+    
+    if not voter:
+        return {"status": "success", "data": None, "message": "No more voters"}
+    
+    return {
+        "status": "success",
+        "data": {
+            "voter_id": voter.master_voter_id,
+            "name": voter.voter_name,
+            "surname": voter.surname,
+            "ward": voter.ward_no,
+            "house_no": voter.house_no,
+            "age": voter.age,
+            "gender": voter.gender,
+            "relation_name": voter.relation_name,
+            "expected_party": voter.expected_party,
+            "occupation": voter.occupation,
+            "religion": voter.religion,
+            "caste": voter.caste,
+            "sub_caste": voter.sub_caste,
+            "mobile_no": voter.mobile_no,
+            "voter_status": voter.voter_status,
+            "snapshot_id": voter.id
+        }
+    }
+
+@app.get("/voters/previous")
+async def get_previous_voter(
+    current_id: int,
+    survey_id: int,
+    skip_completed: bool = True,
+    ward: Optional[int] = None,
+    db: AsyncSession = Depends(get_db)
+):
+    from sqlalchemy import select, and_, desc
+    
+    # Build query for previous voter
+    query = select(SurveyVoter).filter(
+        SurveyVoter.survey_id == survey_id,
+        SurveyVoter.master_voter_id < current_id
+    )
+    
+    # Filter by ward if specified
+    if ward is not None:
+        query = query.filter(SurveyVoter.ward_no == ward)
+    
+    # Skip completed voters if requested
+    if skip_completed:
+        query = query.filter(
+            and_(
+                SurveyVoter.voter_status != "COMPLETED",
+                SurveyVoter.voter_status != "DONE"
+            )
+        )
+    
+    # Order by voter_id descending and get first result
+    query = query.order_by(desc(SurveyVoter.master_voter_id)).limit(1)
+    
+    res = await db.execute(query)
+    voter = res.scalar()
+    
+    if not voter:
+        return {"status": "success", "data": None, "message": "No previous voters"}
+    
+    return {
+        "status": "success",
+        "data": {
+            "voter_id": voter.master_voter_id,
+            "name": voter.voter_name,
+            "surname": voter.surname,
+            "ward": voter.ward_no,
+            "house_no": voter.house_no,
+            "age": voter.age,
+            "gender": voter.gender,
+            "relation_name": voter.relation_name,
+            "expected_party": voter.expected_party,
+            "occupation": voter.occupation,
+            "religion": voter.religion,
+            "caste": voter.caste,
+            "sub_caste": voter.sub_caste,
+            "mobile_no": voter.mobile_no,
+            "voter_status": voter.voter_status,
+            "snapshot_id": voter.id
+        }
+    }
+
 @app.get("/voters/{voter_id}")
 async def get_voter_by_id(voter_id: int, survey_id: int, db: AsyncSession = Depends(get_db)):
     from sqlalchemy import select
