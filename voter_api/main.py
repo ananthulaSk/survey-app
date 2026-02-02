@@ -717,16 +717,29 @@ async def get_active_surveys(
     mobile_no: Optional[str] = Query(None),
     db: AsyncSession = Depends(get_db)
 ):
-    from sqlalchemy import select
+    from sqlalchemy import select, func
+    
+    print(f"🔍 GET /surveys/active called with mobile_no: {mobile_no}")
     
     # Fetch all non-locked surveys
     query = select(Survey).filter(Survey.status != "LOCKED")
     res = await db.execute(query)
     surveys = res.scalars().all()
     
+    print(f"📊 Total surveys (not locked): {len(surveys)}")
+    for s in surveys:
+        # Count voters in each survey
+        res_count = await db.execute(
+            select(func.count()).select_from(SurveyVoter).filter(SurveyVoter.survey_id == s.id)
+        )
+        voter_count = res_count.scalar()
+        print(f"   - Survey '{s.name}' (ID: {s.id}): {voter_count} voters")
+    
     # If mobile_no is provided, filter by assignments
     if mobile_no:
         mobile_no = clean_mobile(mobile_no)
+        print(f"🔍 Filtering by mobile: {mobile_no}")
+        
         # Get surveyor
         res_s = await db.execute(
             select(SurveyorRequest).filter(SurveyorRequest.mobile_no == mobile_no)
@@ -734,15 +747,26 @@ async def get_active_surveys(
         surveyor = res_s.scalar()
         
         if surveyor:
+            print(f"✅ Surveyor found: {surveyor.name} (ID: {surveyor.id})")
+            
             # Get assigned surveys
             res_a = await db.execute(
-                select(SurveyAssignment).filter(SurveyAssignment.surveyor_id == surveyor.id)
+                select(SurveyAssignment).filter(
+                    SurveyAssignment.surveyor_id == surveyor.id,
+                    SurveyAssignment.status == "ACTIVE"
+                )
             )
             assignments = res_a.scalars().all()
             assigned_survey_ids = [a.survey_id for a in assignments]
+            print(f"📋 Assigned survey IDs: {assigned_survey_ids}")
+            
             surveys = [s for s in surveys if s.id in assigned_survey_ids]
+            print(f"✅ Filtered to {len(surveys)} assigned surveys")
+        else:
+            print(f"⚠️ WARNING: Surveyor not found for mobile {mobile_no}")
+            surveys = []
     
-    return [
+    result = [
         {
             "id": s.id,
             "name": s.name,
@@ -755,6 +779,9 @@ async def get_active_surveys(
         }
         for s in surveys
     ]
+    
+    print(f"📤 Returning {len(result)} surveys")
+    return result
 
 @app.put("/voters/update")
 async def update_voter_data(
@@ -845,7 +872,37 @@ async def get_next_voter(
     ward: Optional[int] = None,
     db: AsyncSession = Depends(get_db)
 ):
-    from sqlalchemy import select, and_
+    from sqlalchemy import select, and_, func
+    
+    print(f"🔍 GET /voters/next called with:")
+    print(f"   - current_id: {current_id}")
+    print(f"   - survey_id: {survey_id}")
+    print(f"   - skip_completed: {skip_completed}")
+    print(f"   - ward: {ward}")
+    
+    # First, check if survey exists
+    res_survey = await db.execute(select(Survey).filter(Survey.id == survey_id))
+    survey = res_survey.scalar()
+    if not survey:
+        print(f"❌ ERROR: Survey {survey_id} not found!")
+        raise HTTPException(status_code=404, detail=f"Survey {survey_id} not found")
+    
+    print(f"✅ Survey found: {survey.name}")
+    
+    # Check total voters in this survey
+    res_count = await db.execute(
+        select(func.count()).select_from(SurveyVoter).filter(SurveyVoter.survey_id == survey_id)
+    )
+    total_voters = res_count.scalar()
+    print(f"📊 Total voters in survey: {total_voters}")
+    
+    if total_voters == 0:
+        print(f"⚠️ WARNING: Survey has 0 voters! Survey snapshots not created.")
+        return {
+            "status": "error",
+            "data": None,
+            "message": f"Survey '{survey.name}' has no voters. Please create survey snapshots first."
+        }
     
     # Build query for next voter
     query = select(SurveyVoter).filter(
@@ -856,6 +913,7 @@ async def get_next_voter(
     # Filter by ward if specified
     if ward is not None:
         query = query.filter(SurveyVoter.ward_no == ward)
+        print(f"🔍 Filtering by ward: {ward}")
     
     # Skip completed voters if requested
     if skip_completed:
@@ -865,6 +923,7 @@ async def get_next_voter(
                 SurveyVoter.voter_status != "DONE"
             )
         )
+        print(f"⏭️ Skipping completed voters")
     
     # Order by voter_id and get first result
     query = query.order_by(SurveyVoter.master_voter_id).limit(1)
@@ -873,7 +932,10 @@ async def get_next_voter(
     voter = res.scalar()
     
     if not voter:
+        print(f"⚠️ No next voter found after current_id {current_id}")
         return {"status": "success", "data": None, "message": "No more voters"}
+    
+    print(f"✅ Found voter: {voter.voter_name} (ID: {voter.master_voter_id})")
     
     return {
         "status": "success",
