@@ -1631,6 +1631,42 @@ async def unassign_surveyor(req: AssignmentRequest, db: AsyncSession = Depends(g
 async def unassign_surveyor_legacy(req: AssignmentRequest, db: AsyncSession = Depends(get_db)):
     return await unassign_surveyor(req, db)
 
+@app.get("/assignments/list")
+async def get_assignments_list(survey_id: int, db: AsyncSession = Depends(get_db)):
+    from sqlalchemy import select
+    
+    # Get all assignments for this survey
+    res = await db.execute(
+        select(SurveyAssignment).filter(
+            SurveyAssignment.survey_id == survey_id,
+            SurveyAssignment.status == "ACTIVE"
+        )
+    )
+    assignments = res.scalars().all()
+    
+    # Build response with surveyor details
+    result = []
+    for assignment in assignments:
+        # Get surveyor info
+        res_surveyor = await db.execute(
+            select(SurveyorRequest).filter(SurveyorRequest.id == assignment.surveyor_id)
+        )
+        surveyor = res_surveyor.scalar()
+        
+        if surveyor:
+            result.append({
+                "assignment_id": assignment.id,
+                "survey_id": assignment.survey_id,
+                "surveyor_id": assignment.surveyor_id,
+                "surveyor_name": surveyor.name,
+                "surveyor_mobile": surveyor.mobile_no,
+                "surveyor_role": surveyor.role,
+                "assigned_at": assignment.assigned_at.isoformat() if assignment.assigned_at else None,
+                "status": assignment.status
+            })
+    
+    return result
+
 @app.delete("/surveys/{survey_id}")
 async def delete_survey(survey_id: int, db: AsyncSession = Depends(get_db)):
     from sqlalchemy import select, delete
