@@ -1,7 +1,7 @@
 steps:
-  # 1. Build the container image
+  # 1. Build the container image (with --no-cache to force complete rebuild)
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '-t', 'asia-south1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/survey-app/survey-app:$COMMIT_SHA', '.']
+    args: ['build', '--no-cache', '-t', 'asia-south1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/survey-app/survey-app:$COMMIT_SHA', '.']
 
   # 2. Push the container image to Artifact Registry
   - name: 'gcr.io/cloud-builders/docker'

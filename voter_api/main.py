@@ -17,7 +17,7 @@ from fastapi.security import APIKeyHeader
 
 # --- CONFIGURATION (Dynamic Versioning) ---
 # Auto-increment version using BUILD_NUMBER from CI/CD
-BUILD_NUMBER = os.getenv("BUILD_NUMBER", "111")  # Cloud Build will set this
+BUILD_NUMBER = os.getenv("BUILD_NUMBER", "200")  # Changed to 200 to force new version
 MAIN_VERSION = os.getenv("APP_VERSION", f"v20.{int(BUILD_NUMBER):03d}")
 EXPECTED_FRONTEND_VERSION = os.getenv("FRONTEND_VERSION", f"v20.{int(BUILD_NUMBER):03d}")
 
